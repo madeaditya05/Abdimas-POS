@@ -36,7 +36,7 @@ class DetailPenjualansTable
                 TextColumn::make('harga')
                     ->label('Harga')
                     ->numeric()
-                    ->prefix('Rp ')
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignCenter(),
 
@@ -49,7 +49,7 @@ class DetailPenjualansTable
                 TextColumn::make('subtotal')
                     ->label('Subtotal')
                     ->numeric()
-                    ->prefix('Rp ')
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignCenter(),
             ])

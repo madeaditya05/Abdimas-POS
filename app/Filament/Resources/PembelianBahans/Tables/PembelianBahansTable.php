@@ -36,6 +36,7 @@ class PembelianBahansTable
                 TextColumn::make('total')
                     ->numeric()
                     ->sortable()
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->alignCenter(),
                 TextColumn::make('created_at')->dateTime()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')->dateTime()->toggleable(isToggledHiddenByDefault: true),

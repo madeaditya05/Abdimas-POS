@@ -29,15 +29,18 @@ class PenjualansTable
                     ->alignCenter(),
                 TextColumn::make('total')
                     ->numeric()
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignCenter(),
                 TextColumn::make('bayar')
                     ->numeric()
                     ->sortable()
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->alignCenter(),
                 TextColumn::make('kembalian')
                     ->numeric()
                     ->sortable()
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->alignCenter(),
                 TextColumn::make('metode')
                     ->searchable()

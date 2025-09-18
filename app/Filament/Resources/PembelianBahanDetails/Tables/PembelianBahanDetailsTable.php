@@ -18,8 +18,17 @@ class PembelianBahanDetailsTable
                 TextColumn::make('nama_bahan')->searchable()->alignCenter(),
                 TextColumn::make('satuan_beli')->alignCenter(),
                 TextColumn::make('qty_beli')->numeric()->sortable()->alignCenter(),
-                TextColumn::make('harga_satuan')->numeric()->sortable()->alignCenter(),
-                TextColumn::make('subtotal')->numeric()->sortable()->alignCenter(),
+
+                TextColumn::make('harga_satuan')
+                ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
+                ->sortable()
+                ->alignCenter(),
+
+                TextColumn::make('subtotal')
+                ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
+                ->sortable()
+                ->alignCenter(),
+
                 TextColumn::make('expired_date')->date()->sortable()->alignCenter(),
                 TextColumn::make('created_at')->dateTime()->toggleable(isToggledHiddenByDefault: true)->alignCenter(),
             ])
