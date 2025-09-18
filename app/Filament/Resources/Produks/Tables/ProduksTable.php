@@ -33,7 +33,7 @@ class ProduksTable
 
                 TextColumn::make('harga')
                     ->numeric()
-                    ->prefix('Rp ')
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->sortable()
                     ->alignCenter(),
 

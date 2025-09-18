@@ -54,8 +54,7 @@ class BahanBakusTable
                             ?? $record->getAttribute('min_stock');
                     })
                     ->numeric()
-                    ->alignCenter()
-                    ->placeholder('—'),
+                    ->placeholder('_'),
 
                 // harga beli terakhir (computed dari pembelian detail)
                 TextColumn::make('harga_beli_terakhir')
@@ -67,7 +66,7 @@ class BahanBakusTable
                         // ganti 'harga_satuan' kalau kolomnya beda
                         return $last?->harga_satuan ?? null;
                     })
-                    ->money('IDR')
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                     ->alignCenter()
                     ->sortable(false)
                     ->toggleable(),
