@@ -5,7 +5,7 @@ namespace App\Filament\Resources\PembelianBahans\Schemas;
 use App\Models\PembelianBahan;
 use App\Models\BahanBaku;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\{Hidden, TextInput, DateTimePicker, Repeater, Select, DatePicker};
+use Filament\Forms\Components\{ Hidden, TextInput, DateTimePicker, Repeater, Select, DatePicker, FileUpload };
 use Filament\Schemas\Schema;
 
 class PembelianBahanForm
@@ -33,7 +33,23 @@ class PembelianBahanForm
             TextInput::make('supplier_nama')->label('Supplier')->maxLength(120),
             TextInput::make('supplier_kontak')->label('Kontak')->maxLength(120),
 
-            TextInput::make('total')->numeric()->prefix('Rp')->readOnly()->dehydrated(true),
+            // Header: Total + Bukti Bayar (tanpa Grid; urutan komponen membuatnya sejajar)
+            TextInput::make('total')
+                ->numeric()
+                ->prefix('Rp')
+                ->readOnly()
+                ->dehydrated(true),
+
+            FileUpload::make('catatan') // tetap pakai kolom 'catatan' untuk simpan path bukti bayar
+                ->label('Bukti Bayar (Invoice)')
+                ->image()
+                ->directory('pembelian/bukti-bayar') // storage/app/public/pembelian/bukti-bayar
+                ->disk('public')
+                ->visibility('public')
+                ->acceptedFileTypes(['image/*'])
+                ->maxSize(2048) // 2MB
+                ->downloadable()
+                ->openable(),
 
             // =======================
             // REPEATER DETAIL BELI
@@ -77,11 +93,14 @@ class PembelianBahanForm
                     TextInput::make('harga_satuan')
                         ->numeric()->default(0)->required()->live()
                         ->afterStateUpdated(fn($s,$set,$get)=>$set('subtotal',(float)($get('qty_beli')??0)*(float)($s??0)))
-                        ->prefix('Rp')
+                        ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                         ->columnSpan(2),
 
                     TextInput::make('subtotal')
-                        ->numeric()->prefix('Rp')->readOnly()->dehydrated(true)
+                        ->numeric()
+                        ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
+                        ->readOnly()
+                        ->dehydrated(true)
                         ->columnSpan(2),
                 ])
                 ->live()
@@ -93,7 +112,8 @@ class PembelianBahanForm
                     $set('total', $total);
                 }),
 
-            TextInput::make('catatan')->columnSpanFull(),
+            // HAPUS input catatan teks lama (diganti FileUpload di header)
+            // TextInput::make('catatan')->columnSpanFull(),
         ]);
     }
 }
