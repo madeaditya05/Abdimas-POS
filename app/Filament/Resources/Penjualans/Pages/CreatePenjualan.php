@@ -9,6 +9,9 @@ class CreatePenjualan extends CreateRecord
 {
     protected static string $resource = PenjualanResource::class;
 
-    // Tidak perlu afterCreate di sini.
-    // Repeater menyimpan DetailPenjualan, dan hook di model yang menulis mutasi OUT.
+    protected function getRedirectUrl(): string
+    {
+        // setelah simpan, ke halaman Edit record ini
+        return static::$resource::getUrl('edit', ['record' => $this->record]);
+    }
 }

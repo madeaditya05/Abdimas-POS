@@ -13,9 +13,18 @@ class EditPenjualan extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\Action::make('print')
+                ->label('Cetak Tiket')
+                ->icon('heroicon-o-printer')
+                ->color('success')
+                ->url(fn () => route('tickets.penjualan', $this->record))
+                ->openUrlInNewTab(),
         ];
     }
 
-    // Tidak perlu afterSave: model DetailPenjualan sudah menghapus & menulis ulang mutasi OUT.
+    // setelah user klik "Simpan" di Edit, pastikan total ke-update
+    protected function afterSave(): void
+    {
+        $this->record->recalcTotal();
+    }
 }

@@ -31,17 +31,17 @@ class UsersTable
                      // TAMPILKAN Title Case: "barista" -> "Barista"
                     ->formatStateUsing(fn ($state) => $state ? ucfirst($state) : '-')
                     ->badge()
-                    ->colors([
-                        'success' => 'Barista',
-                        'warning' => 'Kasir',
-                    ])
+                    // ->colors([
+                    //     'warning' => 'Barista',
+                    //     'warning' => 'Kasir',
+                    // ])
                     ->sortable()
                     ->alignCenter(),
 
-                TextColumn::make('email_verified_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->alignCenter(),
+                // TextColumn::make('email_verified_at')
+                //     ->dateTime()
+                //     ->sortable()
+                //     ->alignCenter(),
 
                 TextColumn::make('created_at')
                     ->dateTime()

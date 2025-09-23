@@ -6,13 +6,14 @@ use App\Services\JournalPoster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Penjualan extends Model
 {
     protected $table = 'penjualan';
 
+    // Biarkan model yang mengisi kode_penjualan (jangan dimass-assign dari form)
     protected $fillable = [
-        'kode_penjualan',
         'tanggal',
         'user_id',
         'total',
@@ -28,6 +29,9 @@ class Penjualan extends Model
         'kembalian' => 'decimal:2',
     ];
 
+    /* =======================
+     |  Relasi
+     =======================*/
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -38,70 +42,76 @@ class Penjualan extends Model
         return $this->hasMany(PenjualanDetail::class, 'penjualan_id');
     }
 
-    public static function generateKodeHarian(): string
+    /* =======================
+     |  Generator Kode Harian
+     |  Format: PJL-ddmmyy-0001
+     |  Basis hari: created_at (hari ini)
+     =======================*/
+    public static function nextKode(): string
     {
-        $today  = now()->format('ymd');
-        $prefix = "CFF-{$today}-";
+        $prefix = 'PJL-' . now()->format('dmy') . '-';
 
-        $lastKode = static::whereDate('tanggal', now()->toDateString())
-            ->where('kode_penjualan', 'like', $prefix . '%')
-            ->orderByDesc('kode_penjualan')
-            ->value('kode_penjualan');
+        return DB::transaction(function () use ($prefix) {
+            $last = static::whereDate('created_at', today())
+                ->where('kode_penjualan', 'like', $prefix . '%')
+                ->lockForUpdate()
+                ->orderByDesc('id')
+                ->value('kode_penjualan');
 
-        $nextNumber = 1;
-        if ($lastKode && preg_match('/^CFF-\d{6}-(\d{4})$/', $lastKode, $m)) {
-            $nextNumber = (int) $m[1] + 1;
-        }
+            $next = 1;
+            if ($last && preg_match('/^PJL-\d{6}-(\d{4})$/', $last, $m)) {
+                $next = (int) $m[1] + 1;
+            }
 
-        $suffix = str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
-
-        return $prefix . $suffix;
+            return $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        });
     }
 
-    /** Hitung ulang total dari detail & kembalian dari bayar */
+    /* =======================
+     |  Hitung Total & Kembalian
+     |  (dari detail: subtotal = harga * qty)
+     =======================*/
     public function recalcTotal(): void
     {
-        $total = (float) $this->details()->sum('subtotal');
+        // Sesuaikan kolom subtotal sesuai tabelmu (di kamu sudah ada 'subtotal')
+        $total = (float) ($this->details()->sum('subtotal') ?? 0);
 
         $this->total     = $total;
         $this->kembalian = max(0, (float) ($this->bayar ?? 0) - $total);
 
-        // penting: quietly → tidak memicu event "saved" lagi (hindari loop)
+        // quietly → tidak memicu event "saved" lagi (hindari loop)
         $this->saveQuietly();
     }
 
+    /* =======================
+     |  Model Hooks
+     =======================*/
     protected static function booted(): void
     {
-        // Default value saat membuat
-        static::creating(function (Penjualan $model) {
-            $model->tanggal        ??= now();
-            $model->kode_penjualan ??= static::generateKodeHarian();
-            $model->metode         ??= 'cash';
-            $model->total          ??= 0;
-            $model->bayar          ??= 0;
-            $model->kembalian      ??= 0;
+        // Nilai default saat create
+        static::creating(function (self $m) {
+            $m->tanggal        ??= now();
+            $m->kode_penjualan ??= static::nextKode();
+            $m->metode         ??= 'cash';
+            $m->total          ??= 0;
+            $m->bayar          ??= 0;
+            $m->kembalian      ??= 0;
         });
 
-        // Pastikan anak terhapus pakai delete() agar event di detail terpanggil
+        // Hapus anak2nya pakai delete() supaya event di detail tetap jalan
         static::deleting(function (self $header) {
             foreach ($header->details as $d) {
                 $d->delete();
             }
         });
 
-        // =========================
-        // [JOURNAL] Integrasi jurnal
-        // =========================
-
-        // 1) Setelah header tersimpan:
-        //    - hitung ulang total (supaya akurat kalau detail berubah)
-        //    - post jurnal (Kas/Bank/Piutang vs Pendapatan)
+        // Setelah tersimpan: hitung ulang total & post jurnal
         static::saved(function (self $m) {
-            $m->recalcTotal(); // quietly, tidak ngetrigger saved lagi
+            $m->recalcTotal(); // quietly
             app(JournalPoster::class)->postForPenjualan($m);
         });
 
-        // 2) Saat header dihapus: hapus jurnal sumbernya
+        // Saat dihapus: hapus jurnal yang terkait
         static::deleted(function (self $m) {
             app(JournalPoster::class)->deleteFor(self::class, $m->id);
         });

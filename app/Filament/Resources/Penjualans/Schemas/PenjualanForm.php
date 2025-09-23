@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Penjualans\Schemas;
 
 use App\Models\Penjualan;
 use App\Models\Produk;
-use Filament\Facades\Filament;                 // <-- WAJIB: pakai guard Filament
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -18,26 +18,28 @@ class PenjualanForm
     {
         return $schema->components([
 
-            // 1) Otomatis isi user_id dari user yang login di panel
+            // user yang login
             Hidden::make('user_id')
                 ->default(fn () => (int) Filament::auth()->id())
-                ->dehydrated(true),                     // <-- perhatikan: KOMA, bukan TITIK KOMA
-
-            // 2) Kode otomatis CFF-YYMMDD-0001 (tetap dijaga di model juga)
-            TextInput::make('kode_penjualan')
-                ->label('Kode')
-                ->default(fn () => Penjualan::generateKodeHarian())
-                ->readOnly()
                 ->dehydrated(true),
 
+            // kode otomatis (tetap diisi oleh model sebagai fallback)
+            TextInput::make('kode_penjualan')
+                ->label('Kode')
+                ->default(fn () => Penjualan::nextKode())
+                ->disabled()
+                ->dehydrated(false),
+
             DateTimePicker::make('tanggal')
+                ->label('Tanggal')
                 ->timezone('Asia/Jakarta')
                 ->default(now('Asia/Jakarta'))
-                ->seconds(false)                 // sembunyikan detik
+                ->seconds(false)
                 ->displayFormat('dd/MM/yyyy HH:mm')
                 ->required(),
 
             Select::make('metode')
+                ->label('Metode')
                 ->options([
                     'cash'     => 'Cash',
                     'qris'     => 'QRIS',
@@ -47,81 +49,143 @@ class PenjualanForm
                 ->default('cash')
                 ->required(),
 
+            // ==== BAYAR ====
             TextInput::make('bayar')
                 ->label('Dibayar')
                 ->numeric()
-                ->prefix('Rp')
+                // tampil sebagai rupiah
+                ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
+                // isi nilai dari DB saat Edit (hindari tampil 0)
+                ->afterStateHydrated(function ($state, callable $set) {
+                    $set('bayar', (float) $state);
+                })
+                // simpan sebagai angka murni (hilangkan 'Rp', titik, spasi)
+                ->dehydrateStateUsing(fn ($state) =>
+                    (float) preg_replace('/[^\d]/', '', (string) $state)
+                )
                 ->default(0)
-                ->live() // di v4 lebih dianjurkan pakai live() daripada reactive()
+                ->live()
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     $total = array_sum(array_map(
                         fn ($i) => (float) ($i['subtotal'] ?? 0),
                         $get('details') ?? []
                     ));
+                    $bayar = (float) preg_replace('/[^\d]/', '', (string) $state);
                     $set('total', $total);
-                    $set('kembalian', max(0, ($state ?? 0) - $total));
+                    $set('kembalian', max(0, $bayar - $total));
                 }),
 
+            // ==== TOTAL ====
             TextInput::make('total')
+                ->label('Total')
                 ->numeric()
-                ->prefix('Rp')
-                ->readOnly()
+                ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
+                ->disabled()
                 ->dehydrated(true),
 
+            // ==== KEMBALIAN ====
             TextInput::make('kembalian')
+                ->label('Kembalian')
                 ->numeric()
-                ->prefix('Rp')
+                ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
+                // hitung ulang saat Edit dibuka supaya tidak 0
+                ->afterStateHydrated(function ($state, callable $set, callable $get) {
+                    $total = (float) ($get('total') ?? 0);
+                    $bayar = (float) ($get('bayar') ?? 0);
+                    $set('kembalian', max(0, $bayar - $total));
+                })
+                // simpan sebagai angka murni
+                ->dehydrateStateUsing(fn ($state) =>
+                    (float) preg_replace('/[^\d]/', '', (string) $state)
+                )
                 ->readOnly()
                 ->dehydrated(true),
 
             // =======================
-            //        REPEATER
+            //         REPEATER
             // =======================
             Repeater::make('details')
-                ->relationship('details')             // relasi Penjualan::details()
-                ->columnSpanFull()   // <-- ini yang bikin melebar full width
+                ->relationship('details')          // relasi Penjualan::details()
+                ->columnSpanFull()
                 ->defaultItems(1)
-                // ->createItemButtonLabel('Tambah Produk')
                 ->columns(4)
+
+                // Saat Edit dibuka: isi harga/subtotal kalau 0, lalu sum total
+                ->afterStateHydrated(function ($state, callable $set, callable $get) {
+                    $items   = $state ?? [];
+                    $changed = false;
+
+                    foreach ($items as $idx => $row) {
+                        $pid   = $row['produk_id'] ?? null;
+                        $harga = (float) ($row['harga'] ?? 0);
+                        $qty   = (float) ($row['qty'] ?? 0);
+
+                        if ($pid && $harga <= 0) {
+                            $hargaDb = Produk::find($pid)?->harga ?? 0;
+                            $items[$idx]['harga']    = (float) $hargaDb;
+                            $items[$idx]['subtotal'] = (float) $hargaDb * $qty;
+                            $changed = true;
+                        } elseif (!isset($row['subtotal'])) {
+                            $items[$idx]['subtotal'] = $harga * $qty;
+                            $changed = true;
+                        }
+                    }
+
+                    if ($changed) {
+                        $set('details', $items);
+                    }
+
+                    $total = array_sum(array_map(fn ($i) => (float) ($i['subtotal'] ?? 0), $items));
+                    $set('total', $total);
+                    $set('kembalian', max(0, (float) ($get('bayar') ?? 0) - $total));
+                })
+
                 ->schema([
                     Select::make('produk_id')
                         ->label('Produk')
-                        ->relationship('produk', 'nama_barang') // butuh method produk() di PenjualanDetail
+                        // GANTI jika kolom nama produk berbeda (mis. 'name' / 'nama')
+                        ->relationship('produk', 'nama_barang')
                         ->searchable()
                         ->preload()
                         ->live()
-                        ->afterStateUpdated(function ($state, callable $set) {
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
                             $harga = Produk::find($state)?->harga ?? 0;
-                            $set('harga', $harga);
+                            $set('harga', (float) $harga);
+                            $set('subtotal', (float) $harga * (float) ($get('qty') ?? 0));
                         })
                         ->required(),
 
                     TextInput::make('harga')
+                        ->label('Harga')
                         ->numeric()
-                        ->prefix('Rp')
+                        ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                         ->live()
                         ->required()
                         ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                            $qty = (int) ($get('qty') ?? 0);
-                            $set('subtotal', (float) ($state ?? 0) * $qty);
+                            $harga = (float) preg_replace('/[^\d.]/', '', (string) $state);
+                            $qty   = (float) ($get('qty') ?? 0);
+                            $set('subtotal', $harga * $qty);
                         }),
 
                     TextInput::make('qty')
+                        ->label('Qty')
                         ->numeric()
                         ->default(1)
                         ->live()
                         ->required()
                         ->afterStateUpdated(function ($state, callable $set, callable $get) {
                             $harga = (float) ($get('harga') ?? 0);
-                            $set('subtotal', $harga * (int) ($state ?? 0));
+                            $set('subtotal', $harga * (float) ($state ?? 0));
                         }),
 
                     TextInput::make('subtotal')
+                        ->label('Subtotal')
                         ->numeric()
-                        ->prefix('Rp')
+                        ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 0, ',', '.'))
                         ->readOnly()
                         ->dehydrated(true),
                 ])
+
                 ->live()
                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     $total = array_sum(array_map(
