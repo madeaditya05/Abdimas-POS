@@ -6,6 +6,7 @@ use App\Models\BahanBaku;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Schema;
 
 class PembelianBahanDetailForm
@@ -50,7 +51,19 @@ class PembelianBahanDetailForm
 
             TextInput::make('subtotal')->numeric()->prefix('Rp')->readOnly()->dehydrated(true),
 
-            TextInput::make('catatan')->columnSpanFull(),
+            // TextInput::make('catatan')->columnSpanFull(),
+
+            FileUpload::make('catatan')
+                ->label('Bukti Bayar (Invoice)')
+                ->image()
+                ->directory('pembelian/bukti-bayar/detail')
+                ->disk('public')
+                ->visibility('public')
+                ->acceptedFileTypes(['image/*'])
+                ->maxSize(2048) // 2 MB
+                ->downloadable()
+                ->openable()
+                ->columnSpanFull(),
         ]);
     }
 }

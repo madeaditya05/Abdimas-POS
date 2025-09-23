@@ -7,6 +7,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+// use Filament\Tables\Actions\Action;
 
 class PenjualansTable
 {
@@ -59,11 +60,21 @@ class PenjualansTable
             ])
             ->recordActions([
                 EditAction::make(),
+
+                // Action::make('cetakTiket')
+                // ->label('Cetak Tiket')
+                // ->icon('heroicon-o-printer')
+                // ->url(fn ($record) => route('tickets.penjualan', $record))
+                // ->openUrlInNewTab()
+                // ->color('success'),
+
+                
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
+                
             ]);
     }
 }
