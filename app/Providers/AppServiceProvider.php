@@ -3,11 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\User;
-use App\Observers\UserObserver;
-use App\Models\PenjualanDetail;
-use App\Observers\PenjualanDetailObserver;
-
+use Midtrans\Config as MidtransConfig;
+use App\Services\Payments\PaymentGateway;
+use App\Services\Payments\MidtransPaymentGateway;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,7 +14,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Services\Payments\PaymentGateway::class, function () {
+        return new \App\Services\Payments\PaymentGateway();
+    });
+
     }
 
     /**
@@ -24,9 +25,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-            // User::observe(UserObserver::class);
-                PenjualanDetail::observe(PenjualanDetailObserver::class);
+    MidtransConfig::$serverKey = config('midtrans.server_key');
+    MidtransConfig::$isProduction = (bool) config('midtrans.is_production');
+    MidtransConfig::$isSanitized  = (bool) config('midtrans.sanitize');
+    MidtransConfig::$is3ds        = (bool) config('midtrans.enable_3ds');
     }
-
-    
 }

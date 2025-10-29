@@ -1,0 +1,151 @@
+/* ============= Cofit EV • Layar Customer (Light, senada dashboard) ============= */
+:root{
+  --bg: #f9fafb;          /* body */
+  --panel: #ffffff;       /* card/panel */
+  --text: #111827;        /* teks utama */
+  --muted:#6b7280;        /* teks sekunder */
+  --border:#e5e7eb;       /* garis */
+  --soft:#f3f4f6;         /* surface lembut */
+
+  --brand:#059669;        /* hijau utama */
+  --brand-dark:#047857;   /* hover */
+  --green-bg:#d1fae5; --green-text:#065f46;
+  --amber-bg:#fef3c7; --amber-text:#b45309;
+  --red-bg:#fee2e2;   --red-text:#991b1b;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body.cust-body{
+  margin:0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ===== Shell: header + konten, no page scroll ===== */
+.cust-wrap{
+  height:100vh;
+  display:grid;
+  grid-template-rows: 92px 1fr;
+  overflow:hidden; /* mencegah halaman scroll */
+}
+
+/* ===== Header ===== */
+.cust-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 28px;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+}
+.brand{
+  display:flex; align-items:center; gap:14px;
+}
+.brand-badge{
+  width:44px; height:44px; border-radius:12px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-weight:800;
+  box-shadow: 0 10px 15px -3px rgba(5,150,105,.25);
+}
+.brand-title{ font-size:20px; font-weight:700; }
+.brand-sub{ font-size:13px; color:var(--muted); margin-top:2px; }
+
+.badges{
+  display:flex; align-items:center; gap:10px;
+}
+.pill{
+  padding:8px 14px; border-radius:999px; font-weight:700; font-size:14px;
+  border:1px solid var(--border); background:#fff; color:var(--text);
+}
+.pill.ok{    background:var(--green-bg); color:var(--green-text); border-color: rgba(5,150,105,.25); }
+.pill.warn{  background:var(--amber-bg); color:var(--amber-text); border-color: rgba(180,83,9,.25); }
+.pill.bad{   background:var(--red-bg);   color:var(--red-text);   border-color: rgba(153,27,27,.25); }
+
+/* ===== Main: dua kolom, tetap 1 layar ===== */
+.cust-main{
+  display:grid; grid-template-columns: 1.1fr 1fr;
+  gap:24px; padding:24px;
+  overflow:hidden; /* no page scroll */
+}
+@media (max-width: 1024px){
+  .cust-main{ grid-template-columns: 1fr; }
+}
+
+/* ===== Card ===== */
+.c-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px;
+  height:100%;
+  display:flex; flex-direction:column;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+}
+.c-head{ margin-bottom:8px; }
+.c-head h2{ margin:0; font-size:20px; font-weight:700; }
+.c-sub{ margin:4px 0 0; font-size:14px; color:var(--muted); }
+
+/* ===== Daftar belanja ===== */
+.bill-wrap{
+  display:flex; flex-direction:column; gap:12px;
+  overflow:auto; /* scroll di dalam panel */
+  padding-right:4px; margin-top:8px;
+}
+.bill-item{
+  display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center;
+  background: var(--soft);
+  border:1px solid var(--border);
+  border-radius:10px; padding:12px 14px;
+}
+.bill-title{ font-weight:600; }
+.bill-meta{ font-size:13px; color:var(--muted); margin-top:2px; }
+.bill-line{ font-weight:700; color:var(--brand-dark); }
+
+.bill-total{
+  margin-top:14px; display:flex; align-items:center; justify-content:space-between;
+  padding-top:12px; border-top:1px dashed var(--border);
+  font-size:18px; font-weight:700; color:var(--brand-dark);
+}
+
+/* ===== Pembayaran (QR/VA) ===== */
+.pay-wrap{ display:flex; flex-direction:column; gap:14px; overflow:hidden; }
+
+.qr-box{
+  flex:1; min-height:0;
+  border-radius:12px;
+  background:#fff;
+  border:1px dashed var(--border);
+  display:flex; align-items:center; justify-content:center;
+  padding:14px;
+}
+.qr-img{
+  width:min(50vh, 380px);
+  height:min(50vh, 380px);
+  max-width:100%; max-height:100%;
+  object-fit:contain;
+  background:#fff; border-radius:10px; padding:10px;
+  border:1px solid var(--border);
+}
+.qr-fallback{ font-size:12px; color:var(--muted); word-break:break-all; text-align:center; }
+.info{ font-size:14px; color:var(--muted); text-align:center; }
+
+.va-box{
+  background:#fff; border:1px solid var(--border);
+  border-radius:10px; padding:12px 14px; text-align:center;
+}
+.va-bank{ font-weight:700; letter-spacing:.3px; color:var(--text); }
+.va-no{
+  margin-top:4px;
+  font: 800 26px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  color:var(--brand-dark);
+}
+
+/* ===== Footer status ===== */
+.state{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  font-size:14px; color:var(--muted);
+}
+.state .dot{ width:8px; height:8px; border-radius:50%; background:var(--amber-text); }
+.state.ok .dot{ background:var(--green-text); }
+.state.bad .dot{ background:var(--red-text); }
