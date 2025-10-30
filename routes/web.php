@@ -6,10 +6,12 @@ use App\Http\Controllers\KasirController;
 use App\Http\Controllers\CustomerPembayaranController;
 use App\Http\Controllers\ProductController;
 
+use Illuminate\Support\Facades\Auth;
+
 Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
+    return Auth::check()
+        ? to_route('dashboard')
+        : to_route('login');
 });
 
 // ====== Guest only ======
