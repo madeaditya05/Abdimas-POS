@@ -3,7 +3,7 @@
 @endpush
 
 @extends('layouts.main')
-@section('title', 'Produk')
+@section('title', 'COA')
 
 @section('content')
 <div class="product-admin">
@@ -25,20 +25,20 @@
         <div class="card-body">
           @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
 
-          <h2 class="page-title m-0 mb-3">Produk</h2>
+          <h2 class="page-title m-0 mb-3">Chart of Accounts (COA)</h2>
 
           {{-- Filter --}}
-          <form method="get" action="{{ route('product.search') }}" class="mb-3 d-flex gap-2 flex-wrap">
-            <input type="text" name="s" value="{{ request('s') }}" class="form-control" placeholder="Cari nama atau SKU" style="max-width:260px">
+          <form method="get" action="{{ route('coa.search') }}" class="mb-3 d-flex gap-2 flex-wrap">
+            <input type="text" name="s" value="{{ request('s') }}" class="form-control" placeholder="Cari kode / nama akun / tipe" style="max-width:300px">
             <button class="btn btn-secondary" type="submit">Cari</button>
-            <a href="{{ route('product.index') }}" class="btn btn-light">Reset</a>
+            <a href="{{ route('coa.index') }}" class="btn btn-light">Reset</a>
           </form>
 
           <div class="card">
             <div class="subcard-header">
-              <span class="muted">Daftar Produk</span>
-              <a href="{{ route('product.create') }}" class="btn btn-primary btn-sm">
-                <i class="ti ti-plus"></i> Tambah Produk
+              <span class="muted">Daftar Akun</span>
+              <a href="{{ route('coa.create') }}" class="btn btn-primary btn-sm">
+                <i class="ti ti-plus"></i> Tambah Akun
               </a>
             </div>
 
@@ -47,29 +47,29 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Nama</th>
-                      <th>SKU</th>
-                      <th>Harga</th>
+                      <th>Kode</th>
+                      <th>Nama Akun</th>
+                      <th>Tipe</th>
                       <th style="width:160px">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
-                    @forelse ($product as $p)
+                    @forelse ($coa as $c)
                       <tr>
-                        <td>{{ $p->name }}</td>
-                        <td>{{ $p->sku }}</td>
-                        <td>Rp {{ number_format($p->price,0,',','.') }}</td>
+                        <td>{{ $c->code }}</td>
+                        <td>{{ $c->name }}</td>
+                        <td>{{ $c->type }}</td>
                         <td>
                           <div class="d-flex gap-2">
-                            <a href="{{ route('product.edit', $p->id) }}" class="btn btn-edit btn-sm">Edit</a>
+                            <a href="{{ route('coa.edit', $c->id) }}" class="btn btn-edit btn-sm">Edit</a>
                             <a href="#" class="btn btn-delete btn-sm"
-                               data-id="{{ $p->id }}"
+                               data-id="{{ $c->id }}"
                                onclick="deleteConfirm(this); return false;">Hapus</a>
                           </div>
                         </td>
                       </tr>
                     @empty
-                      <tr><td colspan="4" class="muted">Belum ada data</td></tr>
+                      <tr><td colspan="5" class="muted">Belum ada data</td></tr>
                     @endforelse
                   </tbody>
                 </table>
@@ -82,7 +82,7 @@
   </div>
 </div>
 
-{{-- Modal konfirmasi (custom, tidak tergantung Bootstrap) --}}
+{{-- Modal konfirmasi (custom) --}}
 <div id="confirmModal" class="pa-modal">
   <div class="box">
     <div class="box-header">Apakah anda yakin?</div>
@@ -96,27 +96,17 @@
 
 @push('scripts')
 <script>
-  const DELETE_URL = @json(route('product.delete',['id'=>'__ID__']));
-
+  const DELETE_URL = @json(route('coa.delete',['id'=>'__ID__']));
   function deleteConfirm(el){
     const id = el.getAttribute('data-id');
     const url = DELETE_URL.replace('__ID__', id);
     document.getElementById('btn-delete').setAttribute('href', url);
-    document.getElementById('xid').innerHTML = "Data dengan ID <b>"+id+"</b> akan dihapus";
+    document.getElementById('xid').innerHTML = "Akun dengan ID <b>"+id+"</b> akan dihapus";
     openConfirm();
   }
-  function openConfirm(){
-    document.getElementById('confirmModal').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeConfirm(){
-    document.getElementById('confirmModal').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-  // Klik backdrop untuk tutup
-  document.getElementById('confirmModal').addEventListener('click', function(e){
-    if(e.target.id === 'confirmModal') closeConfirm();
-  });
+  function openConfirm(){ document.getElementById('confirmModal').classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeConfirm(){ document.getElementById('confirmModal').classList.remove('open'); document.body.style.overflow=''; }
+  document.getElementById('confirmModal').addEventListener('click', e => { if(e.target.id==='confirmModal') closeConfirm(); });
 </script>
 @endpush
 @endsection
