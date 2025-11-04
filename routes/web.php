@@ -5,6 +5,9 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\KasirController;
 use App\Http\Controllers\CustomerPembayaranController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\BahanBakuController;
+
+
 
 use Illuminate\Support\Facades\Auth;
 
@@ -54,3 +57,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/pembayaran', [CustomerPembayaranController::class, 'layar'])->name('customer.pembayaran.live');
 Route::get('/public/display/{code}', [CustomerPembayaranController::class, 'dataDisplay']);
 Route::get('/public/order/{orderNo}', [CustomerPembayaranController::class, 'dataPublik']);
+
+Route::prefix('app')->middleware('auth')->group(function () {
+    Route::resource('bahan-baku', BahanBakuController::class)
+        ->only(['index','create','store','edit','update','destroy'])
+        ->names('bahan-baku');
+});

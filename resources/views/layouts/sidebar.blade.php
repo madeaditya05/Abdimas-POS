@@ -97,6 +97,13 @@
                     </svg>
                     <span>Pengaturan</span>
                 </a>
+                <a href="{{ route('bahan-baku.index') }}"
+        class="nav-item {{ request()->routeIs('bahan-baku.*') ? 'active' : '' }}">
+        <i data-feather="package"></i>
+        <span>Bahan Baku</span>
+        </a>
+
+
             </nav>
 
             <div class="sidebar-footer">
