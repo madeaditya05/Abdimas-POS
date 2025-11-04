@@ -58,6 +58,28 @@ class ProductController extends Controller
         return redirect()->route('product.index')->with('success','Produk berhasil diperbarui');
     }
 
+
+    public function search(Request $request)
+    {
+        $s = trim($request->get('s', ''));
+
+        // kalau kosong, balik ke index biar ga query sia-sia
+        if ($s === '') {
+            return redirect()->route('product.index');
+        }
+
+        $product = Product::query()
+            ->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                ->orWhere('sku',  'like', "%{$s}%");
+            })
+            ->orderBy('name')
+            ->get();  // (boleh diganti paginate() kalau mau)
+
+        // tampilkan view yang sama
+        return view('product.index', compact('product'));
+    }
+
     /** Hapus (versi GET untuk modal) */
     public function destroy($id)
     {

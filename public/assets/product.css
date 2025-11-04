@@ -1,95 +1,105 @@
-/* ====== PRODUCT PAGE ONLY (scoped dengan .product-page) ====== */
-.product-page .card {
-  border: 1px solid #eef2f7;
-  border-radius: 16px;
-  box-shadow: 0 10px 20px rgba(0,0,0,.04);
+/* ========== Product Scoped Styles ========== */
+.product-admin{
+  --pad:12px; --radius:14px; --shadow:0 10px 24px rgba(0,0,0,.06);
+  --border:#e5e7eb; --muted:#6b7280; --title:#111827;
+  --blue:#3b82f6; --blue-700:#2563eb; --red:#ef4444; --red-700:#dc2626;
+  --green:#16a34a; --bg:#fff; --bg-soft:#f8fafc;
+}
+.product-admin a{ text-decoration:none; }
+
+/* Headings */
+.product-admin .page-title{ font-weight:800; font-size:26px; line-height:1.25; color:var(--title); }
+
+/* Card */
+.product-admin .card{ background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.product-admin .card-body{ padding:20px; }
+.product-admin .subcard-header{ padding:14px var(--pad); background:var(--bg-soft); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.product-admin .muted{ color:var(--muted); }
+
+/* Table */
+.product-admin .table-wrap{ border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.product-admin table{ width:100%; border-collapse:separate; border-spacing:0; background:#fff; }
+.product-admin thead th{ background:#f9fafb; border-bottom:1px solid var(--border); border-right:1px solid #eef2f7; font-weight:700; font-size:14px; color:#0f172a; padding:12px 14px; }
+.product-admin thead th:last-child{ border-right:0; }
+.product-admin tbody td{ border-top:1px solid var(--border); border-right:1px solid #f1f5f9; padding:12px 14px; color:#111827; font-size:14px; }
+.product-admin tbody td:last-child{ border-right:0; }
+.product-admin tbody tr:hover{ background:#fcfdfd; }
+.product-admin .text-right{ text-align:right; }
+
+/* Buttons */
+.product-admin .btn{ border-radius:10px; padding:8px 12px; border:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+.product-admin .btn-sm{ padding:6px 10px; font-size:13px; }
+.product-admin .btn-light{ background:#f1f5f9; color:#111827; border:1px solid #e2e8f0; }
+.product-admin .btn-secondary{ background:#e5e7eb; color:#111827; }
+.product-admin .btn-primary{ background:var(--green); color:#fff; }
+.product-admin .btn-primary:hover{ filter:brightness(.95); }
+.product-admin .btn-edit{ background:var(--blue); color:#fff; }
+.product-admin .btn-edit:hover{ background:var(--blue-700); }
+.product-admin .btn-delete{ background:var(--red); color:#fff; }
+.product-admin .btn-delete:hover{ background:var(--red-700); }
+
+/* Forms (Create/Edit) */
+.product-admin .form-section{ display:grid; gap:16px; }
+.product-admin .form-grid{ display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:16px; }
+.product-admin .col-6{ grid-column:span 6 / span 6; }
+.product-admin .col-12{ grid-column:span 12 / span 12; }
+@media (max-width: 768px){ .product-admin .col-6{ grid-column:span 12 / span 12; } }
+.product-admin .form-label{ font-weight:600; margin-bottom:8px; color:#0f172a; display:block; }
+.product-admin .form-control, .product-admin .form-select{
+  width:100%; border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:#fff; color:#111827;
+}
+.product-admin .form-control:focus, .product-admin .form-select:focus{
+  outline:none; border-color:#86efac; box-shadow:0 0 0 3px rgba(34,197,94,.15);
 }
 
-.product-page .card-header {
-  background: #f9fafb;
-  border-bottom: 1px solid #eef2f7;
-  border-radius: 16px 16px 0 0;
-  padding: 14px 18px;
+/* ===== Custom Modal (tanpa Bootstrap JS) ===== */
+#confirmModal.pa-modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(17,24,39,.45); z-index:9999; }
+#confirmModal.pa-modal.open{ display:flex; }
+#confirmModal .box{ width:min(480px,92vw); background:#fff; border-radius:14px; box-shadow:0 25px 60px rgba(0,0,0,.25); overflow:hidden; }
+#confirmModal .box-header{ padding:14px 16px; font-weight:700; border-bottom:1px solid var(--border); }
+#confirmModal .box-body{ padding:16px; color:#111827; }
+#confirmModal .box-footer{ padding:12px 16px; background:#f9fafb; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; }
+
+.product-admin .form-actions{
   display: flex;
+  gap: 12px;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 15px;             /* <<< perbesar dari 8px jadi 20px */
 }
 
-.product-page .card-header h6 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: .2px;
-}
+/* --- NORMALISASI TOMBOL --- */
+.product-admin .btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 
-/* Tabel */
-.product-page .table-products {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.product-page .table-products thead th {
-  font-size: 14px;
-  font-weight: 700;
-  color: #111827;
-  background: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.product-page .table-products th,
-.product-page .table-products td {
-  padding: 14px 16px;
-  border-bottom: 1px solid #eef2f7;
-}
-
-.product-page .table-products tbody tr:hover {
-  background: #f9fafb;
-}
-
-/* Kolom angka & aksi */
-.product-page .table-products th:nth-child(3),
-.product-page .table-products td:nth-child(3) {
-  text-align: right;
-  width: 160px;
-  font-variant-numeric: tabular-nums;
-}
-
-.product-page .table-products th:nth-child(5),
-.product-page .table-products td:nth-child(5) {
-  text-align: center;
-  width: 160px;
-}
-
-/* Badge status */
-.product-page .badge {
-  border-radius: 999px;
-  padding: 6px 10px;
+  height: 40px;          /* tinggi konsisten */
+  padding: 0 16px;       /* horizontal padding */
+  line-height: 1;        /* cegah beda tinggi karena line-height */
   font-weight: 600;
-  font-size: 12px;
+
+  border-radius: 10px;
+  border: 1px solid transparent;  /* semua tombol punya border (transparan) */
+  cursor: pointer;
 }
 
-/* Button tweak kecil */
-.product-page .btn { border-radius: 10px; padding: 6px 12px; }
-.product-page .btn-primary { background:#2563eb; border-color:#2563eb; }
-.product-page .btn-success { background:#16a34a; border-color:#16a34a; }
-.product-page .btn-danger  { background:#dc2626; border-color:#dc2626; }
-
-/* Form (create & edit) */
-.product-page .product-form .form-label { font-weight: 600; color:#111827; }
-.product-page .product-form .form-control,
-.product-page .product-form .form-select {
-  border-radius: 12px;
-  padding: 10px 12px;
-  border:1px solid #e5e7eb;
+/* ukuran kecil (kalau dipakai) */
+.product-admin .btn-sm{
+  height: 34px;
+  padding: 0 12px;
 }
-.product-page .product-form .form-check-input { transform: translateY(2px); }
 
-/* Responsive: kecilkan padding */
-@media (max-width: 768px) {
-  .product-page .table-products th,
-  .product-page .table-products td { padding: 10px 12px; }
+/* pastikan <a> juga ikut aturan btn */
+.product-admin a.btn,
+.product-admin button.btn{
+  text-decoration: none;
 }
+
+/* VARIAN WARNA (tetap sama seperti sebelumnya) */
+.product-admin .btn-primary{ background:#16a34a; color:#fff; border-color:#16a34a; }
+.product-admin .btn-primary:hover{ filter: brightness(.95); }
+
+.product-admin .btn-light{ background:#f1f5f9; color:#111827; border-color:#e2e8f0; }
+.product-admin .btn-light:hover{ filter: brightness(.98); }
