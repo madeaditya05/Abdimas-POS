@@ -1,23 +1,16 @@
-@extends('layoutsbootstrapadmin')
+@push('styles')
+  <link rel="stylesheet" href="{{ asset('assets/product.css') }}">
+@endpush
 
-@section('konten')
-<div class="body-wrapper">
-  <header class="app-header">
-    <nav class="navbar navbar-expand-lg navbar-light">
-      <ul class="navbar-nav">
-        <li class="nav-item d-block d-xl-none">
-          <a class="nav-link sidebartoggler nav-icon-hover" id="headerCollapse" href="javascript:void(0)">
-            <i class="ti ti-menu-2"></i>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </header>
+@extends('layouts.main')
+@section('title','Ubah Produk')
 
+@section('content')
+<div class="product-admin">
   <div class="container-fluid">
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title fw-semibold mb-4">Ubah Produk</h5>
+        <h2 class="page-title mb-3">Ubah Produk</h2>
 
         @if ($errors->any())
           <div class="alert alert-danger">
@@ -25,33 +18,33 @@
           </div>
         @endif
 
-        <form action="{{ route('product.update', $product->id) }}" method="POST">
+        <form action="{{ route('product.update', $product->id) }}" method="POST" class="mt-2">
           @csrf
           @method('PUT')
 
           <div class="mb-3">
-            <label for="name" class="form-label">Nama Produk</label>
-            <input type="text" class="form-control" id="name" name="name" value="{{ old('name',$product->name) }}" required>
+            <label class="form-label">Nama Produk</label>
+            <input type="text" name="name" class="form-control" value="{{ old('name',$product->name) }}" required>
           </div>
-
           <div class="mb-3">
-            <label for="sku" class="form-label">SKU</label>
-            <input type="text" class="form-control" id="sku" name="sku" value="{{ old('sku',$product->sku) }}">
+            <label class="form-label">SKU</label>
+            <input type="text" name="sku" class="form-control" value="{{ old('sku',$product->sku) }}">
           </div>
-
           <div class="mb-3">
-            <label for="price" class="form-label">Harga (Rp)</label>
-            <input type="number" class="form-control" id="price" name="price" min="0" value="{{ old('price',$product->price) }}" required>
+            <label class="form-label">Harga (Rp)</label>
+            <input type="number" name="price" class="form-control" min="0" value="{{ old('price',$product->price) }}" required>
           </div>
-
           <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" {{ old('is_active',$product->is_active) ? 'checked' : '' }}>
-            <label class="form-check-label" for="is_active">Aktif</label>
+            <input type="checkbox" id="is_active" name="is_active" class="form-check-input" value="1" {{ old('is_active',$product->is_active) ? 'checked' : '' }}>
+            <label for="is_active" class="form-check-label">Aktif</label>
           </div>
 
-          <button type="submit" class="btn btn-success btn-sm">Ubah</button>
-          <a class="btn btn-dark btn-sm" href="{{ route('product.index') }}">Batal</a>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">Ubah</button>
+            <a class="btn btn-light" href="{{ route('product.index') }}">Batal</a>
+          </div>
         </form>
+
       </div>
     </div>
   </div>

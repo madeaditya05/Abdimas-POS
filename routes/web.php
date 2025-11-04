@@ -11,13 +11,17 @@ use App\Http\Controllers\BahanBakuController;
 
 use Illuminate\Support\Facades\Auth;
 
+// Laporan
+use App\Http\Controllers\Reports\KasirReportController;
+use App\Http\Controllers\Reports\OwnerReportController;
+
 Route::get('/', function () {
     return Auth::check()
         ? to_route('dashboard')
         : to_route('login');
 });
 
-// ====== Guest only ======
+// ===== Guest only =====
 Route::middleware('guest')->group(function () {
     Route::get('/login',    [LoginController::class, 'showLogin'])->name('login');
     Route::post('/login',   [LoginController::class, 'login'])->name('login.store');
@@ -26,14 +30,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/register',[LoginController::class, 'register'])->name('register.store');
 });
 
-// ====== Auth only ======
+// ===== Auth only =====
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', fn() => view('tampilan.dashboard'))->name('dashboard');
     Route::get('/dashboard_admin', fn() => view('tampilan.dashboard_admin'))->name('dashboard_admin');
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    // Kasir & API keranjang kamu taruh di sini seperti sebelumnya...
+    // Kasir POS
     Route::get('/kasir', [KasirController::class, 'index'])->name('kasir.index');
     Route::post('/kasir', [KasirController::class, 'prosesForm'])->name('kasir.store');
     Route::get('/kasir/cart',            [KasirController::class, 'dataKeranjang'])->name('kasir.cart.data');
@@ -43,17 +47,23 @@ Route::middleware('auth')->group(function () {
     Route::post('/kasir/cart/kosongkan', [KasirController::class, 'kosongkanKeranjang'])->name('kasir.cart.kosongkan');
     Route::get('/kasir/orders/{order}',  [KasirController::class, 'show'])->name('kasir.orders.show');
 
+    // Laporan (Kasir)
+    Route::get('/reports/kasir',     [KasirReportController::class, 'index'])->name('kasir.rekap');
+    Route::get('/reports/kasir/pdf', [KasirReportController::class, 'pdf'])->name('kasir.rekap.pdf');
+
+    // Owner only
     Route::middleware('owner')->group(function () {
-        Route::resource('product', ProductController::class);
-        // (opsi tombol hapus via GET + modal seperti supplier/karyawan)
-        Route::get('/product/destroy/{id}', [ProductController::class, 'destroy'])->name('product.destroy');
-    
+        Route::resource('product', ProductController::class)->except(['show']);
+        Route::get('/product/destroy/{id}', [ProductController::class, 'destroy'])->name('product.delete');
+        Route::get('/product/search', [ProductController::class, 'search'])->name('product.search');
+
+        // Laporan (Owner) — pakai method index() & pdf()
+        Route::get('/reports/owner/laba-rugi',     [OwnerReportController::class, 'index'])->name('owner.labarugi');
+        Route::get('/reports/owner/laba-rugi/pdf', [OwnerReportController::class, 'pdf'])->name('owner.labarugi.pdf');
     });
 });
 
-
-
-// Layar customer publik (opsional tanpa auth)
+// Layar customer publik
 Route::get('/pembayaran', [CustomerPembayaranController::class, 'layar'])->name('customer.pembayaran.live');
 Route::get('/public/display/{code}', [CustomerPembayaranController::class, 'dataDisplay']);
 Route::get('/public/order/{orderNo}', [CustomerPembayaranController::class, 'dataPublik']);

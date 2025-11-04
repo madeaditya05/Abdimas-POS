@@ -2649,3 +2649,185 @@ body.theme-coffee .topbar-left .search.search--compact input {
     width: 18px;
     height: 18px;
 }
+
+@media (prefers-color-scheme: dark){
+  .logo-icon{
+    border-color: rgba(255,255,255,.12);
+    box-shadow: 0 10px 26px rgba(0,0,0,.35);
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  }
+}
+
+/* ========== Product Admin Scoped Styles ========== */
+.product-admin {
+  --pad: 12px;
+  --radius: 14px;
+  --shadow: 0 10px 24px rgba(0,0,0,.06);
+  --border: 1px solid #e5e7eb; /* abu tipis */
+  --muted: #6b7280;
+  --primary: #16a34a;
+  --primary-600: #16a34a;
+  --primary-700: #15803d;
+}
+
+/* wrapper card/layout */
+.product-admin .card {
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* judul halaman */
+.product-admin .page-title {
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+/* tombol kecil di header kartu */
+.product-admin .btn {
+  border-radius: 10px;
+}
+.product-admin .btn-primary {
+  background: var(--primary-600);
+  border-color: var(--primary-600);
+}
+.product-admin .btn-primary:hover {
+  background: var(--primary-700);
+  border-color: var(--primary-700);
+}
+
+/* tabel rapi + garis */
+.product-admin .table-wrap {
+  border: var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.product-admin table {
+  width: 100%;
+  border-collapse: collapse; /* penting biar garis rapat */
+  background: #fff;
+}
+.product-admin table thead th {
+  background: #f9fafb;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: .2px;
+  border-bottom: var(--border);
+  padding: 12px 14px;
+  color: #111827;
+}
+.product-admin table tbody td {
+  border-top: var(--border);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #111827;
+}
+.product-admin table tbody tr:hover {
+  background: #fcfdfd;
+}
+
+/* badge status */
+.product-admin .badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.product-admin .badge-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.product-admin .badge-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* form */
+.product-admin .form-label {
+  font-weight: 600;
+}
+.product-admin .form-control, 
+.product-admin .form-select {
+  border-radius: 10px !important;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+}
+.product-admin .form-control:focus,
+.product-admin .form-select:focus {
+  border-color: #86efac;
+  box-shadow: 0 0 0 3px rgba(34,197,94,.15);
+}
+
+/* header card di dalam section */
+.product-admin .subcard-header {
+  padding: 14px var(--pad);
+  background: #f8fafc;
+  border-bottom: var(--border);
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* modal */
+.product-admin .modal-content {
+  border-radius: 14px;
+}
+
+/* util */
+.product-admin .muted { color: var(--muted); }
+.product-admin .text-right { text-align: right; }
+.product-admin .gap-8 { gap: 8px; }
+.product-admin .mb-16 { margin-bottom: 16px; }
+.product-admin .mb-24 { margin-bottom: 24px; }
+.product-admin .mt-16 { margin-top: 16px; }
+
+/* Warna teks sidebar saat tema terang (day/cream) */
+body.theme-day .sidebar .sidebar-logo-text h1,
+body.theme-day .sidebar .sidebar-logo-text p {
+    color: #2b2b2b !important;
+}
+
+/* Warna teks user login di topbar saat tema terang */
+body.theme-day .topbar .user-name {
+    color: #2b2b2b !important;
+}
+
+/* Matikan background/border wrapper search untuk semua tema */
+body.theme-day #topbar .search.search--compact,
+body.theme-day .topbar .search.search--compact,
+body.theme-coffee #topbar .search.search--compact,
+body.theme-coffee .topbar .search.search--compact {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important; /* jaga-jaga */
+}
+
+/* Styling khusus INPUT-nya (pill) */
+#topbar .search.search--compact input {
+  width: 100%;
+  height: 40px;
+  border-radius: 999px;
+  padding: 0 14px 0 34px;
+  border: 1px solid #e7e3dc;      /* tema siang */
+  background: #fff;
+  color: #0f172a;
+}
+body.theme-coffee #topbar .search.search--compact input {
+  border-color: #3c2e26;          /* tema malam */
+  background: #3a2c25;
+  color: #f2e9e4;
+}
+#topbar .search.search--compact .search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+}
+#topbar .search.search--compact .search-icon svg {
+  stroke: currentColor !important;
+  opacity: .6;
+}
