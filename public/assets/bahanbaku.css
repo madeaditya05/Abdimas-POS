@@ -1,0 +1,296 @@
+/* =========================================================
+   B A H A N  B A K U  —  Stylesheet khusus halaman ini
+   Berlaku untuk:
+   - Index (filter, tabel)
+   - Create/Edit (form + partial _form)
+   ========================================================= */
+
+/* ---------- Token warna ringan ---------- */
+:root{
+  --bb-bg:#ffffff;
+  --bb-soft:#f8fafc;
+  --bb-line:#e5e7eb;
+  --bb-text:#0f172a;
+  --bb-muted:#64748b;
+  --bb-accent:#0f766e;   /* hijau-kopi */
+  --bb-accent-2:#10b981; /* hijau cerah */
+  --bb-warn:#f59e0b;
+  --bb-danger:#ef4444;
+  --bb-surface:#fcfdfd;
+}
+
+/* =========================================================
+   INDEX: Header + Filter Bar
+   ========================================================= */
+.card .card-header{
+  padding:16px;
+  border-bottom:1px solid var(--bb-line);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.card .card-header h2{
+  margin:0; font-size:26px; font-weight:800; letter-spacing:.2px; color:var(--bb-text);
+}
+
+.filter-bar{
+  margin:12px 0; padding:0 16px 12px; gap:10px;
+  display:grid; align-items:center;
+  grid-template-columns: 1fr 220px 200px auto auto; /* search, kategori, aktif, apply, reset */
+}
+@media (max-width: 1024px){
+  .filter-bar{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px){
+  .filter-bar{ grid-template-columns: 1fr; }
+}
+
+.filter-bar input[type="text"]{
+  height:38px; width:100%;
+  border:1px solid var(--bb-line); border-radius:10px;
+  padding:8px 12px; background:var(--bb-bg); color:var(--bb-text);
+}
+.filter-bar input[type="text"]::placeholder{ color:#94a3b8; }
+
+/* Tombol apply/reset */
+.filter-bar .btn{
+  height:38px; display:inline-flex; align-items:center; justify-content:center;
+  border-radius:999px; padding:0 16px; font-weight:700;
+}
+.filter-bar .btn.btn--coffee{
+  border:1px solid var(--bb-accent); color:var(--bb-accent); background:#fff;
+}
+.filter-bar .btn.btn--coffee:hover{ background:#ecfdf5; }
+.filter-bar a.btn{ border:1px solid var(--bb-line); color:#475569; background:#fff; }
+.filter-bar a.btn:hover{ background:var(--bb-soft); }
+
+/* =========================================================
+   INDEX: Custom Dropdown (.dd)
+   ========================================================= */
+.dd{ position:relative; min-width:200px; }
+.dd .dd-toggle{
+  height:38px; width:100%; background:var(--bb-bg); color:var(--bb-text);
+  border:1px solid var(--bb-line); border-radius:10px; padding:0 12px;
+  display:flex;align-items:center;justify-content:space-between; gap:10px;
+}
+.dd .dd-caret{
+  width:0;height:0; border-left:5px solid transparent; border-right:5px solid transparent;
+  border-top:6px solid #94a3b8;
+}
+.dd .dd-menu{
+  position:absolute; inset:auto 0  auto 0; top:44px; z-index:30;
+  background:var(--bb-bg); border:1px solid var(--bb-line); border-radius:12px;
+  box-shadow:0 14px 40px rgba(2,6,23,.10);
+  padding:6px; display:none; max-height:260px; overflow:auto;
+}
+.dd.open .dd-menu{ display:block; }
+.dd .dd-item{
+  padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--bb-text);
+}
+.dd .dd-item:hover{ background:var(--bb-soft); }
+.dd .dd-item.active{ background:#ecfdf5; color:#065f46; font-weight:700; }
+
+/* =========================================================
+   INDEX: Tabel
+   ========================================================= */
+.table-wrap{
+  border:1px solid var(--bb-line); border-radius:14px; overflow:auto;
+  background:var(--bb-bg);
+  box-shadow:0 8px 24px rgba(2,6,23,.06);
+}
+.table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px; }
+.table thead th{
+  background:var(--bb-soft); position:sticky; top:0; z-index:1;
+  color:var(--bb-text); font-weight:800; font-size:14px; letter-spacing:.2px;
+  padding:12px 14px; border-bottom:1px solid var(--bb-line); text-align:left;
+}
+.table tbody td{
+  padding:14px; border-top:1px solid #f1f5f9; vertical-align:middle; color:var(--bb-text);
+}
+.table tbody tr:hover{ background:var(--bb-surface); }
+
+.table .num{ text-align:right; font-variant-numeric: tabular-nums; }
+.badge{
+  background:#eef2ff; color:#1d4ed8; border:1px solid #dbeafe;
+  padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700;
+}
+.muted{ color:var(--bb-muted); }
+
+/* boolean aktif */
+.bool{ display:inline-flex; align-items:center; gap:8px; font-weight:700; }
+.bool-dot{ width:10px; height:10px; border-radius:999px; background:#e5e7eb; display:inline-block; }
+.bool--yes .bool-dot{ background:#22c55e; }
+.bool--no  .bool-dot{ background:#ef4444; }
+
+/* aksi */
+.actions{ display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+.btn.btn--sm{ padding:6px 10px; border-radius:10px; font-size:13px; }
+.btn.btn--warning{ background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+.btn.btn--danger{ background:#fee2e2; color:#7f1d1d; border:1px solid #fecaca; }
+.btn.btn--warning:hover{ background:#fde68a; }
+.btn.btn--danger:hover{ background:#fecaca; }
+
+/* pagination (Laravel default) */
+.pagination{
+  display:flex; gap:6px; align-items:center; justify-content:flex-end; padding:12px 4px;
+}
+.page-link{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:34px; height:34px; padding:0 12px;
+  border:1px solid var(--bb-line); border-radius:999px; background:#fff; color:var(--bb-text);
+  font-weight:700; text-decoration:none;
+}
+.page-item.active .page-link{ background:var(--bb-accent); border-color:var(--bb-accent); color:#fff; }
+.page-link:hover{ background:var(--bb-soft); }
+
+/* =========================================================
+   FORM (Create/Edit + partial _form)
+   ========================================================= */
+.form{
+  padding:16px;
+}
+.form-section{
+  background:var(--bb-bg); border:1px solid var(--bb-line);
+  border-radius:14px; padding:16px; margin-bottom:14px;
+  box-shadow:0 6px 18px rgba(2,6,23,.04);
+}
+.form-title{
+  font-size:16px; font-weight:800; color:var(--bb-text);
+  margin-bottom:12px; letter-spacing:.2px;
+}
+
+/* grid responsif */
+.form-grid{
+  display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px;
+}
+.form-grid .span-2{ grid-column: span 2 / span 2; }
+@media (max-width: 800px){
+  .form-grid{ grid-template-columns: 1fr; }
+  .form-grid .span-2{ grid-column: auto; }
+}
+
+/* field, input, textarea */
+.form-field label, .form-check label{
+  display:block; font-size:13px; font-weight:700; color:#334155; margin-bottom:6px;
+}
+.form-input, .form-textarea{
+  width:100%; border:1px solid var(--bb-line); border-radius:10px;
+  background:#fff; color:var(--bb-text);
+  padding:10px 12px; font-size:14px;
+}
+.form-input:focus, .form-textarea:focus{
+  outline:none; border-color:#94d5cc; box-shadow:0 0 0 4px rgba(16,185,129,.15);
+}
+.form-textarea{ min-height:120px; resize:vertical; }
+
+/* checkbox */
+.form-check{ display:flex; align-items:center; gap:10px; }
+.form-check input[type="checkbox"]{
+  width:16px; height:16px; accent-color:var(--bb-accent);
+}
+
+/* help text */
+.form-help{ margin-top:6px; color:var(--bb-muted); font-size:12px; }
+
+/* dropdown di form (pakai .dd yang sama) */
+.form .dd .dd-toggle{ height:40px; }
+.form .dd .dd-menu{ top:48px; }
+
+/* file input */
+.file-field{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  border:1px dashed var(--bb-line); border-radius:12px; padding:10px 12px;
+  background:#fff;
+}
+.file-input{ position:absolute; left:-9999px; }
+.file-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:8px 14px; border-radius:10px; background:var(--bb-soft);
+  color:#0f172a; font-weight:700; cursor:pointer; border:1px solid var(--bb-line);
+}
+.file-btn:hover{ background:#eef2f7; }
+.file-name{ color:var(--bb-muted); font-size:14px; }
+.file-name.is-empty{ opacity:.8; font-style:italic; }
+.file-field.is-focus{ box-shadow:0 0 0 4px rgba(16,185,129,.12); }
+
+/* preview image */
+.preview-img{
+  display:block; max-width:220px; max-height:160px; object-fit:cover;
+  border-radius:12px; border:1px solid var(--bb-line);
+}
+
+/* aksi form */
+.form-actions{
+  display:flex; justify-content:flex-end; gap:10px; padding:14px 0 2px;
+}
+.form-actions .btn{
+  padding:10px 16px; border-radius:12px; font-weight:800; border:1px solid var(--bb-line);
+  background:#fff; color:#0f172a;
+}
+.form-actions .btn:hover{ background:var(--bb-soft); }
+.form-actions .btn--filled.btn--success{
+  background:var(--bb-accent); border-color:var(--bb-accent); color:#fff;
+}
+.form-actions .btn--filled.btn--success:hover{ background:#0e665f; }
+
+/* =========================================================
+   DARK / COFFEE THEME (opsional – bila body ada class)
+   ========================================================= */
+body.theme-coffee{
+  --bb-bg:#2e221c;
+  --bb-soft:#3a2c25;
+  --bb-line:#3c2e26;
+  --bb-text:#f2e9e4;
+  --bb-muted:#c8bdb6;
+  --bb-surface:#35271f;
+}
+
+/* ==== FIX: Bahan Baku – no horizontal scroll + inline actions ==== */
+
+/* Table should fit container (no forced min-width) */
+.table-wrap{ overflow-x: hidden; }               /* jangan auto; kita rapikan lebar cell */
+.table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:auto;                             /* biar kolom fleksibel */
+  min-width:0 !important;                        /* override min-width sebelumnya */
+}
+
+/* Izinkan teks membungkus agar tidak melar ke kanan */
+.table thead th,
+.table tbody td{
+  white-space: normal !important;
+  word-break: break-word;
+  padding:12px 10px;                             /* sedikit lebih rapat */
+}
+
+/* Kolom angka tetap rapi */
+.table .num{ text-align:right; font-variant-numeric: tabular-nums; }
+
+/* Aksi: pastikan 1 baris, bukan menumpuk */
+.table td:last-child .actions{
+  display:flex !important;
+  flex-wrap:nowrap;
+  gap:8px;
+  justify-content:flex-start;                    /* atau flex-end jika mau nempel kanan */
+  align-items:center;
+  white-space:nowrap;                            /* cegah wrap di antara tombol */
+}
+
+/* Form hapus jangan block */
+.table td:last-child .actions form{ display:inline; margin:0; }
+
+/* Tombol kecil agar muat 2 dalam kolom ~130px */
+.table td:last-child .actions .btn{
+  display:inline-flex;
+  width:auto;
+  padding:6px 8px;
+  font-size:12px;
+  line-height:1;
+  border-radius:10px;
+}
+
+/* Badge kategori sedikit lebih kecil biar hemat lebar */
+.badge{ padding:3px 8px; font-size:12px; }
+
+/* Jika masih ada halaman yang memaksa nowrap global, ini hajar habis */
+.table *{ white-space: normal; }

@@ -75,3 +75,4 @@
 
 /* Opsional: pakai wrapper ini jika mau sudut meja membulat */
 .kr-table-rounded{ border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+
