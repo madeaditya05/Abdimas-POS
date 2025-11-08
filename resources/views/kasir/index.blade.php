@@ -15,21 +15,31 @@
         </div>
       </div>
 
-      <div class="produk-toolbar">
+      <div class="produk-toolbar" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
         <input type="text" id="cariProduk" class="form-input" placeholder="Cari produk…">
+        <select id="filterKategori" class="form-input" style="max-width:220px;">
+          <option value="">Semua kategori</option>
+          @foreach($kategoris as $kat)
+            <option value="{{ Str::lower($kat) }}">{{ $kat }}</option>
+          @endforeach
+        </select>
       </div>
 
       <div class="produk-grid" id="gridProduk">
-        @foreach($products as $p)
+        @foreach($produks as $p)
           <div class="produk-card"
                data-id="{{ $p->id }}"
-               data-name="{{ Str::lower($p->name) }}"
-               data-price="{{ $p->price }}">
+               data-name="{{ Str::lower($p->nama_barang) }}"
+               data-price="{{ (int)$p->harga }}"
+               data-kategori="{{ Str::lower($p->kategori ?? '') }}">
             <div class="produk-main">
-              <div class="produk-avatar">{{ strtoupper(mb_substr($p->name,0,1)) }}</div>
+              <div class="produk-avatar">{{ strtoupper(mb_substr($p->nama_barang,0,1)) }}</div>
               <div class="produk-info">
-                <div class="produk-name">{{ $p->name }}</div>
-                <div class="produk-price">Rp {{ number_format($p->price,0,',','.') }}</div>
+                <div class="produk-name">{{ $p->nama_barang }}</div>
+                <div class="produk-price">Rp {{ number_format($p->harga,0,',','.') }}</div>
+                @if(!is_null($p->stok))
+                  <div class="produk-stock" style="font-size:12px; color:#64748b;">Stok: {{ $p->stok }}</div>
+                @endif
               </div>
             </div>
             <div class="produk-qty">
@@ -60,7 +70,7 @@
         <button type="button" class="btn btn-sm" id="btnKosongkan">Kosongkan</button>
       </div>
 
-      {{-- Nama pelanggan: tetep tampil sampai paid --}}
+      {{-- Nama pelanggan --}}
       <div class="kasir-form-inline" style="margin-bottom:8px;">
         <input type="text" name="customer_name" class="form-input"
                value="{{ $pendingName ?? '' }}"
@@ -119,9 +129,9 @@ $(function(){
               <div class="order-customer">x${i.qty} • ${i.price_text}</div>
             </div>
             <div>
-              <button type="button" class="btn btn-sm aksi" data-act="kurang" data-id="${i.product_id}">−</button>
-              <button type="button" class="btn btn-sm aksi" data-act="tambah" data-id="${i.product_id}">+</button>
-              <button type="button" class="btn btn-sm aksi" data-act="hapus"  data-id="${i.product_id}">Hapus</button>
+              <button type="button" class="btn btn-sm aksi" data-act="kurang" data-id="${i.produk_id}">−</button>
+              <button type="button" class="btn btn-sm aksi" data-act="tambah" data-id="${i.produk_id}">+</button>
+              <button type="button" class="btn btn-sm aksi" data-act="hapus"  data-id="${i.produk_id}">Hapus</button>
             </div>
           </div>
           <div class="order-footer">
@@ -135,31 +145,37 @@ $(function(){
 
   // Tambah/kurang/hapus/kosongkan
   wadahProduk.on('click','.btn-tambah',e=>{
-    $.post('{{ route('kasir.cart.tambah') }}',{product_id:$(e.currentTarget).data('id')},renderKeranjang);
+    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:$(e.currentTarget).data('id')},renderKeranjang);
   });
   $('#ringkasanKeranjang').on('click','.aksi',function(){
     const id=$(this).data('id'), act=$(this).data('act');
-    let url='', method='POST';
+    let url='', method='POST', payload={produk_id:id};
     if(act==='tambah') url='{{ route('kasir.cart.tambah') }}';
     if(act==='kurang') url='{{ route('kasir.cart.kurang') }}';
     if(act==='hapus'){ url='{{ route('kasir.cart.hapus') }}'; method='DELETE'; }
-    $.ajax({url, type:method, data:{product_id:id}, success:renderKeranjang});
+    $.ajax({url, type:method, data:payload, success:renderKeranjang});
   });
   $('#btnKosongkan').on('click',()=>$.post('{{ route('kasir.cart.kosongkan') }}',{},renderKeranjang));
 
-  // Cari produk
-  $('#cariProduk').on('input',function(){
-    const q=$(this).val().trim().toLowerCase();
+  // Search + filter kategori
+  function applyFilter(){
+    const q = ($('#cariProduk').val()||'').trim().toLowerCase();
+    const k = ($('#filterKategori').val()||'').trim().toLowerCase();
     $('.produk-card').each(function(){
-      const n=$(this).data('name')||'';
-      $(this).toggle(n.includes(q));
+      const n = ($(this).data('name')||'');
+      const c = ($(this).data('kategori')||'');
+      const matchName = n.includes(q);
+      const matchCat  = k ? (c === k) : true;
+      $(this).toggle(matchName && matchCat);
     });
-  });
+  }
+  $('#cariProduk').on('input', applyFilter);
+  $('#filterKategori').on('change', applyFilter);
 
   // Load awal keranjang
   $.get('{{ route('kasir.cart.data') }}',renderKeranjang);
 
-  // ===== Polling status pembayaran + sinkron nama pelanggan =====
+  // ===== Polling status (pakai ORDER ID) =====
   let flashOrderId = {!! json_encode(session('order_id')) !!};
   let orderId = flashOrderId || localStorage.getItem('last_order_id');
   if (flashOrderId) localStorage.setItem('last_order_id', flashOrderId);
@@ -167,8 +183,7 @@ $(function(){
   if (orderId) {
     statusWrap.show();
     statusBadge.text('Menunggu pembayaran…')
-               .css({background:'#fff3cd', color:'#7a5a00'}); // kuning
-    // tampilkan nama pelanggan yg pending kalau ada
+               .css({background:'#fff3cd', color:'#7a5a00'});
     const pendingName = {!! json_encode($pendingName ?? null) !!};
     if (pendingName) statusInfo.text('Atas nama: ' + pendingName);
 
@@ -176,11 +191,10 @@ $(function(){
       $.get("{{ url('/kasir/orders') }}/"+orderId)
         .done(function(d){
           if (d.status === 'paid') {
-            statusBadge.text('Lunas ✅').css({background:'#dcfce7', color:'#14532d'}); // hijau
-            // kosongkan keranjang + kosongkan nama pending
+            statusBadge.text('Lunas ✅').css({background:'#dcfce7', color:'#14532d'});
             $.post('{{ route('kasir.cart.kosongkan') }}',{}, function(data){
               renderKeranjang(data);
-              inputNama.val('');             // nama hilang bareng keranjang
+              inputNama.val('');
               statusInfo.text('');
             });
             localStorage.removeItem('last_order_id');
@@ -194,7 +208,6 @@ $(function(){
             statusBadge.text('Dibatalkan ❌').css({background:'#fee2e2', color:'#7f1d1d'});
             localStorage.removeItem('last_order_id'); return;
           }
-          // masih pending → cek lagi
           setTimeout(cekStatus, 1800);
         })
         .fail(()=> setTimeout(cekStatus, 2500));

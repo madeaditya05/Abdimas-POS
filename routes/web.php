@@ -10,10 +10,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CustomerDisplayController;
 use App\Http\Controllers\EspressoController;
 
-
-
-
-
 use Illuminate\Support\Facades\Auth;
 
 // Laporan
@@ -52,6 +48,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/kasir/cart/kurang',    [KasirController::class, 'kurangKeranjang'])->name('kasir.cart.kurang');
     Route::delete('/kasir/cart/hapus',   [KasirController::class, 'hapusDariKeranjang'])->name('kasir.cart.hapus');
     Route::post('/kasir/cart/kosongkan', [KasirController::class, 'kosongkanKeranjang'])->name('kasir.cart.kosongkan');
+
+    // 🔄 route status baru berbasis kode penjualan
+    Route::get('/kasir/status/{kode}',  [KasirController::class, 'statusPenjualan'])->name('kasir.status');
+
+    // (Opsional) route lama show order masih ada, tapi FE sudah tidak memakainya
     Route::get('/kasir/orders/{order}',  [KasirController::class, 'show'])->name('kasir.orders.show');
 
     // Laporan (Kasir)
@@ -64,7 +65,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/product/destroy/{id}', [ProductController::class, 'destroy'])->name('product.delete');
         Route::get('/product/search', [ProductController::class, 'search'])->name('product.search');
 
-        // Laporan (Owner) — pakai method index() & pdf()
+        // Laporan (Owner)
         Route::get('/reports/owner/laba-rugi',     [OwnerReportController::class, 'index'])->name('owner.labarugi');
         Route::get('/reports/owner/laba-rugi/pdf', [OwnerReportController::class, 'pdf'])->name('owner.labarugi.pdf');
     });
@@ -82,9 +83,7 @@ Route::prefix('app')->middleware('auth')->group(function () {
 });
 
 // routes/web.php
-// routes/web.php
 Route::get('/promo-display', fn () => view('promo.display'))->name('promo.display');
-
 
 // espressooo ilustration
 Route::get('/barista/espresso', [EspressoController::class, 'index'])->name('espresso.index');
