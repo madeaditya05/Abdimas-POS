@@ -3,46 +3,65 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\Product;
 use App\Models\Payment;
 use App\Models\PaymentLog;
 use App\Models\Display;
 use App\Models\Customer;
+
+// Modul laporan
+use App\Models\Penjualan;
+use App\Models\PenjualanDetail;
+use App\Models\Produk;
+
 use App\Services\Payments\PaymentGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class KasirController extends Controller
 {
     public function __construct(private PaymentGateway $gateway) {}
 
-    /** Halaman kasir */
+    /** Halaman kasir (katalog dari tabel `produk`) */
     public function index()
     {
-        // Auto-clear: kalau order terakhir sudah selesai, kosongkan keranjang & nama pending
+        // Auto-clear bila order terakhir sudah selesai
         $lastOrderId = Session::get('last_order_id');
         if ($lastOrderId) {
             $last = Order::find($lastOrderId);
-            if ($last && in_array($last->status, ['paid','expired','cancelled'])) {
+            if ($last && in_array($last->status, ['paid','expired','cancelled'], true)) {
                 Session::forget('cart');
                 Session::forget('last_order_id');
                 Session::forget('pending_customer_name');
             }
         }
 
-        $products = Product::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id','name','price']);
+        // Katalog dari tabel produk
+        $produks = Produk::orderBy('nama_barang')
+            ->get(['id','kode_barang','nama_barang','harga','kategori','stok']);
 
-        // kirim nama pelanggan yg sedang pending (untuk isi ulang input)
+        // daftar kategori (distinct)
+        $kategoris = Produk::whereNotNull('kategori')
+            ->select('kategori')->distinct()->orderBy('kategori')->pluck('kategori');
+
+        $produks = Produk::select('id','nama_barang','harga','stok','kategori')
+        ->whereRaw('COALESCE(stok,0) > 0')   // sembunyikan stok 0 / null
+        ->orderBy('nama_barang')
+        ->get();
+
         $pendingName = Session::get('pending_customer_name');
+        
 
-        return view('kasir.index', compact('products', 'pendingName'));
+        return view('kasir.index', [
+            'produks'     => $produks,
+            'kategoris'   => $kategoris,
+            'pendingName' => $pendingName,
+        ]);
     }
 
-    /** ===== UTIL DISPLAY ===== */
+    /** Dorong nomor order ke layar customer */
     private function dorongKeLayar(string $kodeLayar, string $orderNo): void
     {
         Display::updateOrCreate(['code' => $kodeLayar], ['order_no' => $orderNo]);
@@ -64,7 +83,7 @@ class KasirController extends Controller
             $subtotal += $line;
             $count += (int)$row['qty'];
             $items[] = [
-                'product_id'      => $row['id'],
+                'produk_id'       => $row['id'],
                 'name'            => $row['name'],
                 'price'           => (int)$row['price'],
                 'qty'             => (int)$row['qty'],
@@ -94,14 +113,14 @@ class KasirController extends Controller
 
     public function tambahKeKeranjang(Request $req)
     {
-        $data = $req->validate(['product_id' => 'required|integer|exists:product,id']);
-        $p = Product::select('id','name','price')->findOrFail($data['product_id']);
+        $data = $req->validate(['produk_id' => 'required|integer|exists:produk,id']);
+        $p = Produk::select('id','nama_barang','harga')->findOrFail($data['produk_id']);
 
         $cart = $this->ambilKeranjang();
         $items =& $cart['items'];
 
         if (!isset($items[$p->id])) {
-            $items[$p->id] = ['id'=>$p->id, 'name'=>$p->name, 'price'=>(int)$p->price, 'qty'=>1];
+            $items[$p->id] = ['id'=>$p->id, 'name'=>$p->nama_barang, 'price'=>(int)$p->harga, 'qty'=>1];
         } else {
             $items[$p->id]['qty'] = (int)$items[$p->id]['qty'] + 1;
         }
@@ -111,28 +130,27 @@ class KasirController extends Controller
 
     public function kurangKeranjang(Request $req)
     {
-        $data = $req->validate(['product_id' => 'required|integer']);
+        $data = $req->validate(['produk_id' => 'required|integer']);
         $cart = $this->ambilKeranjang();
         $items =& $cart['items'];
 
-        if (isset($items[$data['product_id']])) {
-            $items[$data['product_id']]['qty'] = max(0, (int)$items[$data['product_id']]['qty'] - 1);
-            if ($items[$data['product_id']]['qty'] === 0) unset($items[$data['product_id']]);
+        if (isset($items[$data['produk_id']])) {
+            $items[$data['produk_id']]['qty'] = max(0, (int)$items[$data['produk_id']]['qty'] - 1);
+            if ($items[$data['produk_id']]['qty'] === 0) unset($items[$data['produk_id']]);
         }
         return response()->json($this->simpanKeranjang($cart));
     }
 
     public function hapusDariKeranjang(Request $req)
     {
-        $data = $req->validate(['product_id' => 'required|integer']);
+        $data = $req->validate(['produk_id' => 'required|integer']);
         $cart = $this->ambilKeranjang();
-        unset($cart['items'][$data['product_id']]);
+        unset($cart['items'][$data['produk_id']]);
         return response()->json($this->simpanKeranjang($cart));
     }
 
     public function kosongkanKeranjang()
     {
-        // saat paid/expired/cancelled via polling -> kosong + hapus nama pending
         Session::forget('cart');
         Session::forget('pending_customer_name');
         return response()->json($this->simpanKeranjang(['items'=>[]]));
@@ -154,42 +172,62 @@ class KasirController extends Controller
 
             $namaPelanggan = trim((string) $req->input('customer_name', ''));
 
-            // Order
+            /** 1) Buat Order (untuk Midtrans) */
             $order = new Order();
             $order->order_no = $this->buatNomorOrder();
             $order->status   = 'pending';
             $order->discount = 0; $order->tax = 0;
             $order->subtotal = 0; $order->grand_total = 0;
 
-            // Link pelanggan (case-insensitive)
             if ($namaPelanggan !== '') {
                 $norm = Str::of($namaPelanggan)->squish()->lower()->value();
                 $customer = Customer::whereRaw('LOWER(TRIM(name)) = ?', [$norm])->first();
                 if (!$customer) $customer = Customer::create(['name' => Str::of($namaPelanggan)->squish()->value()]);
                 $order->customer_id = $customer->id;
-
-                // simpan nama supaya tetap tampil di kasir saat pending
                 Session::put('pending_customer_name', $customer->name);
             }
-
             $order->save();
 
-            // Items
+            // Items → order_item (product_id dibiarkan NULL, simpan nama & harga dari tabel `produk`)
             $subtotal = 0;
             foreach ($cart['items'] as $row) {
                 $line = (int)$row['price'] * (int)$row['qty'];
                 $order->items()->create([
-                    'product_id'=>$row['id'],
-                    'name'=>$row['name'],
-                    'price'=>(int)$row['price'],
-                    'qty'=>(int)$row['qty'],
-                    'line_total'=>$line,
+                    'product_id' => null, // kolom ini milik tabel `product`, kita kosongkan
+                    'name'       => $row['name'],
+                    'price'      => (int)$row['price'],
+                    'qty'        => (int)$row['qty'],
+                    'line_total' => $line,
                 ]);
                 $subtotal += $line;
             }
             $order->update(['subtotal'=>$subtotal,'grand_total'=>$subtotal]);
 
-            // Charge Midtrans
+            /** 2) Mirror ke Penjualan + PenjualanDetail */
+            $penjualan = Penjualan::updateOrCreate(
+                ['kode_penjualan' => $order->order_no],
+                [
+                    'tanggal'   => now(),
+                    'user_id'   => Auth::id() ?: 1,
+                    'total'     => $subtotal,
+                    'bayar'     => 0,
+                    'kembalian' => 0,
+                    'metode'    => $metode,
+                ]
+            );
+
+            $penjualan->details()->delete();
+            foreach ($cart['items'] as $row) {
+                PenjualanDetail::create([
+                    'penjualan_id' => $penjualan->id,
+                    'produk_id'    => (int)$row['id'],   // FK ke tabel `produk`
+                    'harga'        => (int)$row['price'],
+                    'qty'          => (int)$row['qty'],
+                    'subtotal'     => (int)$row['price'] * (int)$row['qty'],
+                ]);
+            }
+
+            /** 3) Charge Midtrans */
             switch ($metode) {
                 case 'qris': {
                     $res = $this->gateway->buatTransaksiQris($order);
@@ -227,12 +265,12 @@ class KasirController extends Controller
                 }
             }
 
-            // Tampilkan di layar customer + simpan penanda order
+            // Dorong ke layar + simpan pointer order
             $this->dorongKeLayar('utama', $order->order_no);
             Session::put('last_order_id', $order->id);
 
             return redirect()->route('kasir.index')
-                ->with('order_id', $order->id)        // untuk polling pertama
+                ->with('order_id', $order->id)
                 ->with('order_no', $order->order_no)
                 ->with('success', 'Transaksi dibuat. Layar customer otomatis menampilkan order.');
 
@@ -254,7 +292,7 @@ class KasirController extends Controller
         return response()->json([
             'order_id'    => $order->id,
             'order_no'    => $order->order_no,
-            'status'      => $order->status,   // pending | paid | expired | cancelled
+            'status'      => $order->status,
             'grand_total' => (int) $order->grand_total,
         ]);
     }

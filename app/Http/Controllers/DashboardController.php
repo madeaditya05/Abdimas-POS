@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
+use App\Models\Produk;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -66,20 +66,35 @@ class DashboardController extends Controller
     // Endpoint JSON untuk tombol lonceng
     public function notifications()
     {
-        $items = Product::where(function($q){
-                $q->whereColumn('stock','<=','min_stock')
-                  ->orWhere('stock','<=',0);
+        $rows = Produk::query()
+            ->select('id', 'nama_barang', 'stok', 'min_stock', 'kategori')
+            // Habis atau menipis (stok <= min_stock, min_stock > 0)
+            ->where(function ($q) {
+                $q->whereNull('stok')->orWhere('stok', '<=', 0);
             })
-            ->orderBy('stock')
-            ->get(['id','name','stock','min_stock','unit']);
+            ->orWhere(function ($q) {
+                $q->whereRaw('COALESCE(stok,0) <= COALESCE(min_stock,0)')
+                  ->whereRaw('COALESCE(min_stock,0) > 0');
+            })
+            ->orderByRaw('COALESCE(stok,0) ASC')
+            ->limit(50)
+            ->get();
+
+        $items = $rows->map(function ($p) {
+            $stok = (int) ($p->stok ?? 0);
+            $min  = (int) ($p->min_stock ?? 0);
+            $habis = $stok <= 0;
+
+            return [
+                'title'    => $habis ? 'Stok Habis' : 'Stok Rendah',
+                'subtitle' => "{$p->nama_barang} — {$stok} (min {$min})",
+                'color'    => $habis ? '#ef4444' : '#f59e0b', // merah / oranye
+            ];
+        });
 
         return response()->json([
             'count' => $items->count(),
-            'items' => $items->map(fn($p)=>[
-                'title' => $p->stock <= 0 ? 'Stok Habis' : 'Stok Rendah',
-                'subtitle' => "{$p->name} — {$p->stock} ".($p->unit ?? '')." (min {$p->min_stock})",
-                'color' => $p->stock <= 0 ? '#ef4444' : '#f59e0b',
-            ]),
+            'items' => $items->values(),
         ]);
     }
 }

@@ -1157,3 +1157,91 @@ body.sidebar-collapsed .sidebar .nav-item .nav-icon { margin:0; }
   width:100%; height:100%; object-fit:contain; display:block;
 }
 body.sidebar-collapsed .sidebar-logo-icon{ width:48px; height:48px; padding:6px; margin:0 auto; }
+
+/* === FIX: Saat collapse, ikon tetap tampil, hanya label/caret yang disembunyikan === */
+body.sidebar-collapsed .sidebar .nav-item .nav-label,
+body.sidebar-collapsed .sidebar .nav-item .nav-caret,
+body.sidebar-collapsed .sidebar .subnav,
+body.sidebar-collapsed .sidebar .btn-logout span {
+  display: none !important;
+}
+
+/* Hidupkan kembali IKON yang sempat ikut ter-hide oleh rule generik */
+body.sidebar-collapsed .sidebar .nav-item .nav-icon {
+  display: grid !important;             /* atau inline-grid / inline-flex */
+  place-items: center;
+}
+
+/* opsional: bikin ikon ukurannya konsisten */
+.sidebar .nav-icon svg { width:22px; height:22px; }
+body.sidebar-collapsed .sidebar .nav-item { justify-content:center; padding:12px 0; }
+
+/* === FIX LOGO SIDEBAR: center, tidak miring, tidak kepotong === */
+.sidebar-logo-icon{
+  width:56px; height:56px;
+  display:grid; place-items:center;
+  border-radius:14px; padding:6px;
+  background:#fff; border:1px solid rgba(0,0,0,.06);
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  overflow:visible;
+}
+.sidebar-logo-img{
+  width:84%;                 /* jangan 100%, beri ruang tepi */
+  height:84%;
+  object-fit:contain;
+  object-position:center;    /* pastikan benar-benar di tengah */
+  display:block;
+  margin:0;                  /* nolkan margin default */
+  transform:none !important; /* cegah rotasi tak sengaja */
+  rotate:0deg;               /* hormati orientasi asli */
+  image-orientation:from-image;
+}
+body.sidebar-collapsed .sidebar-logo-icon{
+  width:48px; height:48px; padding:6px; margin:0 auto;
+}
+
+/* Alternatif tanpa ubah file PNG */
+.sidebar-logo-icon{
+  background:#fff url("/images/logo.png") center / 84% no-repeat;
+}
+.sidebar-logo-icon .sidebar-logo-img{ display:none; }
+
+/* === FIX: Submenu pakai cream di tema terang === */
+body.theme-day .sidebar .subnav-item,
+body.theme-day .sidebar .subnav-link{
+  background: var(--sb-hover-day) !important;   /* #efe7dc */
+  border-color: var(--sb-border-day) !important;/* #e7e3dc */
+  color: var(--sb-text-day) !important;         /* #2b2b2b */
+}
+
+body.theme-day .sidebar .subnav-item:hover,
+body.theme-day .sidebar .subnav-link:hover{
+  background: var(--sb-active-day) !important;  /* #e9dfd2 */
+  border-color: #d6cbbb !important;
+}
+
+body.theme-day .sidebar .subnav-item.is-active,
+body.theme-day .sidebar .subnav-link.is-active{
+  background: var(--sb-active-day) !important;
+  border-color: #cfbea6 !important;
+  font-weight: 800;
+}
+
+/* Jangan ada “kartu putih” di container submenu */
+body.theme-day .sidebar .subnav{ background: transparent !important; }
+
+/* NOTIF: pakai mekanisme .open */
+.topbar-right .dropdown .dropdown-menu{
+  display: block;            /* override display:none lama */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  z-index: 2000;             /* pastikan di atas topbar */
+  transition: opacity .18s, transform .18s, visibility 0s .18s;
+}
+.topbar-right .dropdown.open .dropdown-menu{
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 0s;
+}

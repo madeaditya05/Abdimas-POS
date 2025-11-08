@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentLog;
+
+// penjualan
+use App\Models\Penjualan;
+
 use Illuminate\Http\Request;
 
 class MidtransWebhookController extends Controller
@@ -14,18 +18,12 @@ class MidtransWebhookController extends Controller
     {
         $payload = $req->all();
 
-        // simpan log mentah
         PaymentLog::create(['event'=>'notification','payload'=>json_encode($payload)]);
 
-        $orderNo = $payload['order_id'] ?? null;
-        $status  = $payload['transaction_status'] ?? null;
+        $orderNo = $payload['order_id'] ?? null;             // contoh: ORD-241029-0001 (== kode_penjualan)
+        $status  = $payload['transaction_status'] ?? null;   // capture|settlement|expire|cancel|deny
         $fraud   = $payload['fraud_status'] ?? null;
         $gross   = (int) ($payload['gross_amount'] ?? 0);
-
-        // Optional: verify signature_key (disarankan)
-        // $sig = $payload['signature_key'] ?? '';
-        // $calc = hash('sha512', $orderNo.$payload['status_code'].$payload['gross_amount'].config('midtrans.server_key'));
-        // if (!hash_equals($calc, $sig)) { abort(403, 'Invalid signature'); }
 
         $order = Order::where('order_no', $orderNo)->first();
         if (!$order) return response('OK', 200);
@@ -48,6 +46,17 @@ class MidtransWebhookController extends Controller
             $order->update(['status' => 'expired']);
         } elseif (in_array($status, ['cancel','deny'])) {
             $order->update(['status' => 'cancelled']);
+        }
+
+        // === Sinkron ke PENJUALAN ===
+        if ($pj = Penjualan::where('kode_penjualan', $orderNo)->first()) {
+            if (in_array($status, ['capture','settlement'])) {
+                $pj->update([
+                    'bayar'     => $gross,
+                    'kembalian' => 0,
+                    'metode'    => $payment?->pg_payment_type ?: ($payload['payment_type'] ?? $pj->metode),
+                ]);
+            }
         }
 
         return response('OK', 200);
