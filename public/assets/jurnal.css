@@ -1,0 +1,46 @@
+/* ====== Reports Page (scoped, aman tdk ganggu yg lain) ====== */
+.rp-page { --bg:#fff; --soft:#f8fafc; --text:#0f172a; --muted:#64748b; --line:#e5e7eb; --primary:#10b981; }
+
+.rp-card{
+  background:var(--bg); color:var(--text);
+  border-radius:16px; padding:24px;
+  box-shadow:0 10px 30px rgba(0,0,0,.06); border:1px solid var(--line);
+}
+
+.rp-header{ font-weight:700; font-size:22px; margin-bottom:16px; }
+
+.rp-filter{
+  display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap:12px; margin-bottom:14px;
+}
+.rp-field label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px;}
+.rp-field input[type="date"]{
+  width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+  background:#fff; color:var(--text);
+}
+.rp-actions{ display:flex; gap:10px; align-items:end; }
+
+.rp-btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; 
+  font-weight:600; border:1px solid transparent; text-decoration:none; }
+.rp-btn-primary{ background:var(--primary); color:#fff; }
+.rp-btn-ghost{ background:#fff; color:#0f172a; border-color:var(--line); }
+.rp-btn:hover{ filter:brightness(0.98) }
+
+.rp-sep{ height:1px; background:var(--line); margin:12px 0 18px; }
+
+.rp-stats{ list-style:none; padding:0; margin:0; display:grid; gap:8px; max-width:520px; }
+.rp-stats li{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; }
+.rp-stats li strong{ font-weight:700; }
+.rp-money{ font-variant-numeric: tabular-nums; letter-spacing:.3px; }
+.rp-emph{ background:var(--soft); border-radius:12px; padding:8px 10px; font-weight:700; }
+
+.rp-table{ width:100%; border-collapse:collapse; font-size:14px; }
+.rp-table th, .rp-table td{ padding:10px 12px; border-bottom:1px solid var(--line); }
+.rp-table th{ text-align:left; color:var(--muted); font-weight:600; }
+.rp-right{text-align:right}
+
+/* Responsive fine-tune */
+@media (max-width: 560px){
+  .rp-actions{ width:100%; }
+  .rp-actions .rp-btn{ flex:1; justify-content:center; }
+}

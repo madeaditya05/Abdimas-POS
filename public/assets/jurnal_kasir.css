@@ -1,0 +1,77 @@
+/* ===== Kasir Report (scoped) ===== */
+.kr-page { --bg:#fff; --soft:#f8fafc; --text:#0f172a; --muted:#64748b; --line:#e5e7eb; --accent:#10b981; }
+
+.kr-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.kr-title { font-size:22px; font-weight:700; color:var(--text); }
+
+.kr-card{
+  background:var(--bg); color:var(--text);
+  border:1px solid var(--line); border-radius:16px; padding:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,.06);
+}
+
+.kr-filter{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:12px; margin-bottom:12px;
+}
+.kr-field label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+.kr-field input[type="date"]{
+  width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+  background:#fff; color:var(--text);
+}
+.kr-actions{ display:flex; gap:10px; align-items:end; flex-wrap:wrap; }
+
+.kr-btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px;
+  font-weight:600; border:1px solid transparent; text-decoration:none; cursor:pointer; }
+.kr-btn-primary{ background:var(--accent); color:#fff; }
+.kr-btn-ghost{ background:#fff; color:#0f172a; border-color:var(--line); }
+.kr-btn:hover{ filter:brightness(.98); }
+
+.kr-sep{ height:1px; background:var(--line); margin:10px 0 16px; }
+
+.kr-section{ margin-top:12px; }
+.kr-section-title{ font-weight:700; font-size:14px; color:#0f172a; margin-bottom:8px; }
+
+/* ===== UPDATED: full grid lines untuk semua tabel ===== */
+.kr-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+  border:1px solid var(--line);     /* garis luar */
+  background:#fff;
+}
+.kr-table th,
+.kr-table td{
+  padding:10px 12px;
+  border:1px solid var(--line);     /* garis antar sel (vertikal & horizontal) */
+}
+.kr-table th{
+  text-align:left;
+  color:var(--muted);
+  font-weight:600;
+  background:var(--soft);
+}
+.kr-table tbody tr:hover{ background:#f9fbfd; }
+
+.kr-right{ text-align:right }
+.kr-money{ font-variant-numeric: tabular-nums; letter-spacing:.3px; }
+
+.kr-empty{ text-align:center; color:var(--muted); padding:24px 8px; background:var(--soft); border-radius:12px; }
+
+/* Small summary chips (optional) */
+.kr-chipbar{ display:flex; gap:8px; flex-wrap:wrap; }
+.kr-chip{ background:var(--soft); color:#0f172a; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--line); }
+
+/* Responsive */
+@media (max-width:560px){
+  .kr-actions .kr-btn{ flex:1; justify-content:center; }
+}
+
+/* Subcard untuk Buku Besar */
+.kr-subcard{
+  background:#fff; border:1px solid var(--line);
+  border-radius:12px; padding:12px;
+}
+
+/* Opsional: pakai wrapper ini jika mau sudut meja membulat */
+.kr-table-rounded{ border:1px solid var(--line); border-radius:12px; overflow:hidden; }
