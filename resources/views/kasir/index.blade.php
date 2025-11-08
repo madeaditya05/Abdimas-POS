@@ -2,13 +2,11 @@
 @section('title', 'Kasir')
 
 @section('content')
-
-
 <form action="{{ route('kasir.store') }}" method="POST">
   @csrf
 
   <div class="grid-kasir">
-    {{-- Kolom kiri: Produk --}}
+    {{-- Kiri: Produk --}}
     <div class="card">
       <div class="card-header">
         <div class="card-title">
@@ -42,7 +40,7 @@
       </div>
     </div>
 
-    {{-- Kolom kanan: Keranjang + Pembayaran --}}
+    {{-- Kanan: Keranjang + Pembayaran --}}
     <div class="card card--sticky">
       <div class="card-header">
         <div class="card-title">
@@ -54,12 +52,19 @@
       <div class="card-subtitle" style="font-size:14px; color:#6b7280; margin-bottom:8px;">Keranjang</div>
 
       <div id="ringkasanKeranjang" class="order-list" style="max-height:320px; overflow:auto; margin-bottom:12px;">
-        <p class="text-muted" style="color:#6b7280;">Memuat keranjang…</p>
+        <p class="text-muted">Memuat keranjang…</p>
       </div>
 
-      <div class="order-footer" style="margin-bottom:12px;">
+      <div class="order-footer" style="margin-bottom:12px; display:flex; align-items:center; gap:8px; justify-content:space-between;">
         <span class="order-total">Total: <span id="grandTotal">Rp 0</span></span>
         <button type="button" class="btn btn-sm" id="btnKosongkan">Kosongkan</button>
+      </div>
+
+      {{-- Nama pelanggan: tetep tampil sampai paid --}}
+      <div class="kasir-form-inline" style="margin-bottom:8px;">
+        <input type="text" name="customer_name" class="form-input"
+               value="{{ $pendingName ?? '' }}"
+               placeholder="Nama pelanggan (opsional)">
       </div>
 
       <div class="kasir-form-inline" style="margin-bottom:12px;">
@@ -71,61 +76,42 @@
         </select>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-block">
-  Proses Pembayaran
-</button>
-      {{-- di card Pembayaran, letakkan di bawah tombol "Proses Pembayaran" --}}
-<p id="indikatorTransaksi" class="demo-info" style="margin-top:8px;display:none;"></p>
+      <button type="submit" class="btn btn-primary btn-block">Proses Pembayaran</button>
+
+      {{-- Badge status + nama pelanggan saat pending --}}
+      <div id="statusWrap" style="display:none; margin-top:10px;">
+        <span id="statusBadge"
+              style="padding:6px 10px; border-radius:999px; font-weight:600; font-size:13px; background:#fff3cd; color:#7a5a00;">
+          Menunggu pembayaran…
+        </span>
+        <span id="statusInfo" style="margin-left:8px; font-size:13px; color:#334155;"></span>
+      </div>
     </div>
   </div>
 </form>
 
-{{-- ===== JS minimal: hanya panggil API & render ===== --}}
+{{-- ===== JS ===== --}}
 <script>
-// $(document).ready(...) artinya:
-// "Jalankan semua kode di dalam ini HANYA JIKA halaman HTML sudah 100% siap"
-$(document).ready(function() {
-
-  // === BAGIAN 1: PERSIAPAN ===
-
-  // Ambil elemen-elemen penting (versi jQuery)
+$(function(){
   const wadahKeranjang = $('#ringkasanKeranjang');
   const elTotal = $('#grandTotal');
-  const inputCari = $('#cariProduk');
   const wadahProduk = $('#gridProduk');
-  
-  // Ambil Token CSRF
-  const CSRF = $('meta[name="csrf-token"]').attr('content');
+  const statusWrap = $('#statusWrap');
+  const statusBadge = $('#statusBadge');
+  const statusInfo = $('#statusInfo');
+  const inputNama = $('[name=customer_name]');
 
-  // Perintah AJAIB:
-  // "Tolong, setiap kali jQuery kirim data (POST/DELETE),
-  // selalu sertakan 'Stempel Resmi' (CSRF) ini."
-  $.ajaxSetup({
-    headers: { 'X-CSRF-TOKEN': CSRF }
-  });
+  $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
-  // === BAGIAN 2: FUNGSI "MENGGAMBAR" ===
-  
-  /**
-   * FUNGSI MENGGAMBAR KERANJANG (Versi jQuery)
-   * Tugasnya sama: 'menggambar' data di papan keranjang.
-   */
-  function renderKeranjang(data) {
-    // 1. Bersihkan papan tulis
-    wadahKeranjang.html(''); // Dulu: .innerHTML = ''
-
-    // 2. Cek jika datanya kosong
-    if (!data.items || data.items.length === 0) {
-      wadahKeranjang.html('<p class="text-muted" style="color:#6b7280;">Belum ada item dipilih.</p>');
-      elTotal.text('Rp 0'); // Dulu: .textContent = ''
-      return; // Selesai
+  function renderKeranjang(data){
+    wadahKeranjang.html('');
+    if(!data.items || data.items.length===0){
+      wadahKeranjang.html('<p class="text-muted">Belum ada item dipilih.</p>');
+      elTotal.text('Rp 0');
+      return;
     }
-
-    // 3. Jika ada data, tulis ulang satu per satu
-    data.items.forEach(i => {
-      // Kita tidak perlu 'createElement', kita bisa langsung 'append' (tambahkan)
-      // string HTML-nya. Lebih cepat!
-      const htmlString = `
+    data.items.forEach(i=>{
+      wadahKeranjang.append(`
         <div class="order-item">
           <div class="order-header">
             <div>
@@ -140,138 +126,81 @@ $(document).ready(function() {
           </div>
           <div class="order-footer">
             <span class="order-total">${i.line_total_text}</span>
-            <span class="order-time"></span>
           </div>
         </div>
-      `;
-      wadahKeranjang.append(htmlString); // Langsung tambahkan
+      `);
     });
-
-    // 4. Update total harga
     elTotal.text(data.subtotal_text);
-
-    // TIDAK PERLU 'addEventListener' DI SINI LAGI! (Ini kuncinya)
   }
 
-  // === BAGIAN 3: "MEMASANG TELINGA" (Event Listeners) ===
-  
-  // Telinga 1: Di Wadah Produk (Kolom Kiri)
-  // "Hei #gridProduk, kalau ada yang klik tombol '.btn-tambah' DI DALAM dirimu,
-  // jalankan fungsi ini." (Ini namanya Event Delegation)
-  wadahProduk.on('click', '.btn-tambah', function() {
-    const id = $(this).data('id'); // Ambil 'data-id'
+  // Tambah/kurang/hapus/kosongkan
+  wadahProduk.on('click','.btn-tambah',e=>{
+    $.post('{{ route('kasir.cart.tambah') }}',{product_id:$(e.currentTarget).data('id')},renderKeranjang);
+  });
+  $('#ringkasanKeranjang').on('click','.aksi',function(){
+    const id=$(this).data('id'), act=$(this).data('act');
+    let url='', method='POST';
+    if(act==='tambah') url='{{ route('kasir.cart.tambah') }}';
+    if(act==='kurang') url='{{ route('kasir.cart.kurang') }}';
+    if(act==='hapus'){ url='{{ route('kasir.cart.hapus') }}'; method='DELETE'; }
+    $.ajax({url, type:method, data:{product_id:id}, success:renderKeranjang});
+  });
+  $('#btnKosongkan').on('click',()=>$.post('{{ route('kasir.cart.kosongkan') }}',{},renderKeranjang));
 
-    // Kirim data ke Dapur (Controller)
-    // $.post(URL, DATA_YG_DIKIRIM, FUNGSI_SETELAH_DAPAT_JAWABAN)
-    $.post('{{ route('kasir.cart.tambah') }}', { product_id: id }, function(data) {
-      // 'data' adalah jawaban JSON dari controller
-      renderKeranjang(data); // Langsung gambar ulang
+  // Cari produk
+  $('#cariProduk').on('input',function(){
+    const q=$(this).val().trim().toLowerCase();
+    $('.produk-card').each(function(){
+      const n=$(this).data('name')||'';
+      $(this).toggle(n.includes(q));
     });
   });
 
-  // Telinga 2: Di Wadah Keranjang (Kolom Kanan)
-  // "Hei #ringkasanKeranjang, kalau ada yang klik tombol '.aksi' DI DALAM dirimu..."
-  wadahKeranjang.on('click', '.aksi', function() {
-    const id = $(this).data('id');
-    const act = $(this).data('act');
-    
-    let url = '';
-    let method = 'POST'; // Default
+  // Load awal keranjang
+  $.get('{{ route('kasir.cart.data') }}',renderKeranjang);
 
-    if (act === 'tambah') {
-      url = '{{ route('kasir.cart.tambah') }}';
-    } else if (act === 'kurang') {
-      url = '{{ route('kasir.cart.kurang') }}';
-    } else if (act === 'hapus') {
-      url = '{{ route('kasir.cart.hapus') }}';
-      method = 'DELETE'; // Khusus hapus, pakai DELETE
-    }
-    
-    // Ini '$.ajax', versi lebih lengkap dari '$.post'
-    // Kita pakai ini karena ada method 'DELETE'
-    $.ajax({
-      url: url,
-      type: method, // 'POST' atau 'DELETE'
-      data: { product_id: id },
-      success: function(data) {
-        // 'success' sama kayak 'function(data)' di $.post
-        renderKeranjang(data);
-      }
-    });
-  });
+  // ===== Polling status pembayaran + sinkron nama pelanggan =====
+  let flashOrderId = {!! json_encode(session('order_id')) !!};
+  let orderId = flashOrderId || localStorage.getItem('last_order_id');
+  if (flashOrderId) localStorage.setItem('last_order_id', flashOrderId);
 
-  // Telinga 3: Di Tombol "Kosongkan"
-  $('#btnKosongkan').on('click', function() {
-    $.post('{{ route('kasir.cart.kosongkan') }}', {}, function(data) {
-      renderKeranjang(data);
-    });
-  });
+  if (orderId) {
+    statusWrap.show();
+    statusBadge.text('Menunggu pembayaran…')
+               .css({background:'#fff3cd', color:'#7a5a00'}); // kuning
+    // tampilkan nama pelanggan yg pending kalau ada
+    const pendingName = {!! json_encode($pendingName ?? null) !!};
+    if (pendingName) statusInfo.text('Atas nama: ' + pendingName);
 
-  // Telinga 4: Di Kotak Pencarian
-  inputCari.on('input', function() {
-    const q = $(this).val().trim().toLowerCase();
-    
-    // "Untuk setiap '.produk-card'..."
-    $('.produk-card').each(function() {
-      const name = $(this).data('name') || '';
-      
-      // Versi jQuery dari 'sembunyi/tampil'
-      if (name.includes(q)) {
-        $(this).show(); // Dulu: .style.display = ''
-      } else {
-        $(this).hide(); // Dulu: .style.display = 'none'
-      }
-    });
-  });
-
-  // === BAGIAN 4: KODE YANG JALAN SAAT HALAMAN DIBUKA ===
-
-  // 1. Muat Keranjang Awal
-  // Ini 'GET' (minta data), jadi kita pakai '$.get'
-  $.get('{{ route('kasir.cart.data') }}', function(dataAwal) {
-    renderKeranjang(dataAwal);
-  }).fail(function() {
-    // 'fail' jalan kalau ada error
-    wadahKeranjang.html('<p style="color:red;">Gagal memuat keranjang.</p>');
-  });
-
-  
-  // 2. Script Pengecekan Status Bayar (juga pakai jQuery)
-  @if (session('order_id'))
-    const lbl = $('#indikatorTransaksi');
-    lbl.show(); // Tampilkan indikator
-    let done = false;
-
-    function cekStatus() {
-      if (done) return; // Berhenti jika sudah
-      
-      // Minta status ke Dapur (Controller)
-      $.get("{{ route('kasir.orders.show', ['order' => session('order_id')]) }}")
-        .done(function(d) { // '.done' = 'success'
+    function cekStatus(){
+      $.get("{{ url('/kasir/orders') }}/"+orderId)
+        .done(function(d){
           if (d.status === 'paid') {
-            lbl.text('Status: Lunas ✅');
-            done = true;
-            // Kosongkan keranjang di server & gambar ulang
-            $.post('{{ route('kasir.cart.kosongkan') }}', {}, function(data) {
+            statusBadge.text('Lunas ✅').css({background:'#dcfce7', color:'#14532d'}); // hijau
+            // kosongkan keranjang + kosongkan nama pending
+            $.post('{{ route('kasir.cart.kosongkan') }}',{}, function(data){
               renderKeranjang(data);
+              inputNama.val('');             // nama hilang bareng keranjang
+              statusInfo.text('');
             });
+            localStorage.removeItem('last_order_id');
             return;
           }
-          
-          if (d.status === 'expired')   { lbl.text('Status: Kedaluwarsa ❌'); done = true; return; }
-          if (d.status === 'cancelled') { lbl.text('Status: Dibatalkan ❌');  done = true; return; }
-
-          lbl.text('Status: Menunggu pembayaran…');
-          setTimeout(cekStatus, 1500); // Ulangi
+          if (d.status === 'expired') {
+            statusBadge.text('Kedaluwarsa ❌').css({background:'#fee2e2', color:'#7f1d1d'});
+            localStorage.removeItem('last_order_id'); return;
+          }
+          if (d.status === 'cancelled') {
+            statusBadge.text('Dibatalkan ❌').css({background:'#fee2e2', color:'#7f1d1d'});
+            localStorage.removeItem('last_order_id'); return;
+          }
+          // masih pending → cek lagi
+          setTimeout(cekStatus, 1800);
         })
-        .fail(function() { // '.fail' = 'error'
-          setTimeout(cekStatus, 2500); // Coba lagi nanti
-        });
+        .fail(()=> setTimeout(cekStatus, 2500));
     }
-
-    cekStatus(); // Mulai cek pertama kali
-  @endif
-
-}); // Penutup dari $(document).ready
+    cekStatus();
+  }
+});
 </script>
 @endsection

@@ -1,5 +1,10 @@
+@push('styles')
+  <link rel="stylesheet" href="{{ asset('assets/bahanbaku.css') }}">
+@endpush
+
 @extends('layouts.main')
 @section('title','Bahan Baku')
+
 
 @section('content')
 <div class="card">

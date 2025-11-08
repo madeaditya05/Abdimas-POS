@@ -1,0 +1,130 @@
+:root{
+  --bg0:#fbf7ef; --glow1:rgba(182,122,78,.20); --glow2:rgba(122,84,57,.14);
+  --ink:#2b2219; --muted:#7a6a57; --line:#e6d7c3;
+  --wood1:#7c563b; --wood2:#5d3f2c; --steel:#c9beb0; --amber:#d7a56d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 800px at 15% 10%, var(--glow1), transparent 60%),
+    radial-gradient(1200px 800px at 85% 90%, var(--glow2), transparent 60%),
+    var(--bg0);
+  color:var(--ink); font-family:'Poppins', system-ui, Segoe UI, Roboto, Arial;
+  overflow:hidden; cursor:none; user-select:none;
+}
+
+/* header */
+.scene{position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr; gap:2vh; padding:3vh 3vw}
+.brand{display:flex; align-items:center; gap:12px}
+.brand .logo{width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #d9c6ad, #b89b8d);
+  box-shadow:0 2px 0 #b8a184 inset, 0 6px 18px rgba(0,0,0,.08)}
+.brand .title{font-weight:800; font-size:3.2vh}
+
+/* layout */
+.grid{display:grid; grid-template-columns:1.15fr .85fr; gap:3vw; position:relative}
+
+/* background leaves & beans */
+.bg-leaves{position:absolute; inset:-8%; pointer-events:none; filter:blur(1px);
+  background:radial-gradient(800px 500px at 0% 0%, rgba(255,255,255,.5), transparent 60%);}
+.beans{position:absolute; inset:0; pointer-events:none; z-index:0}
+.bean{position:absolute; left:var(--x); top:var(--y); width:90px; height:60px; opacity:.18;
+  border-radius:60px; background:radial-gradient(ellipse at 30% 50%, #c9a987, #a17a55);
+  transform:rotate(var(--r)); animation:floatBean var(--d) ease-in-out infinite}
+.bean::after{content:""; position:absolute; left:50%; top:10%; bottom:10%; width:8px; background:#7f5a3a; border-radius:8px; transform:translateX(-50%)}
+@keyframes floatBean{0%{transform:translate3d(0,0,0) rotate(var(--r))}
+  50%{transform:translate3d(34px,-26px,0) rotate(calc(var(--r)+6deg))}
+  100%{transform:translate3d(0,0,0) rotate(var(--r))}}
+
+/* ===== LEFT: Sales Panel ===== */
+.sales-panel{position:relative; z-index:1}
+.sales-wood{
+  background:linear-gradient(180deg, #8c6547, #694a33);
+  border:1px solid #5b3f2c; border-radius:24px; padding:18px 22px;
+  box-shadow:0 22px 60px rgba(0,0,0,.12), inset 0 0 0 2px rgba(255,255,255,.08);
+}
+.sales-head{display:flex; justify-content:space-between; align-items:end; color:#f6efe5}
+.sales-head h3{letter-spacing:.08em}
+.sales-head small{opacity:.85}
+.sales-body{display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center; margin-top:8px}
+
+.cup-steam{ position:relative; width:150px; height:150px; filter:drop-shadow(0 10px 18px rgba(0,0,0,.18))}
+.cup-steam .cup{
+  position:absolute; bottom:0; left:0; width:100px; height:56px; border-radius:0 0 28px 28px;
+  background:linear-gradient(180deg,#fff,#f1e4d6); border:1px solid #e6d7c3; transform:translateX(24px);
+}
+.cup-steam .cup::after{
+  content:""; position:absolute; right:-22px; top:8px; width:34px; height:34px; border-radius:50%;
+  border:8px solid #e6d7c3; border-left-color:transparent;
+}
+.steam{ position:absolute; left:12px; top:-8px; width:120px; height:140px }
+.steam path{ fill:none; stroke:#cdb499; stroke-width:6; stroke-linecap:round; animation:steamRise 4.4s ease-in-out infinite}
+.steam path:nth-child(2){animation-delay:.7s}
+.steam path:nth-child(3){animation-delay:1.4s}
+@keyframes steamRise{0%{transform:translateY(0) scaleY(.9);opacity:0}
+  25%{opacity:.8}70%{opacity:.35}100%{transform:translateY(-60px) scaleY(1.05);opacity:0}}
+
+.hint{margin-top:8px; color:#e6dacb; opacity:.9}
+
+/* ===== Flip clock (big & mini share core) ===== */
+.flip-clock{display:flex; gap:12px; perspective:1200px}
+.digit{position:relative; width:110px; height:150px}
+.digit.big{width:min(10vw,140px); height:min(14vw,180px)}
+.card{position:relative; width:100%; height:100%}
+.top, .bottom, .flip-top, .flip-bottom{
+  position:absolute; left:0; right:0; height:50%; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  font-family:ui-monospace, Menlo, Consolas, 'Courier New', monospace;
+  font-weight:800; color:#2a2018; font-size: clamp(54px, 8.5vh, 110px);
+  background:linear-gradient(180deg,#fdfcfb,#ece2d6); border:1px solid var(--steel);
+  text-shadow:0 1px 0 #fff; overflow:hidden;
+}
+.top{top:0; border-bottom:none; border-radius:14px 14px 0 0; box-shadow:inset 0 -6px 12px rgba(0,0,0,.06)}
+.bottom{bottom:0; border-top:none; border-radius:0 0 14px 14px; box-shadow:inset 0 6px 12px rgba(0,0,0,.06)}
+
+.flip{position:absolute; left:0; right:0; top:0; bottom:0; perspective:1200px; pointer-events:none}
+.flip-top, .flip-bottom{backface-visibility:hidden}
+.flip-top{top:0; transform-origin:center bottom; border-bottom:none; border-radius:14px 14px 0 0}
+.flip-bottom{bottom:0; transform-origin:center top; border-top:none; border-radius:0 0 14px 14px; transform:rotateX(180deg)}
+
+.digit.play .flip-top{animation:flipTop .35s ease-in forwards}
+.digit.play .flip-bottom{animation:flipBottom .35s .35s ease-out forwards}
+@keyframes flipTop{to{transform:rotateX(-180deg)}}
+@keyframes flipBottom{from{transform:rotateX(180deg)} to{transform:rotateX(0deg)}}
+
+/* ===== RIGHT: mini flips ===== */
+.menu-panel{
+  background:linear-gradient(180deg,#efe6d9,#ffffff);
+  border:1px solid var(--line); border-radius:24px;
+  box-shadow:0 22px 60px rgba(0,0,0,.10); display:grid; grid-template-rows:auto 1fr auto; overflow:hidden
+}
+.menu-title{padding:16px 18px; font-weight:900; letter-spacing:.12em; color:#4a382a; border-bottom:1px solid #eadcc8}
+.mini-grid{display:grid; grid-template-rows:1fr 1fr 1fr; gap:14px; padding:18px}
+
+.mini{background:#fff; border:1px solid #eadcc8; border-radius:16px; padding:0 12px; display:grid; align-items:center;
+  box-shadow:0 10px 24px rgba(0,0,0,.08)}
+.mini-flip{position:relative; perspective:1000px}
+.mini-card{position:relative; height:92px}
+.mini-card .front, .mini-card .back{
+  position:absolute; inset:0; display:flex; align-items:center; gap:12px; padding:12px;
+  border-radius:12px; background:linear-gradient(180deg,#fff,#f6efe5); border:1px solid #eadcc8;
+}
+.mini-card.flip .front{animation:miniOut .7s both}
+.mini-card.flip .back{animation:miniIn  .7s both}
+@keyframes miniOut{0%{transform:rotateX(0)}100%{transform:rotateX(-180deg)}}
+@keyframes miniIn {0%{transform:rotateX(180deg)}100%{transform:rotateX(0)}}
+
+.mini .ico{font-size:28px}
+.mini .txt h4{font-weight:800; font-size:20px; color:#3b2c20}
+.mini .txt p{color:#6b5642}
+
+/* footer text */
+.menu-footer{padding:12px 16px; color:#7a6a57; border-top:1px solid #eadcc8; text-align:center}
+
+/* responsive */
+@media (max-width:1100px){
+  .grid{grid-template-columns:1fr; gap:18px}
+}
+
+/* steam & beans already above */

@@ -6,6 +6,11 @@ use App\Http\Controllers\KasirController;
 use App\Http\Controllers\CustomerPembayaranController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\BahanBakuController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CustomerDisplayController;
+use App\Http\Controllers\EspressoController;
+
+
 
 
 
@@ -32,8 +37,10 @@ Route::middleware('guest')->group(function () {
 
 // ===== Auth only =====
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', fn() => view('tampilan.dashboard'))->name('dashboard');
     Route::get('/dashboard_admin', fn() => view('tampilan.dashboard_admin'))->name('dashboard_admin');
+
+    Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
+    Route::get('/notifications', [DashboardController::class,'notifications'])->name('notifications');
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -73,3 +80,14 @@ Route::prefix('app')->middleware('auth')->group(function () {
         ->only(['index','create','store','edit','update','destroy'])
         ->names('bahan-baku');
 });
+
+// routes/web.php
+// routes/web.php
+Route::get('/promo-display', fn () => view('promo.display'))->name('promo.display');
+
+
+// espressooo ilustration
+Route::get('/barista/espresso', [EspressoController::class, 'index'])->name('espresso.index');
+Route::get('/barista/espresso/data', [EspressoController::class, 'getData'])->name('espresso.data');
+Route::get('/barista/espresso/preview', [EspressoController::class, 'preview'])->name('espresso.preview');
+Route::get('/display/espresso', [EspressoController::class, 'screen'])->name('espresso.screen');
