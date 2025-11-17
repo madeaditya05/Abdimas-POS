@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User; 
 use Illuminate\Support\Facades\Hash;
 
-
 class LoginController extends Controller
 {
     public function showLogin()
@@ -23,9 +22,11 @@ class LoginController extends Controller
             'password' => ['required','string'],
         ]);
 
-        if (Auth::attempt(['email'=>$cred['email'], 'password'=>$cred['password']], $r->boolean('remember'))) {
+        if (Auth::attempt(['email' => $cred['email'], 'password' => $cred['password']], $r->boolean('remember'))) {
             $r->session()->regenerate();
-            return $this->redirectBasedOnUserGroup(Auth::user());
+
+            // 🔁 Semua user diarahkan ke dashboard
+            return redirect()->intended(route('dashboard'));
         }
 
         return back()
@@ -54,7 +55,7 @@ class LoginController extends Controller
         if ($r->user_group === 'owner') {
             $expected = config('auth.owner_signup_code'); // dari .env OWNER_SIGNUP_CODE
             if (!$expected || $r->owner_token !== $expected) {
-                return back()->withErrors(['owner_token'=>'Kode Owner tidak valid.'])->withInput();
+                return back()->withErrors(['owner_token' => 'Kode Owner tidak valid.'])->withInput();
             }
         }
 
@@ -65,22 +66,10 @@ class LoginController extends Controller
             'user_group' => $r->user_group,
         ]);
 
-        // JANGAN Auth::login($user) —> balik ke halaman login
         return redirect()
             ->route('login')
             ->with('success', 'Registrasi berhasil. Silakan login.')
             ->with('prefill_email', $r->email);
-    }
-
-    // === Redirect sesuai group ===
-    private function redirectBasedOnUserGroup($user)
-    {
-        // Pakai intended supaya kalau user akses URL tertentu lalu login, tetap balik ke sana.
-        return match ($user->user_group) {
-            'owner', 'admin'   => redirect()->intended(route('dashboard_admin')), // atau route('dashboard_admin')
-            'kasir'            => redirect()->intended(route('dashboard')),
-            default            => redirect()->intended(route('dashboard')),
-        };
     }
 
     public function logout(Request $request)

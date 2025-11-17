@@ -14,100 +14,172 @@ class KasirReportController extends Controller
         [$start, $end] = $this->range($r);
         $sections = $this->sections($r);
 
-        // === Per Produk
-        $items = DB::table(DB::raw('`order` as o'))
-            ->join('order_item as oi', 'oi.order_id', '=', 'o.id')
-            ->join('payment as p', 'p.order_id', '=', 'o.id')
-            ->where('o.status', 'paid')
-            ->where('p.transaction_status', 'settlement')
-            ->whereBetween('o.created_at', [$start, $end])
-            ->selectRaw('oi.product_id, oi.name, SUM(oi.qty) AS qty, SUM(oi.price * oi.qty) AS total')
-            ->groupBy('oi.product_id', 'oi.name')
+        // =====================================================================
+        // REKAP PER PRODUK
+        // =====================================================================
+        $items = DB::table('penjualan as pjl')
+            ->join('penjualan_detail as d', 'd.penjualan_id', '=', 'pjl.id')
+            ->join('produk as pr', 'pr.id', '=', 'd.produk_id')
+            ->join('payment as pay', 'pay.penjualan_id', '=', 'pjl.id')
+            ->where('pay.transaction_status', 'settlement')
+            ->whereBetween('pjl.created_at', [$start, $end])
+            ->selectRaw('
+                pr.id as product_id,
+                pr.nama_barang as name,
+                SUM(d.qty) AS qty,
+                SUM(d.qty * d.harga) AS total
+            ')
+            ->groupBy('pr.id', 'pr.nama_barang')
             ->orderByDesc('total')
             ->get();
 
-        // === Per Metode Pembayaran
-        $payments = DB::table('payment as p')
-            ->join(DB::raw('`order` as o'), 'o.id', '=', 'p.order_id')
-            ->where('p.transaction_status', 'settlement')
-            ->whereBetween('p.paid_at', [$start, $end])
-            ->selectRaw('p.pg_payment_type, COUNT(*) trx, SUM(p.gross_amount) total')
-            ->groupBy('p.pg_payment_type')
+        // =====================================================================
+        // REKAP PER METODE PEMBAYARAN
+        // =====================================================================
+        $payments = DB::table('payment as pay')
+            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
+            ->where('pay.transaction_status', 'settlement')
+            ->whereBetween('pay.paid_at', [$start, $end])
+            ->selectRaw('pay.pg_payment_type, COUNT(*) trx, SUM(pay.gross_amount) total')
+            ->groupBy('pay.pg_payment_type')
             ->orderByDesc('total')
             ->get();
 
-        // === Tunai vs Non-Tunai
-        $payUnified = DB::table('payment as p')
-            ->join(DB::raw('`order` as o'), 'o.id', '=', 'p.order_id')
-            ->where('p.transaction_status', 'settlement')
-            ->whereBetween('p.paid_at', [$start, $end])
-            ->selectRaw("CASE WHEN p.pg_payment_type='cash' THEN 'Tunai' ELSE 'Non Tunai' END as kategori, COUNT(*) trx, SUM(p.gross_amount) total")
+        // =====================================================================
+        // TUNAI VS NON TUNAI
+        // =====================================================================
+        $payUnified = DB::table('payment as pay')
+            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
+            ->where('pay.transaction_status', 'settlement')
+            ->whereBetween('pay.paid_at', [$start, $end])
+            ->selectRaw("
+                CASE 
+                    WHEN pay.pg_payment_type='cash' THEN 'Tunai' 
+                    ELSE 'Non Tunai' 
+                END as kategori,
+                COUNT(*) trx,
+                SUM(pay.gross_amount) total
+            ")
             ->groupBy('kategori')
             ->orderBy('kategori')
             ->get();
 
-        // === Jurnal
+        // =====================================================================
+        // JURNAL
+        // =====================================================================
         $journal = DB::table('journal_entry as je')
             ->join('journal_line as jl', 'jl.journal_entry_id', '=', 'je.id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'jl.account_id')
             ->whereBetween('je.date', [$start, $end])
-            ->orderBy('je.date')->orderBy('je.entry_no')
-            ->selectRaw('je.date, je.entry_no, je.ref_no, je.memo as entry_memo, coa.code, coa.name, coa.normal_side, jl.debit, jl.credit')
+            ->orderBy('je.date')
+            ->orderBy('je.entry_no')
+            ->selectRaw('
+                je.date,
+                je.entry_no,
+                je.ref_no,
+                je.memo as entry_memo,
+                jl.memo as line_memo,
+                coa.code,
+                coa.name,
+                coa.normal_side,
+                jl.debit,
+                jl.credit
+            ')
             ->get();
 
-        // === Buku Besar (running balance per akun)
+        // =====================================================================
+        // BUKU BESAR (LEDGER)
+        // =====================================================================
         $ledger = [];
         foreach ($journal as $row) {
-            $key = $row->code.' - '.$row->name;
+            $key    = $row->code . ' - ' . $row->name;
+            $normal = strtoupper($row->normal_side); // 'debit' / 'credit' → 'DEBIT' / 'CREDIT'
+
             if (!isset($ledger[$key])) {
-                $ledger[$key] = ['normal'=>$row->normal_side,'rows'=>[], 'total_debit'=>0,'total_credit'=>0,'balance'=>0];
+                $ledger[$key] = [
+                    'normal'        => $normal,
+                    'rows'          => [],
+                    'total_debit'   => 0,
+                    'total_credit'  => 0,
+                    'balance'       => 0,
+                ];
             }
-            $change = ($row->normal_side === 'DEBIT') ? ($row->debit - $row->credit) : ($row->credit - $row->debit);
+
+            // DEBIT normal → saldo naik kalau debit
+            // KREDIT normal → saldo naik kalau kredit
+            $change = ($normal === 'DEBIT')
+                ? ($row->debit - $row->credit)
+                : ($row->credit - $row->debit);
+
             $ledger[$key]['balance']      += $change;
-            $ledger[$key]['total_debit']  += (float)$row->debit;
-            $ledger[$key]['total_credit'] += (float)$row->credit;
+            $ledger[$key]['total_debit']  += (float) $row->debit;
+            $ledger[$key]['total_credit'] += (float) $row->credit;
+
             $ledger[$key]['rows'][] = [
-                'date'=>$row->date,'entry'=>$row->entry_no,'ref'=>$row->ref_no,'memo'=>$row->entry_memo,
-                'debit'=>(float)$row->debit,'credit'=>(float)$row->credit,'saldo'=>$ledger[$key]['balance'],
+                'date'   => $row->date,
+                'entry'  => $row->entry_no,
+                'ref'    => $row->ref_no,
+                // Pakai memo baris (lawan akun). Kalau kosong, pakai memo header.
+                'memo'   => $row->line_memo ?: $row->entry_memo,
+                'debit'  => (float) $row->debit,
+                'credit' => (float) $row->credit,
+                'saldo'  => $ledger[$key]['balance'],
             ];
         }
 
-        $meta = compact('start','end');
-        return view('reports.kasir_rekap', compact('items','payments','payUnified','journal','ledger','meta','sections'));
+        $meta = compact('start', 'end');
+
+        return view('reports.kasir_rekap', compact(
+            'items', 'payments', 'payUnified', 'journal', 'ledger', 'meta', 'sections'
+        ));
     }
 
+    // =========================================================================
+    // PDF EXPORT
+    // =========================================================================
     public function pdf(Request $r)
     {
         [$start, $end] = $this->range($r);
         $sections = $this->sections($r);
-        $break    = $r->boolean('break'); // kalau mau dipakai nanti
 
-        // === Query sama dengan index()
-        $items = DB::table(DB::raw('`order` as o'))
-            ->join('order_item as oi', 'oi.order_id', '=', 'o.id')
-            ->join('payment as p', 'p.order_id', '=', 'o.id')
-            ->where('o.status', 'paid')
-            ->where('p.transaction_status', 'settlement')
-            ->whereBetween('o.created_at', [$start, $end])
-            ->selectRaw('oi.product_id, oi.name, SUM(oi.qty) AS qty, SUM(oi.price * oi.qty) AS total')
-            ->groupBy('oi.product_id', 'oi.name')
+        // ===== Query sama dengan index() di atas =====
+        $items = DB::table('penjualan as pjl')
+            ->join('penjualan_detail as d', 'd.penjualan_id', '=', 'pjl.id')
+            ->join('produk as pr', 'pr.id', '=', 'd.produk_id')
+            ->join('payment as pay', 'pay.penjualan_id', '=', 'pjl.id')
+            ->where('pay.transaction_status', 'settlement')
+            ->whereBetween('pjl.created_at', [$start, $end])
+            ->selectRaw('
+                pr.id as product_id,
+                pr.nama_barang as name,
+                SUM(d.qty) AS qty,
+                SUM(d.qty * d.harga) AS total
+            ')
+            ->groupBy('pr.id', 'pr.nama_barang')
             ->orderByDesc('total')
             ->get();
 
-        $payments = DB::table('payment as p')
-            ->join(DB::raw('`order` as o'), 'o.id', '=', 'p.order_id')
-            ->where('p.transaction_status', 'settlement')
-            ->whereBetween('p.paid_at', [$start, $end])
-            ->selectRaw('p.pg_payment_type, COUNT(*) trx, SUM(p.gross_amount) total')
-            ->groupBy('p.pg_payment_type')
+        $payments = DB::table('payment as pay')
+            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
+            ->where('pay.transaction_status', 'settlement')
+            ->whereBetween('pay.paid_at', [$start, $end])
+            ->selectRaw('pay.pg_payment_type, COUNT(*) trx, SUM(pay.gross_amount) total')
+            ->groupBy('pay.pg_payment_type')
             ->orderByDesc('total')
             ->get();
 
-        $payUnified = DB::table('payment as p')
-            ->join(DB::raw('`order` as o'), 'o.id', '=', 'p.order_id')
-            ->where('p.transaction_status', 'settlement')
-            ->whereBetween('p.paid_at', [$start, $end])
-            ->selectRaw("CASE WHEN p.pg_payment_type='cash' THEN 'Tunai' ELSE 'Non Tunai' END as kategori, COUNT(*) trx, SUM(p.gross_amount) total")
+        $payUnified = DB::table('payment as pay')
+            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
+            ->where('pay.transaction_status', 'settlement')
+            ->whereBetween('pay.paid_at', [$start, $end])
+            ->selectRaw("
+                CASE 
+                    WHEN pay.pg_payment_type='cash' THEN 'Tunai' 
+                    ELSE 'Non Tunai' 
+                END as kategori,
+                COUNT(*) trx,
+                SUM(pay.gross_amount) total
+            ")
             ->groupBy('kategori')
             ->orderBy('kategori')
             ->get();
@@ -116,23 +188,54 @@ class KasirReportController extends Controller
             ->join('journal_line as jl', 'jl.journal_entry_id', '=', 'je.id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'jl.account_id')
             ->whereBetween('je.date', [$start, $end])
-            ->orderBy('je.date')->orderBy('je.entry_no')
-            ->selectRaw('je.date, je.entry_no, je.ref_no, je.memo as entry_memo, coa.code, coa.name, coa.normal_side, jl.debit, jl.credit')
+            ->orderBy('je.date')
+            ->orderBy('je.entry_no')
+            ->selectRaw('
+                je.date,
+                je.entry_no,
+                je.ref_no,
+                je.memo as entry_memo,
+                jl.memo as line_memo,
+                coa.code,
+                coa.name,
+                coa.normal_side,
+                jl.debit,
+                jl.credit
+            ')
             ->get();
 
+        // Ledger sama seperti index()
         $ledger = [];
         foreach ($journal as $row) {
-            $key = $row->code.' - '.$row->name;
+            $key    = $row->code . ' - ' . $row->name;
+            $normal = strtoupper($row->normal_side);
+
             if (!isset($ledger[$key])) {
-                $ledger[$key] = ['normal'=>$row->normal_side,'rows'=>[], 'total_debit'=>0,'total_credit'=>0,'balance'=>0];
+                $ledger[$key] = [
+                    'normal'       => $normal,
+                    'rows'         => [],
+                    'total_debit'  => 0,
+                    'total_credit' => 0,
+                    'balance'      => 0,
+                ];
             }
-            $change = ($row->normal_side === 'DEBIT') ? ($row->debit - $row->credit) : ($row->credit - $row->debit);
+
+            $change = ($normal === 'DEBIT')
+                ? ($row->debit - $row->credit)
+                : ($row->credit - $row->debit);
+
             $ledger[$key]['balance']      += $change;
-            $ledger[$key]['total_debit']  += (float)$row->debit;
-            $ledger[$key]['total_credit'] += (float)$row->credit;
+            $ledger[$key]['total_debit']  += (float) $row->debit;
+            $ledger[$key]['total_credit'] += (float) $row->credit;
+
             $ledger[$key]['rows'][] = [
-                'date'=>$row->date,'entry'=>$row->entry_no,'ref'=>$row->ref_no,'memo'=>$row->entry_memo,
-                'debit'=>(float)$row->debit,'credit'=>(float)$row->credit,'saldo'=>$ledger[$key]['balance'],
+                'date'   => $row->date,
+                'entry'  => $row->entry_no,
+                'ref'    => $row->ref_no,
+                'memo'   => $row->line_memo ?: $row->entry_memo,
+                'debit'  => (float) $row->debit,
+                'credit' => (float) $row->credit,
+                'saldo'  => $ledger[$key]['balance'],
             ];
         }
 
@@ -142,18 +245,20 @@ class KasirReportController extends Controller
             'payUnified'=> $payUnified,
             'journal'   => $journal,
             'ledger'    => $ledger,
-            'meta'      => ['start'=>$start,'end'=>$end],
-            'sections'  => $sections,
-            'break'     => $break,
+            'meta'      => compact('start','end'),
+            'sections'  => $sections
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download("Rekap-Kasir_{$start}_sd_{$end}.pdf");
     }
 
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
     private function range(Request $r): array
     {
         $start = $r->get('start_date') ?: now()->toDateString();
-        $end   = $r->get('end_date')   ?: now()->toDateString();
+        $end   = $r->get('end_date') ?: now()->toDateString();
         return [$start.' 00:00:00', $end.' 23:59:59'];
     }
 
@@ -162,6 +267,7 @@ class KasirReportController extends Controller
         $all = ['items','payments','unified','journal','ledger'];
         $sel = $r->input('sec', $all);
         if (!is_array($sel)) $sel = [$sel];
+
         return [
             'items'    => in_array('items', $sel),
             'payments' => in_array('payments', $sel),

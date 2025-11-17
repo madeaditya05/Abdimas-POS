@@ -2,76 +2,66 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\Payment;
-use App\Models\PaymentLog;
 use App\Models\Display;
-use App\Models\Customer;
-
-// Modul laporan
+use App\Models\Produk;
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
-use App\Models\Produk;
-
+use App\Models\Payment;
+use App\Models\PaymentLog;
 use App\Services\Payments\PaymentGateway;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class KasirController extends Controller
 {
     public function __construct(private PaymentGateway $gateway) {}
 
-    /** Halaman kasir (katalog dari tabel `produk`) */
     public function index()
     {
-        // Auto-clear bila order terakhir sudah selesai
-        $lastOrderId = Session::get('last_order_id');
-        if ($lastOrderId) {
-            $last = Order::find($lastOrderId);
-            if ($last && in_array($last->status, ['paid','expired','cancelled'], true)) {
-                Session::forget('cart');
-                Session::forget('last_order_id');
-                Session::forget('pending_customer_name');
+        // Bereskan sisa transaksi final
+        if ($last = Session::get('last_sales_code')) {
+            $status = $this->hitungStatus($last);
+            if (in_array($status, ['paid','expired','cancelled'], true)) {
+                $this->cleanupSesiDanDisplay($last);
             }
         }
 
-        // Katalog dari tabel produk
-        $produks = Produk::orderBy('nama_barang')
-            ->get(['id','kode_barang','nama_barang','harga','kategori','stok']);
+        $produks = Produk::select('id','nama_barang','harga','stok','kategori')
+            ->whereRaw('COALESCE(stok,0) > 0')
+            ->orderBy('nama_barang')->get();
 
-        // daftar kategori (distinct)
         $kategoris = Produk::whereNotNull('kategori')
             ->select('kategori')->distinct()->orderBy('kategori')->pluck('kategori');
 
-        $produks = Produk::select('id','nama_barang','harga','stok','kategori')
-        ->whereRaw('COALESCE(stok,0) > 0')   // sembunyikan stok 0 / null
-        ->orderBy('nama_barang')
-        ->get();
-
-        $pendingName = Session::get('pending_customer_name');
-        
+        // Kode aktif untuk memicu polling di view
+        $activeCode = session('sales_code') ?? Session::get('last_sales_code');
 
         return view('kasir.index', [
             'produks'     => $produks,
             'kategoris'   => $kategoris,
-            'pendingName' => $pendingName,
+            'pendingName' => Session::get('pending_customer_name'),
+            'activeCode'  => $activeCode,
         ]);
     }
 
-    /** Dorong nomor order ke layar customer */
-    private function dorongKeLayar(string $kodeLayar, string $orderNo): void
+    private function cleanupSesiDanDisplay(string $kode): void
     {
-        Display::updateOrCreate(['code' => $kodeLayar], ['order_no' => $orderNo]);
+        Session::forget('cart');
+        Session::forget('pending_customer_name');
+        Session::forget('last_sales_code');
+
+        Display::where('code','utama')->where('order_no',$kode)->update(['order_no' => null]);
     }
 
-    /** ===== KERANJANG (SESSION) ===== */
     private function ambilKeranjang(): array
     {
-        $cart = Session::get('cart', ['items' => []]);
-        if (!isset($cart['items']) || !is_array($cart['items'])) $cart = ['items' => []];
+        $cart = Session::get('cart', ['items'=>[]]);
+        if (!isset($cart['items']) || !is_array($cart['items'])) $cart = ['items'=>[]];
         return $cart;
     }
 
@@ -80,10 +70,9 @@ class KasirController extends Controller
         $subtotal = 0; $count = 0; $items = [];
         foreach ($cart['items'] as $row) {
             $line = (int)$row['price'] * (int)$row['qty'];
-            $subtotal += $line;
-            $count += (int)$row['qty'];
+            $subtotal += $line; $count += (int)$row['qty'];
             $items[] = [
-                'produk_id'       => $row['id'],
+                'produk_id'       => (int)$row['id'],
                 'name'            => $row['name'],
                 'price'           => (int)$row['price'],
                 'qty'             => (int)$row['qty'],
@@ -92,7 +81,8 @@ class KasirController extends Controller
                 'line_total_text' => $this->rupiah($line),
             ];
         }
-        Session::put('cart', ['items' => $cart['items']]);
+        Session::put('cart', ['items'=>$cart['items']]);
+
         return [
             'items'         => $items,
             'subtotal'      => $subtotal,
@@ -103,7 +93,7 @@ class KasirController extends Controller
 
     private function rupiah(int $n): string
     {
-        return 'Rp ' . number_format($n, 0, ',', '.');
+        return 'Rp ' . number_format($n,0,',','.');
     }
 
     public function dataKeranjang()
@@ -113,29 +103,26 @@ class KasirController extends Controller
 
     public function tambahKeKeranjang(Request $req)
     {
-        $data = $req->validate(['produk_id' => 'required|integer|exists:produk,id']);
+        $data = $req->validate(['produk_id'=>'required|integer|exists:produk,id']);
         $p = Produk::select('id','nama_barang','harga')->findOrFail($data['produk_id']);
 
         $cart = $this->ambilKeranjang();
         $items =& $cart['items'];
-
         if (!isset($items[$p->id])) {
-            $items[$p->id] = ['id'=>$p->id, 'name'=>$p->nama_barang, 'price'=>(int)$p->harga, 'qty'=>1];
+            $items[$p->id] = ['id'=>$p->id,'name'=>$p->nama_barang,'price'=>(int)$p->harga,'qty'=>1];
         } else {
             $items[$p->id]['qty'] = (int)$items[$p->id]['qty'] + 1;
         }
-
         return response()->json($this->simpanKeranjang($cart));
     }
 
     public function kurangKeranjang(Request $req)
     {
-        $data = $req->validate(['produk_id' => 'required|integer']);
+        $data = $req->validate(['produk_id'=>'required|integer']);
         $cart = $this->ambilKeranjang();
         $items =& $cart['items'];
-
         if (isset($items[$data['produk_id']])) {
-            $items[$data['produk_id']]['qty'] = max(0, (int)$items[$data['produk_id']]['qty'] - 1);
+            $items[$data['produk_id']]['qty'] = max(0,(int)$items[$data['produk_id']]['qty'] - 1);
             if ($items[$data['produk_id']]['qty'] === 0) unset($items[$data['produk_id']]);
         }
         return response()->json($this->simpanKeranjang($cart));
@@ -143,7 +130,7 @@ class KasirController extends Controller
 
     public function hapusDariKeranjang(Request $req)
     {
-        $data = $req->validate(['produk_id' => 'required|integer']);
+        $data = $req->validate(['produk_id'=>'required|integer']);
         $cart = $this->ambilKeranjang();
         unset($cart['items'][$data['produk_id']]);
         return response()->json($this->simpanKeranjang($cart));
@@ -156,12 +143,11 @@ class KasirController extends Controller
         return response()->json($this->simpanKeranjang(['items'=>[]]));
     }
 
-    /** ===== PROSES PEMBAYARAN ===== */
     public function prosesForm(Request $req)
     {
         try {
             $metode = (string) $req->input('metode');
-            if (!in_array($metode, ['qris','va_bca','va_bri','va_bni'], true)) {
+            if (!in_array($metode, ['cash','qris','va_bca','va_bri','va_bni'], true)) {
                 return back()->with('error', 'Metode pembayaran tidak valid.');
             }
 
@@ -170,130 +156,385 @@ class KasirController extends Controller
                 return back()->with('error', 'Keranjang kosong. Tambahkan produk terlebih dahulu.');
             }
 
-            $namaPelanggan = trim((string) $req->input('customer_name', ''));
-
-            /** 1) Buat Order (untuk Midtrans) */
-            $order = new Order();
-            $order->order_no = $this->buatNomorOrder();
-            $order->status   = 'pending';
-            $order->discount = 0; $order->tax = 0;
-            $order->subtotal = 0; $order->grand_total = 0;
-
-            if ($namaPelanggan !== '') {
-                $norm = Str::of($namaPelanggan)->squish()->lower()->value();
-                $customer = Customer::whereRaw('LOWER(TRIM(name)) = ?', [$norm])->first();
-                if (!$customer) $customer = Customer::create(['name' => Str::of($namaPelanggan)->squish()->value()]);
-                $order->customer_id = $customer->id;
-                Session::put('pending_customer_name', $customer->name);
+            if (trim((string) $req->input('customer_name','')) !== '') {
+                Session::put(
+                    'pending_customer_name',
+                    Str::of($req->input('customer_name'))->squish()->value()
+                );
             }
-            $order->save();
 
-            // Items → order_item (product_id dibiarkan NULL, simpan nama & harga dari tabel `produk`)
+            // =========================
+            // SIMPAN PENJUALAN & DETAIL
+            // =========================
+            $penjualan = Penjualan::create([
+                'tanggal'   => now(),
+                'user_id'   => Auth::id() ?: 1,
+                'metode'    => $metode,
+                'total'     => 0,
+                'bayar'     => 0,
+                'kembalian' => 0,
+            ]);
+
             $subtotal = 0;
             foreach ($cart['items'] as $row) {
                 $line = (int)$row['price'] * (int)$row['qty'];
-                $order->items()->create([
-                    'product_id' => null, // kolom ini milik tabel `product`, kita kosongkan
-                    'name'       => $row['name'],
-                    'price'      => (int)$row['price'],
-                    'qty'        => (int)$row['qty'],
-                    'line_total' => $line,
+                PenjualanDetail::create([
+                    'penjualan_id' => $penjualan->id,
+                    'produk_id'    => (int)$row['id'],
+                    'harga'        => (int)$row['price'],
+                    'qty'          => (int)$row['qty'],
+                    'subtotal'     => $line,
                 ]);
                 $subtotal += $line;
             }
-            $order->update(['subtotal'=>$subtotal,'grand_total'=>$subtotal]);
+            $penjualan->update(['total'=>$subtotal]);
 
-            /** 2) Mirror ke Penjualan + PenjualanDetail */
-            $penjualan = Penjualan::updateOrCreate(
-                ['kode_penjualan' => $order->order_no],
-                [
-                    'tanggal'   => now(),
-                    'user_id'   => Auth::id() ?: 1,
-                    'total'     => $subtotal,
-                    'bayar'     => 0,
-                    'kembalian' => 0,
-                    'metode'    => $metode,
-                ]
-            );
+            $kode = $penjualan->kode_penjualan;
 
-            $penjualan->details()->delete();
-            foreach ($cart['items'] as $row) {
-                PenjualanDetail::create([
-                    'penjualan_id' => $penjualan->id,
-                    'produk_id'    => (int)$row['id'],   // FK ke tabel `produk`
-                    'harga'        => (int)$row['price'],
-                    'qty'          => (int)$row['qty'],
-                    'subtotal'     => (int)$row['price'] * (int)$row['qty'],
+            // =========================
+            // PEMBAYARAN CASH
+            // =========================
+            if ($metode === 'cash') {
+                $req->validate(['cash_tendered' => 'required|integer|min:0']);
+                $bayar = (int) $req->input('cash_tendered', 0);
+                if ($bayar < $subtotal) {
+                    return back()->with('error', 'Uang cash kurang dari total.');
+                }
+                $kembalian = $bayar - $subtotal;
+
+                // Update penjualan + payment + jurnal dalam satu flow
+                DB::transaction(function () use ($penjualan, $kode, $subtotal, $bayar, $kembalian) {
+                    $penjualan->update([
+                        'bayar'     => $bayar,
+                        'kembalian' => $kembalian,
+                        'metode'    => 'cash',
+                    ]);
+
+                    Payment::create([
+                        'penjualan_id'       => $penjualan->id,
+                        'kode_penjualan'     => $kode,
+                        'pg'                 => 'cash',
+                        'pg_transaction_id'  => null,
+                        'pg_payment_type'    => 'cash',
+                        'gross_amount'       => $subtotal,
+                        'transaction_status' => 'settlement',
+                        'meta'               => [
+                            'order_no'      => $kode,
+                            'cash_tendered' => $bayar,
+                            'change'        => $kembalian,
+                        ],
+                        'paid_at'            => now(),
+                    ]);
+
+                    // === JURNAL OTOMATIS (CASH) ===
+                    $this->postJournalPenjualan($penjualan, 'cash');
+                });
+
+                $this->cleanupSesiDanDisplay($kode);
+
+                return redirect()->route('kasir.index')
+                    ->with('success', 'Transaksi CASH berhasil. Kembalian: '.$this->rupiah($kembalian));
+            }
+
+            // =========================
+            // PEMBAYARAN NON-CASH → MIDTRANS
+            // (QRIS / VA)
+            // =========================
+
+            $itemDetails = $penjualan->details()
+                ->with('produk:id,nama_barang')
+                ->get()
+                ->map(function($d){
+                    return [
+                        'id'       => 'SKU-'.$d->produk_id,
+                        'price'    => (int)$d->harga,
+                        'quantity' => (int)$d->qty,
+                        'name'     => $d->produk?->nama_barang ?? 'Item',
+                    ];
+                })->toArray();
+
+            if ($metode === 'qris') {
+                $res = $this->gateway->chargeQris($kode, (int)$penjualan->total, $itemDetails);
+                PaymentLog::create([
+                    'event'   => 'charge_qris',
+                    'payload' => json_encode($res),
+                ]);
+
+                $qrUrl    = collect($res['actions'] ?? [])->firstWhere('name','generate-qr-code')['url'] ?? null;
+                $qrString = $res['qr_string'] ?? null;
+
+                Payment::create([
+                    'penjualan_id'       => $penjualan->id,
+                    'kode_penjualan'     => $kode,
+                    'pg'                 => 'midtrans',
+                    'pg_transaction_id'  => $res['transaction_id'] ?? null,
+                    'pg_payment_type'    => 'qris',
+                    'gross_amount'       => $penjualan->total,
+                    'transaction_status' => $res['transaction_status'] ?? 'pending',
+                    'meta'               => [
+                        'order_no'  => $kode,
+                        'qr_url'    => $qrUrl,
+                        'qr_string' => $qrString,
+                    ],
+                    // paid_at akan diisi ketika settlement
+                ]);
+            } else {
+                $bank = substr($metode, 3); // bca/bri/bni
+                $res  = $this->gateway->chargeVa($kode, (int)$penjualan->total, $bank);
+                PaymentLog::create([
+                    'event'   => 'charge_va_'.$bank,
+                    'payload' => json_encode($res),
+                ]);
+
+                $vaNumber = $res['va_numbers'][0]['va_number'] ?? null;
+
+                Payment::create([
+                    'penjualan_id'       => $penjualan->id,
+                    'kode_penjualan'     => $kode,
+                    'pg'                 => 'midtrans',
+                    'pg_transaction_id'  => $res['transaction_id'] ?? null,
+                    'pg_payment_type'    => 'va_'.$bank,
+                    'gross_amount'       => $penjualan->total,
+                    'transaction_status' => $res['transaction_status'] ?? 'pending',
+                    'meta'               => [
+                        'order_no'  => $kode,
+                        'va_number' => $vaNumber,
+                    ],
+                    // paid_at akan diisi ketika settlement
                 ]);
             }
 
-            /** 3) Charge Midtrans */
-            switch ($metode) {
-                case 'qris': {
-                    $res = $this->gateway->buatTransaksiQris($order);
-                    PaymentLog::create(['order_id'=>$order->id,'event'=>'charge_qris','payload'=>json_encode($res)]);
-                    $qrUrl    = collect($res['actions'] ?? [])->firstWhere('name','generate-qr-code')['url'] ?? null;
-                    $qrString = $res['qr_string'] ?? null;
-
-                    Payment::create([
-                        'order_id'=>$order->id,'pg'=>'midtrans',
-                        'pg_transaction_id'=>$res['transaction_id'] ?? null,
-                        'pg_payment_type'=>'qris',
-                        'gross_amount'=>$order->grand_total,
-                        'transaction_status'=>$res['transaction_status'] ?? 'pending',
-                        'meta'=>['qr_url'=>$qrUrl,'qr_string'=>$qrString],
-                    ]);
-                    break;
-                }
-                case 'va_bca':
-                case 'va_bri':
-                case 'va_bni': {
-                    $bank = substr($metode, 3);
-                    $res  = $this->gateway->buatTransaksiVa($order, $bank);
-                    PaymentLog::create(['order_id'=>$order->id,'event'=>'charge_va_'.$bank,'payload'=>json_encode($res)]);
-                    $vaNumber = $res['va_numbers'][0]['va_number'] ?? null;
-
-                    Payment::create([
-                        'order_id'=>$order->id,'pg'=>'midtrans',
-                        'pg_transaction_id'=>$res['transaction_id'] ?? null,
-                        'pg_payment_type'=>'va_'.$bank,
-                        'gross_amount'=>$order->grand_total,
-                        'transaction_status'=>$res['transaction_status'] ?? 'pending',
-                        'meta'=>['va_number'=>$vaNumber],
-                    ]);
-                    break;
-                }
-            }
-
-            // Dorong ke layar + simpan pointer order
-            $this->dorongKeLayar('utama', $order->order_no);
-            Session::put('last_order_id', $order->id);
+            // tampilkan di layar customer
+            Display::updateOrCreate(['code'=>'utama'], ['order_no'=>$kode]);
+            Session::put('last_sales_code', $kode);
 
             return redirect()->route('kasir.index')
-                ->with('order_id', $order->id)
-                ->with('order_no', $order->order_no)
+                ->with('sales_code', $kode)
                 ->with('success', 'Transaksi dibuat. Layar customer otomatis menampilkan order.');
 
         } catch (\Throwable $e) {
-            Log::error('Kasir prosesForm error', ['msg'=>$e->getMessage(),'file'=>$e->getFile(),'line'=>$e->getLine()]);
+            Log::error('Kasir prosesForm error', [
+                'msg'  => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
             return back()->with('error', 'Gagal memproses pembayaran: '.$e->getMessage());
         }
     }
 
-    private function buatNomorOrder(): string
+    public function statusPenjualan(string $kode)
     {
-        $seq = str_pad((string) ((Order::max('id') ?? 0) + 1), 4, '0', STR_PAD_LEFT);
-        return 'ORD-'.now()->format('ymd').'-'.$seq;
+        $status = $this->hitungStatus($kode);
+
+        if ($status === 'pending') {
+            try {
+                if (method_exists($this->gateway, 'status')) {
+                    $res = $this->gateway->status($kode);
+                    PaymentLog::create([
+                        'event'   => 'status_poll',
+                        'payload' => json_encode($res),
+                    ]);
+
+                    $pgStatus = strtolower((string)($res['transaction_status'] ?? 'pending'));
+
+                    $pay = Payment::where('kode_penjualan',$kode)->latest()->first();
+                    if ($pay && $pgStatus && $pgStatus !== $pay->transaction_status) {
+                        $updateData = ['transaction_status'=>$pgStatus];
+                        if (in_array($pgStatus, ['settlement','capture'], true)) {
+                            $updateData['paid_at'] = now();
+                        }
+                        $pay->update($updateData);
+                    }
+
+                    if (in_array($pgStatus, ['settlement','capture'], true)) {
+                        $pj = Penjualan::where('kode_penjualan',$kode)->first();
+                        if ($pj) {
+                            $pj->update([
+                                'bayar'     => (int)$pj->total,
+                                'kembalian' => 0,
+                            ]);
+                        }
+                        $status = 'paid';
+                    } elseif ($pgStatus === 'expire') {
+                        $status = 'expired';
+                    } elseif (in_array($pgStatus, ['cancel','deny'], true)) {
+                        $status = 'cancelled';
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('statusPenjualan fallback error', [
+                    'kode' => $kode,
+                    'msg'  => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $total = (int) (Penjualan::where('kode_penjualan',$kode)->value('total') ?? 0);
+
+        // === JURNAL OTOMATIS UNTUK NON-CASH SAAT SUDAH PAID ===
+        if ($status === 'paid') {
+            try {
+                $pj = Penjualan::where('kode_penjualan',$kode)->first();
+                if ($pj) {
+                    $pay = Payment::where('kode_penjualan',$kode)->latest()->first();
+                    $paymentType = $pay?->pg_payment_type ?? $pj->metode;
+
+                    $this->postJournalPenjualan($pj, $paymentType);
+                }
+            } catch (\Throwable $ex) {
+                Log::warning('Gagal auto jurnal penjualan', [
+                    'kode' => $kode,
+                    'msg'  => $ex->getMessage(),
+                ]);
+            }
+        }
+
+        if (in_array($status, ['paid','expired','cancelled'], true)) {
+            $this->cleanupSesiDanDisplay($kode);
+        }
+
+        return response()->json([
+            'kode_penjualan' => $kode,
+            'status'         => $status,
+            'grand_total'    => $total,
+        ])->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0')
+          ->header('Pragma','no-cache');
     }
 
-    /** JSON untuk polling status */
-    public function show(Order $order)
+    private function hitungStatus(string $kode): string
     {
-        return response()->json([
-            'order_id'    => $order->id,
-            'order_no'    => $order->order_no,
-            'status'      => $order->status,
-            'grand_total' => (int) $order->grand_total,
+        $pj = Penjualan::where('kode_penjualan',$kode)->first();
+        if (!$pj) return 'pending';
+
+        if ((int)$pj->bayar >= (int)$pj->total && (int)$pj->total > 0) {
+            return 'paid';
+        }
+
+        $pay = Payment::where('kode_penjualan',$kode)->latest()->first()
+             ?: Payment::where('meta->order_no',$kode)->latest()->first();
+
+        if (!$pay) {
+            return 'pending';
+        }
+
+        $st = strtolower((string)($pay->transaction_status ?? 'pending'));
+        return match ($st) {
+            'settlement','capture' => 'paid',
+            'expire'               => 'expired',
+            'cancel','deny'        => 'cancelled',
+            default                => 'pending',
+        };
+    }
+
+    // =========================================================
+    //  FUNGSI BANTUAN: AUTO JURNAL PENJUALAN
+    // =========================================================
+
+    /**
+     * Generate nomor jurnal dengan format: JU-YYYYMM-XXXX
+     */
+    private function generateJournalEntryNo(string $date): string
+    {
+        // $date = '2025-11-13' dsb.
+        $prefix = 'JU-' . date('Ym', strtotime($date)) . '-';
+
+        $lastNo = DB::table('journal_entry')
+            ->where('entry_no', 'like', $prefix.'%')
+            ->orderByDesc('entry_no')
+            ->value('entry_no');
+
+        $next = 1;
+        if ($lastNo) {
+            $next = (int) substr($lastNo, -4) + 1;
+        }
+
+        return $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Auto-post jurnal penjualan ke journal_entry & journal_line
+     * - CASH     → Dr 1001 Kas,       Cr 4001 Penjualan Minuman
+     * - QRIS     → Dr 1002 Bank,      Cr 4001 Penjualan Minuman
+     * - VA_*     → Dr 1101 Piutang,   Cr 4001 Penjualan Minuman
+     * Keterangan di tiap baris = Penjualan PJL-XXXX (Lawan: Nama Akun Lawan)
+     */
+    private function postJournalPenjualan(Penjualan $penjualan, string $paymentType): void
+    {
+        $amount = (int) $penjualan->total;
+        if ($amount <= 0) {
+            return;
+        }
+
+        // Cegah jurnal dobel untuk penjualan yang sama
+        $already = DB::table('journal_entry')
+            ->where('source_type', Penjualan::class)
+            ->where('source_id', $penjualan->id)
+            ->exists();
+
+        if ($already) {
+            return;
+        }
+
+        // Mapping akun sesuai chart_of_account
+        $debitAccountId = match ($paymentType) {
+            'cash'                       => 1, // 1001 Kas
+            'qris'                       => 2, // 1002 Bank
+            'va_bca', 'va_bri', 'va_bni' => 3, // 1101 Piutang Usaha
+            default                      => 1,
+        };
+
+        $creditAccountId = 19; // 4001 Penjualan Minuman
+
+        // Tanggal jurnal pakai tanggal penjualan
+        $date = $penjualan->tanggal
+            ? date('Y-m-d', strtotime($penjualan->tanggal))
+            : now()->toDateString();
+
+        $entryNo    = $this->generateJournalEntryNo($date);
+        $headerMemo = 'Penjualan '.$penjualan->kode_penjualan;
+
+        // Ambil nama akun untuk keterangan lawan
+        $debitAcc  = DB::table('chart_of_account')->where('id', $debitAccountId)->first();
+        $creditAcc = DB::table('chart_of_account')->where('id', $creditAccountId)->first();
+
+        $debitName  = $debitAcc?->name  ?? 'Debit';
+        $creditName = $creditAcc?->name ?? 'Kredit';
+
+        $entryId = DB::table('journal_entry')->insertGetId([
+            'entry_no'    => $entryNo,
+            'date'        => $date,
+            'ref_no'      => $penjualan->kode_penjualan,
+            'memo'        => $headerMemo, // header keterangan umum
+            'source_type' => Penjualan::class,
+            'source_id'   => $penjualan->id,
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        // Baris DEBIT → memo: lawannya akun kredit
+        // Baris KREDIT → memo: lawannya akun debit
+        DB::table('journal_line')->insert([
+            [
+                'journal_entry_id' => $entryId,
+                'account_id'       => $debitAccountId,
+                'debit'            => $amount,
+                'credit'           => 0,
+                'memo'             => "Penjualan {$penjualan->kode_penjualan} (Lawan: {$creditName})",
+                'line_no'          => 1,
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ],
+            [
+                'journal_entry_id' => $entryId,
+                'account_id'       => $creditAccountId,
+                'debit'            => 0,
+                'credit'           => $amount,
+                'memo'             => "Penjualan {$penjualan->kode_penjualan} (Lawan: {$debitName})",
+                'line_no'          => 2,
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ],
         ]);
     }
+
 }

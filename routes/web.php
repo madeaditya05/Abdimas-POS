@@ -33,7 +33,6 @@ Route::middleware('guest')->group(function () {
 
 // ===== Auth only =====
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard_admin', fn() => view('tampilan.dashboard_admin'))->name('dashboard_admin');
 
     Route::get('/dashboard', [DashboardController::class,'index'])->name('dashboard');
     Route::get('/notifications', [DashboardController::class,'notifications'])->name('notifications');
@@ -51,9 +50,6 @@ Route::middleware('auth')->group(function () {
 
     // 🔄 route status baru berbasis kode penjualan
     Route::get('/kasir/status/{kode}',  [KasirController::class, 'statusPenjualan'])->name('kasir.status');
-
-    // (Opsional) route lama show order masih ada, tapi FE sudah tidak memakainya
-    Route::get('/kasir/orders/{order}',  [KasirController::class, 'show'])->name('kasir.orders.show');
 
     // Laporan (Kasir)
     Route::get('/reports/kasir',     [KasirReportController::class, 'index'])->name('kasir.rekap');
@@ -74,7 +70,7 @@ Route::middleware('auth')->group(function () {
 // Layar customer publik
 Route::get('/pembayaran', [CustomerPembayaranController::class, 'layar'])->name('customer.pembayaran.live');
 Route::get('/public/display/{code}', [CustomerPembayaranController::class, 'dataDisplay']);
-Route::get('/public/order/{orderNo}', [CustomerPembayaranController::class, 'dataPublik']);
+
 
 Route::prefix('app')->middleware('auth')->group(function () {
     Route::resource('bahan-baku', BahanBakuController::class)
