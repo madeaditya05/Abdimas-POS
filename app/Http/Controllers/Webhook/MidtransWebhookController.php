@@ -3,62 +3,51 @@
 namespace App\Http\Controllers\Webhook;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentLog;
-
-// penjualan
 use App\Models\Penjualan;
-
 use Illuminate\Http\Request;
 
 class MidtransWebhookController extends Controller
 {
     public function __invoke(Request $req)
     {
-        $payload = $req->all();
+        $p = $req->all();
+        PaymentLog::create(['event'=>'notification','payload'=>json_encode($p)]);
 
-        PaymentLog::create(['event'=>'notification','payload'=>json_encode($payload)]);
+        $kode   = $p['order_id'] ?? null;                     // = PJL-*
+        $status = $p['transaction_status'] ?? null;           // settlement|capture|pending|expire|cancel|deny
+        $fraud  = $p['fraud_status'] ?? null;
+        $gross  = (int)($p['gross_amount'] ?? 0);
+        $ptype  = $p['payment_type'] ?? null;
 
-        $orderNo = $payload['order_id'] ?? null;             // contoh: ORD-241029-0001 (== kode_penjualan)
-        $status  = $payload['transaction_status'] ?? null;   // capture|settlement|expire|cancel|deny
-        $fraud   = $payload['fraud_status'] ?? null;
-        $gross   = (int) ($payload['gross_amount'] ?? 0);
+        if (!$kode) return response('OK',200);
 
-        $order = Order::where('order_no', $orderNo)->first();
-        if (!$order) return response('OK', 200);
+        // update payment (cari by kode_penjualan atau meta->order_no)
+        $payment = Payment::where('kode_penjualan',$kode)
+                    ->orWhere('meta->order_no',$kode)
+                    ->latest()->first();
 
-        // update payment row
-        $payment = Payment::where('order_id',$order->id)->latest()->first();
         if ($payment) {
             $payment->update([
                 'transaction_status' => $status,
-                'fraud_status' => $fraud,
-                'paid_at' => in_array($status, ['capture','settlement']) ? now() : $payment->paid_at,
-                'signature_key' => $payload['signature_key'] ?? $payment->signature_key,
+                'fraud_status'       => $fraud,
+                'paid_at'            => in_array($status,['capture','settlement']) ? now() : $payment->paid_at,
+                'signature_key'      => $p['signature_key'] ?? $payment->signature_key,
             ]);
         }
 
-        // sinkronkan status order
-        if (in_array($status, ['capture','settlement'])) {
-            $order->update(['status' => 'paid']);
-        } elseif ($status === 'expire') {
-            $order->update(['status' => 'expired']);
-        } elseif (in_array($status, ['cancel','deny'])) {
-            $order->update(['status' => 'cancelled']);
-        }
-
-        // === Sinkron ke PENJUALAN ===
-        if ($pj = Penjualan::where('kode_penjualan', $orderNo)->first()) {
-            if (in_array($status, ['capture','settlement'])) {
+        // sinkronkan nilai di penjualan
+        if ($pj = Penjualan::where('kode_penjualan',$kode)->first()) {
+            if (in_array($status,['capture','settlement'])) {
                 $pj->update([
                     'bayar'     => $gross,
-                    'kembalian' => 0,
-                    'metode'    => $payment?->pg_payment_type ?: ($payload['payment_type'] ?? $pj->metode),
+                    'kembalian' => max(0, $gross - (int)$pj->total),
+                    'metode'    => $payment?->pg_payment_type ?: $ptype ?: $pj->metode,
                 ]);
             }
         }
 
-        return response('OK', 200);
+        return response('OK',200);
     }
 }

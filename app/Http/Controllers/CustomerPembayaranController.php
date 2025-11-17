@@ -2,114 +2,85 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\Payment;
 use App\Models\Display;
+use App\Models\Penjualan;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 
 class CustomerPembayaranController extends Controller
 {
-    /** Halaman layar customer berdasarkan NOMOR ORDER (ORD-...) */
-    public function halaman(string $orderNo)
-    {
-        $order = Order::with('items')->where('order_no', $orderNo)->firstOrFail();
-        return view('pembayaran.show', compact('order'));
-    }
-
-    /** View kosong: JS akan polling pointer layar */
+    /** Halaman layar publik: param ?layar=utama */
     public function layar(Request $req)
     {
-        $kode = $req->query('layar', 'utama'); // ?layar=utama
+        $kode = $req->query('layar', 'utama');
         return view('pembayaran.show', compact('kode'));
     }
 
-    /** Data publik untuk polling langsung dengan NOMOR ORDER (ORD-...) */
-    public function dataPublik(string $orderNo)
-    {
-        $order   = Order::with('items')->where('order_no', $orderNo)->firstOrFail();
-        $payment = Payment::where('order_id', $order->id)->latest('id')->first();
-
-        // Normalisasi meta (cast array atau decode manual)
-        $meta = is_array($payment?->meta)
-            ? $payment->meta
-            : (json_decode($payment?->meta ?? '[]', true) ?: []);
-
-        // "va_bca" -> "bca", "qris" tetap "qris"
-        $bankType = $payment?->pg_payment_type;
-        $bank = ($bankType && str_starts_with($bankType, 'va_')) ? substr($bankType, 3) : $bankType;
-
-        return response()->json([
-            'order_no'    => $order->order_no,
-            'status'      => $order->status,                     // pending|paid|expired|cancelled
-            'grand_total' => (int) $order->grand_total,
-            'items'       => $order->items->map(fn($i) => [
-                'name'       => $i->name,
-                'qty'        => (int) $i->qty,
-                'line_total' => (int) $i->line_total,
-            ]),
-            'qris' => [
-                'qr_url'    => $meta['qr_url']    ?? null,
-                'qr_string' => $meta['qr_string'] ?? null,
-            ],
-            'va' => [
-                'bank'      => $bank,
-                'va_number' => $meta['va_number'] ?? null,
-            ],
-        ]);
-    }
-
-    /** Data gabungan untuk layar publik:
-     *  pointer (display.code) -> order_no (ORD-...) -> order + payment
-     */
+    /** Data untuk layar: baca pointer -> ambil penjualan + detail + payment */
     public function dataDisplay(string $code = 'utama')
     {
-        $orderNo = Display::where('code', $code)->value('order_no'); // berisi NOMOR ORDER sekarang
+        $orderNo = Display::where('code', $code)->value('order_no');
+
         if (!$orderNo) {
             return response()->json([
-                'status' => 'idle',
-                'order_no' => null,
+                'status'      => 'idle',
+                'order_no'    => null,
                 'grand_total' => 0,
-                'items' => [],
-                'qris' => ['qr_url'=>null,'qr_string'=>null],
-                'va'   => ['bank'=>null,'va_number'=>null],
+                'items'       => [],
+                'qris'        => ['qr_url'=>null,'qr_string'=>null],
+                'va'          => ['bank'=>null,'va_number'=>null],
             ]);
         }
 
-        $order = Order::with('items')->where('order_no', $orderNo)->first();
-        if (!$order) {
+        $pj = Penjualan::with(['details.produk'])->where('kode_penjualan',$orderNo)->first();
+        if (!$pj) {
             return response()->json([
-                'status' => 'idle',
-                'order_no' => $orderNo,
+                'status'      => 'idle',
+                'order_no'    => $orderNo,
                 'grand_total' => 0,
-                'items' => [],
-                'qris' => ['qr_url'=>null,'qr_string'=>null],
-                'va'   => ['bank'=>null,'va_number'=>null],
+                'items'       => [],
+                'qris'        => ['qr_url'=>null,'qr_string'=>null],
+                'va'          => ['bank'=>null,'va_number'=>null],
             ]);
         }
 
-        $payment = Payment::where('order_id', $order->id)->latest('id')->first();
-        $meta = is_array($payment?->meta)
-            ? $payment->meta
-            : (json_decode($payment?->meta ?? '[]', true) ?: []);
+        $payment = Payment::where('kode_penjualan',$orderNo)->latest()->first()
+            ?: Payment::where('meta->order_no',$orderNo)->latest()->first();
 
-        $bankType = $payment?->pg_payment_type;
-        $bank = ($bankType && str_starts_with($bankType, 'va_')) ? substr($bankType, 3) : $bankType;
+        $items = $pj->details->map(function ($d) {
+            $nama = $d->produk?->nama_barang ?? $d->nama_produk ?? 'Item';
+            return ['name'=>$nama, 'qty'=>(int)$d->qty, 'line_total'=>(int)$d->subtotal];
+        });
+
+        // Tentukan status
+        $status = 'pending';
+        if ((int)$pj->bayar >= (int)$pj->total && (int)$pj->total > 0) {
+            $status = 'paid';
+        } else {
+            $st = strtolower((string)($payment->transaction_status ?? 'pending'));
+            $status = match ($st) {
+                'settlement','capture' => 'paid',
+                'expire'               => 'expired',
+                'cancel','deny'        => 'cancelled',
+                default                => 'pending',
+            };
+        }
 
         return response()->json([
-            'status'      => $order->status,
-            'order_no'    => $order->order_no,
-            'grand_total' => (int) $order->grand_total,
-            'items'       => $order->items->map(fn($i)=>[
-                'name'=>$i->name, 'qty'=>(int)$i->qty, 'line_total'=>(int)$i->line_total
-            ]),
-            'qris' => [
-                'qr_url'    => $meta['qr_url']    ?? null,
-                'qr_string' => $meta['qr_string'] ?? null,
+            'status'      => $status,
+            'order_no'    => $pj->kode_penjualan,
+            'grand_total' => (int) $pj->total,
+            'items'       => $items,
+            'qris'        => [
+                'qr_url'    => data_get($payment, 'meta.qr_url'),
+                'qr_string' => data_get($payment, 'meta.qr_string'),
             ],
-            'va'   => [
-                'bank'      => $bank,
-                'va_number' => $meta['va_number'] ?? null,
+            'va'          => [
+                'bank'      => $payment?->pg_payment_type,
+                'va_number' => data_get($payment, 'meta.va_number'),
             ],
         ]);
     }
+
+    /** Akses publik langsung pakai kode (opsional) */
 }
