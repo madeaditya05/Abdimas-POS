@@ -8,6 +8,7 @@ use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
 use App\Models\Payment;
 use App\Models\PaymentLog;
+use App\Models\Customer; // penting: pakai model Customer
 use App\Services\Payments\PaymentGateway;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -156,24 +157,56 @@ class KasirController extends Controller
                 return back()->with('error', 'Keranjang kosong. Tambahkan produk terlebih dahulu.');
             }
 
-            if (trim((string) $req->input('customer_name','')) !== '') {
-                Session::put(
-                    'pending_customer_name',
-                    Str::of($req->input('customer_name'))->squish()->value()
-                );
+            // Handle customer (tabel customer, kolom name, normalized_name)
+            $customerId = null;
+            $rawCustomerName = Str::of((string) $req->input('customer_name',''))
+                ->squish()
+                ->value();
+
+            if ($rawCustomerName !== '') {
+                // simpan di session supaya balik ke form masih keisi
+                Session::put('pending_customer_name', $rawCustomerName);
+
+                // normalisasi sama dengan generated column normalized_name
+                $normalized = Str::of($rawCustomerName)->trim()->lower();
+
+                // cari berdasarkan normalized_name (supaya "Manusia" dan "manusia" ketemu yang sama)
+                $customer = Customer::whereRaw('normalized_name = ?', [$normalized])->first();
+
+                if (! $customer) {
+                    // kalau belum ada, buat baru
+                    $customer = Customer::create([
+                        'name' => trim($rawCustomerName),
+                    ]);
+                } else {
+                    // opsional: kalau nama aslinya beda kapitalisasi, update biar rapi
+                    if ($customer->name !== $rawCustomerName) {
+                        $customer->name = $rawCustomerName;
+                        $customer->save();
+                    }
+                }
+
+                $customerId = $customer->id;
+            } else {
+                // kalau input kosong, hapus pending name
+                Session::forget('pending_customer_name');
             }
 
-            // =========================
-            // SIMPAN PENJUALAN & DETAIL
-            // =========================
-            $penjualan = Penjualan::create([
+            // Simpan penjualan dan detail
+            $dataPenjualan = [
                 'tanggal'   => now(),
                 'user_id'   => Auth::id() ?: 1,
                 'metode'    => $metode,
                 'total'     => 0,
                 'bayar'     => 0,
                 'kembalian' => 0,
-            ]);
+            ];
+
+            if (!is_null($customerId)) {
+                $dataPenjualan['customer_id'] = $customerId;
+            }
+
+            $penjualan = Penjualan::create($dataPenjualan);
 
             $subtotal = 0;
             foreach ($cart['items'] as $row) {
@@ -191,9 +224,7 @@ class KasirController extends Controller
 
             $kode = $penjualan->kode_penjualan;
 
-            // =========================
-            // PEMBAYARAN CASH
-            // =========================
+            // Pembayaran CASH
             if ($metode === 'cash') {
                 $req->validate(['cash_tendered' => 'required|integer|min:0']);
                 $bayar = (int) $req->input('cash_tendered', 0);
@@ -202,7 +233,6 @@ class KasirController extends Controller
                 }
                 $kembalian = $bayar - $subtotal;
 
-                // Update penjualan + payment + jurnal dalam satu flow
                 DB::transaction(function () use ($penjualan, $kode, $subtotal, $bayar, $kembalian) {
                     $penjualan->update([
                         'bayar'     => $bayar,
@@ -226,7 +256,7 @@ class KasirController extends Controller
                         'paid_at'            => now(),
                     ]);
 
-                    // === JURNAL OTOMATIS (CASH) ===
+                    // Jurnal otomatis cash
                     $this->postJournalPenjualan($penjualan, 'cash');
                 });
 
@@ -236,11 +266,7 @@ class KasirController extends Controller
                     ->with('success', 'Transaksi CASH berhasil. Kembalian: '.$this->rupiah($kembalian));
             }
 
-            // =========================
-            // PEMBAYARAN NON-CASH → MIDTRANS
-            // (QRIS / VA)
-            // =========================
-
+            // Pembayaran NON CASH → Midtrans (QRIS / VA)
             $itemDetails = $penjualan->details()
                 ->with('produk:id,nama_barang')
                 ->get()
@@ -276,7 +302,6 @@ class KasirController extends Controller
                         'qr_url'    => $qrUrl,
                         'qr_string' => $qrString,
                     ],
-                    // paid_at akan diisi ketika settlement
                 ]);
             } else {
                 $bank = substr($metode, 3); // bca/bri/bni
@@ -300,7 +325,6 @@ class KasirController extends Controller
                         'order_no'  => $kode,
                         'va_number' => $vaNumber,
                     ],
-                    // paid_at akan diisi ketika settlement
                 ]);
             }
 
@@ -371,7 +395,7 @@ class KasirController extends Controller
 
         $total = (int) (Penjualan::where('kode_penjualan',$kode)->value('total') ?? 0);
 
-        // === JURNAL OTOMATIS UNTUK NON-CASH SAAT SUDAH PAID ===
+        // Jurnal otomatis untuk non-cash saat status sudah paid
         if ($status === 'paid') {
             try {
                 $pj = Penjualan::where('kode_penjualan',$kode)->first();
@@ -426,16 +450,10 @@ class KasirController extends Controller
         };
     }
 
-    // =========================================================
-    //  FUNGSI BANTUAN: AUTO JURNAL PENJUALAN
-    // =========================================================
+    // Fungsi bantuan auto jurnal penjualan
 
-    /**
-     * Generate nomor jurnal dengan format: JU-YYYYMM-XXXX
-     */
     private function generateJournalEntryNo(string $date): string
     {
-        // $date = '2025-11-13' dsb.
         $prefix = 'JU-' . date('Ym', strtotime($date)) . '-';
 
         $lastNo = DB::table('journal_entry')
@@ -451,13 +469,6 @@ class KasirController extends Controller
         return $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Auto-post jurnal penjualan ke journal_entry & journal_line
-     * - CASH     → Dr 1001 Kas,       Cr 4001 Penjualan Minuman
-     * - QRIS     → Dr 1002 Bank,      Cr 4001 Penjualan Minuman
-     * - VA_*     → Dr 1101 Piutang,   Cr 4001 Penjualan Minuman
-     * Keterangan di tiap baris = Penjualan PJL-XXXX (Lawan: Nama Akun Lawan)
-     */
     private function postJournalPenjualan(Penjualan $penjualan, string $paymentType): void
     {
         $amount = (int) $penjualan->total;
@@ -475,7 +486,7 @@ class KasirController extends Controller
             return;
         }
 
-        // Mapping akun sesuai chart_of_account
+        // Mapping akun
         $debitAccountId = match ($paymentType) {
             'cash'                       => 1, // 1001 Kas
             'qris'                       => 2, // 1002 Bank
@@ -485,7 +496,6 @@ class KasirController extends Controller
 
         $creditAccountId = 19; // 4001 Penjualan Minuman
 
-        // Tanggal jurnal pakai tanggal penjualan
         $date = $penjualan->tanggal
             ? date('Y-m-d', strtotime($penjualan->tanggal))
             : now()->toDateString();
@@ -493,7 +503,6 @@ class KasirController extends Controller
         $entryNo    = $this->generateJournalEntryNo($date);
         $headerMemo = 'Penjualan '.$penjualan->kode_penjualan;
 
-        // Ambil nama akun untuk keterangan lawan
         $debitAcc  = DB::table('chart_of_account')->where('id', $debitAccountId)->first();
         $creditAcc = DB::table('chart_of_account')->where('id', $creditAccountId)->first();
 
@@ -504,15 +513,13 @@ class KasirController extends Controller
             'entry_no'    => $entryNo,
             'date'        => $date,
             'ref_no'      => $penjualan->kode_penjualan,
-            'memo'        => $headerMemo, // header keterangan umum
+            'memo'        => $headerMemo,
             'source_type' => Penjualan::class,
             'source_id'   => $penjualan->id,
             'created_at'  => now(),
             'updated_at'  => now(),
         ]);
 
-        // Baris DEBIT → memo: lawannya akun kredit
-        // Baris KREDIT → memo: lawannya akun debit
         DB::table('journal_line')->insert([
             [
                 'journal_entry_id' => $entryId,
@@ -536,5 +543,4 @@ class KasirController extends Controller
             ],
         ]);
     }
-
 }
