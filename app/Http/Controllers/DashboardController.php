@@ -39,8 +39,10 @@ class DashboardController extends Controller
             ->pluck('total', 'y');
 
         // ---- Pie chart produk terlaris
-        $topProductsChart = \App\Models\OrderItem::select('product_id',
-                \DB::raw('SUM(qty) as sold'))
+        $topProductsChart = OrderItem::select(
+                'product_id',
+                DB::raw('SUM(qty) as sold')
+            )
             ->groupBy('product_id')
             ->orderByDesc('sold')
             ->limit(5)
@@ -53,9 +55,10 @@ class DashboardController extends Controller
             ->sum('grand_total');
 
         $newOrders = \App\Models\Order::where('status','pending')->count();
-        $lowStockCount = \App\Models\Product::whereColumn('stock','<=','min_stock')->count();
+        $lowStockCount = Produk::where('stok', '<=', 0)->count();
         $newCustomers = 12;
-        $lowStockItems = \App\Models\Product::whereColumn('stock','<=','min_stock')->get();
+        $lowStockItems = Produk::where('stok', '<=', 0)->get();
+
 
         return view('tampilan.dashboard', compact(
             'salesToday', 'newOrders', 'lowStockCount', 'newCustomers',

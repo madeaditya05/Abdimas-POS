@@ -49,7 +49,7 @@
                         <path d="m3.3 7 8.7 5 8.7-5"/>
                         <path d="M12 22V12"/>
                     </svg>
-                    <span>Inventaris</span>
+                    <span>Persediaan</span>
                 </a>
                 <a href="{{ route('kasir.rekap') }}" class="nav-item {{ request()->is('reports/kasir') ? 'active' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

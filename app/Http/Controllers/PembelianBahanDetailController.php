@@ -3,64 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\PembelianBahanDetail;
-use App\Http\Requests\StorePembelianBahanDetailRequest;
-use App\Http\Requests\UpdatePembelianBahanDetailRequest;
+use Illuminate\Http\Request;
 
 class PembelianBahanDetailController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Tampilkan daftar Pembelian Bahan Detail (view-only).
      */
-    public function index()
-    {
-        //
+    public function index(Request $request)
+{
+    $search = trim((string) $request->get('q', ''));
+    $sort   = $request->get('sort', 'created_at');
+    $dir    = $request->get('dir', 'desc');
+
+    $allowedSort = ['created_at', 'expired_date', 'qty_beli', 'harga_satuan', 'subtotal'];
+    if (! in_array($sort, $allowedSort, true)) {
+        $sort = 'created_at';
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+    $dir = $dir === 'asc' ? 'asc' : 'desc';
+
+    $query = PembelianBahanDetail::query()->with('header'); // relasi ke PembelianBahan
+
+    if ($search !== '') {
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('header', function ($qh) use ($search) {
+                $qh->where('kode_pembelian', 'like', '%'.$search.'%');
+            })->orWhere('nama_bahan', 'like', '%'.$search.'%');
+        });
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StorePembelianBahanDetailRequest $request)
-    {
-        //
-    }
+    $query->orderBy($sort, $dir);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(PembelianBahanDetail $pembelianBahanDetail)
-    {
-        //
-    }
+    $items = $query->paginate(10)->withQueryString();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(PembelianBahanDetail $pembelianBahanDetail)
-    {
-        //
-    }
+    return view('pembelian_bahan_detail.index', [
+        'items'  => $items,
+        'search' => $search,
+        'sort'   => $sort,
+        'dir'    => $dir,
+    ]);
+}
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdatePembelianBahanDetailRequest $request, PembelianBahanDetail $pembelianBahanDetail)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(PembelianBahanDetail $pembelianBahanDetail)
-    {
-        //
-    }
 }

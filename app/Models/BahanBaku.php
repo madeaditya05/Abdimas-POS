@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\StokMutasi;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -54,10 +55,21 @@ class BahanBaku extends Model
         return $prefix . str_pad((string) $next, $pad, '0', STR_PAD_LEFT);
     }
 
-
-        public function mutasi()
+    public function mutasi()
     {
         return $this->hasMany(\App\Models\StokMutasi::class, 'bahan_baku_id');
+    }
+
+    /**
+     * Accessor stok:
+     * gunakan helper StokMutasi::getStock() sebagai satu-satunya sumber perhitungan stok.
+     * (IN - OUT, termasuk penyesuaian yang juga dicatat sebagai IN/OUT di stok_mutasi)
+     *
+     * Kolom DB 'stok' dibiarkan sebagai legacy/cache dan tidak dipakai di UI.
+     */
+    public function getStokAttribute()
+    {
+        return StokMutasi::getStock($this->id);
     }
 
     protected static function booted(): void

@@ -6,291 +6,1166 @@
    ========================================================= */
 
 /* ---------- Token warna ringan ---------- */
-:root{
-  --bb-bg:#ffffff;
-  --bb-soft:#f8fafc;
-  --bb-line:#e5e7eb;
-  --bb-text:#0f172a;
-  --bb-muted:#64748b;
-  --bb-accent:#0f766e;   /* hijau-kopi */
-  --bb-accent-2:#10b981; /* hijau cerah */
-  --bb-warn:#f59e0b;
-  --bb-danger:#ef4444;
-  --bb-surface:#fcfdfd;
+:root {
+    --bb-bg: #ffffff;
+    --bb-soft: #f8fafc;
+    --bb-line: #e5e7eb;
+    --bb-text: #0f172a;
+    --bb-muted: #64748b;
+    --bb-accent: #0f766e; /* hijau-kopi */
+    --bb-accent-2: #10b981; /* hijau cerah */
+    --bb-warn: #f59e0b;
+    --bb-danger: #ef4444;
+    --bb-surface: #fcfdfd;
 }
 
 /* =========================================================
    INDEX: Header + Filter Bar
    ========================================================= */
-.card .card-header{
-  padding:16px;
-  border-bottom:1px solid var(--bb-line);
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
+.card .card-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--bb-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
-.card .card-header h2{
-  margin:0; font-size:26px; font-weight:800; letter-spacing:.2px; color:var(--bb-text);
-}
-
-.filter-bar{
-  margin:12px 0; padding:0 16px 12px; gap:10px;
-  display:grid; align-items:center;
-  grid-template-columns: 1fr 220px 200px auto auto; /* search, kategori, aktif, apply, reset */
-}
-@media (max-width: 1024px){
-  .filter-bar{ grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 640px){
-  .filter-bar{ grid-template-columns: 1fr; }
+.card .card-header h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: var(--bb-text);
 }
 
-.filter-bar input[type="text"]{
-  height:38px; width:100%;
-  border:1px solid var(--bb-line); border-radius:10px;
-  padding:8px 12px; background:var(--bb-bg); color:var(--bb-text);
+.filter-bar {
+    margin: 12px 0;
+    padding: 0 16px 12px;
+    gap: 10px;
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1fr 220px 200px auto auto; /* search, kategori, aktif, apply, reset */
 }
-.filter-bar input[type="text"]::placeholder{ color:#94a3b8; }
+@media (max-width: 1024px) {
+    .filter-bar {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 640px) {
+    .filter-bar {
+        grid-template-columns: 1fr;
+    }
+}
+
+.filter-bar input[type="text"] {
+    height: 38px;
+    width: 100%;
+    border: 1px solid var(--bb-line);
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: var(--bb-bg);
+    color: var(--bb-text);
+}
+.filter-bar input[type="text"]::placeholder {
+    color: #94a3b8;
+}
 
 /* Tombol apply/reset */
-.filter-bar .btn{
-  height:38px; display:inline-flex; align-items:center; justify-content:center;
-  border-radius:999px; padding:0 16px; font-weight:700;
+.filter-bar .btn {
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0 16px;
+    font-weight: 700;
 }
-.filter-bar .btn.btn--coffee{
-  border:1px solid var(--bb-accent); color:var(--bb-accent); background:#fff;
+.filter-bar .btn.btn--coffee {
+    border: 1px solid var(--bb-accent);
+    color: var(--bb-accent);
+    background: #fff;
 }
-.filter-bar .btn.btn--coffee:hover{ background:#ecfdf5; }
-.filter-bar a.btn{ border:1px solid var(--bb-line); color:#475569; background:#fff; }
-.filter-bar a.btn:hover{ background:var(--bb-soft); }
+.filter-bar .btn.btn--coffee:hover {
+    background: #ecfdf5;
+}
+.filter-bar a.btn {
+    border: 1px solid var(--bb-line);
+    color: #475569;
+    background: #fff;
+}
+.filter-bar a.btn:hover {
+    background: var(--bb-soft);
+}
 
 /* =========================================================
    INDEX: Custom Dropdown (.dd)
    ========================================================= */
-.dd{ position:relative; min-width:200px; }
-.dd .dd-toggle{
-  height:38px; width:100%; background:var(--bb-bg); color:var(--bb-text);
-  border:1px solid var(--bb-line); border-radius:10px; padding:0 12px;
-  display:flex;align-items:center;justify-content:space-between; gap:10px;
+.dd {
+    position: relative;
+    min-width: 200px;
 }
-.dd .dd-caret{
-  width:0;height:0; border-left:5px solid transparent; border-right:5px solid transparent;
-  border-top:6px solid #94a3b8;
+.dd .dd-toggle {
+    height: 38px;
+    width: 100%;
+    background: var(--bb-bg);
+    color: var(--bb-text);
+    border: 1px solid var(--bb-line);
+    border-radius: 10px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
-.dd .dd-menu{
-  position:absolute; inset:auto 0  auto 0; top:44px; z-index:30;
-  background:var(--bb-bg); border:1px solid var(--bb-line); border-radius:12px;
-  box-shadow:0 14px 40px rgba(2,6,23,.10);
-  padding:6px; display:none; max-height:260px; overflow:auto;
+.dd .dd-caret {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #94a3b8;
 }
-.dd.open .dd-menu{ display:block; }
-.dd .dd-item{
-  padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--bb-text);
+.dd .dd-menu {
+    position: absolute;
+    inset: auto 0 auto 0;
+    top: 44px;
+    z-index: 30;
+    background: var(--bb-bg);
+    border: 1px solid var(--bb-line);
+    border-radius: 12px;
+    box-shadow: 0 14px 40px rgba(2, 6, 23, 0.1);
+    padding: 6px;
+    display: none;
+    max-height: 260px;
+    overflow: auto;
 }
-.dd .dd-item:hover{ background:var(--bb-soft); }
-.dd .dd-item.active{ background:#ecfdf5; color:#065f46; font-weight:700; }
+.dd.open .dd-menu {
+    display: block;
+}
+.dd .dd-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--bb-text);
+}
+.dd .dd-item:hover {
+    background: var(--bb-soft);
+}
+.dd .dd-item.active {
+    background: #ecfdf5;
+    color: #065f46;
+    font-weight: 700;
+}
 
 /* =========================================================
    INDEX: Tabel
    ========================================================= */
-.table-wrap{
-  border:1px solid var(--bb-line); border-radius:14px; overflow:auto;
-  background:var(--bb-bg);
-  box-shadow:0 8px 24px rgba(2,6,23,.06);
+.table-wrap {
+    border: 1px solid var(--bb-line);
+    border-radius: 14px;
+    overflow: auto;
+    background: var(--bb-bg);
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.06);
 }
-.table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px; }
-.table thead th{
-  background:var(--bb-soft); position:sticky; top:0; z-index:1;
-  color:var(--bb-text); font-weight:800; font-size:14px; letter-spacing:.2px;
-  padding:12px 14px; border-bottom:1px solid var(--bb-line); text-align:left;
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 980px;
 }
-.table tbody td{
-  padding:14px; border-top:1px solid #f1f5f9; vertical-align:middle; color:var(--bb-text);
+.table thead th {
+    background: var(--bb-soft);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: var(--bb-text);
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--bb-line);
+    text-align: left;
 }
-.table tbody tr:hover{ background:var(--bb-surface); }
+.table tbody td {
+    padding: 14px;
+    border-top: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: var(--bb-text);
+}
+.table tbody tr:hover {
+    background: var(--bb-surface);
+}
 
-.table .num{ text-align:right; font-variant-numeric: tabular-nums; }
-.badge{
-  background:#eef2ff; color:#1d4ed8; border:1px solid #dbeafe;
-  padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700;
+.table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
-.muted{ color:var(--bb-muted); }
+.badge {
+    background: #eef2ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.muted {
+    color: var(--bb-muted);
+}
 
 /* boolean aktif */
-.bool{ display:inline-flex; align-items:center; gap:8px; font-weight:700; }
-.bool-dot{ width:10px; height:10px; border-radius:999px; background:#e5e7eb; display:inline-block; }
-.bool--yes .bool-dot{ background:#22c55e; }
-.bool--no  .bool-dot{ background:#ef4444; }
+.bool {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+.bool-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    display: inline-block;
+}
+.bool--yes .bool-dot {
+    background: #22c55e;
+}
+.bool--no .bool-dot {
+    background: #ef4444;
+}
 
 /* aksi */
-.actions{ display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
-.btn.btn--sm{ padding:6px 10px; border-radius:10px; font-size:13px; }
-.btn.btn--warning{ background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
-.btn.btn--danger{ background:#fee2e2; color:#7f1d1d; border:1px solid #fecaca; }
-.btn.btn--warning:hover{ background:#fde68a; }
-.btn.btn--danger:hover{ background:#fecaca; }
+.actions {
+    display: flex;
+    justify-content: center; /* tengah, bukan ujung kanan */
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.btn.btn--sm {
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+.btn.btn--warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+.btn.btn--danger {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border: 1px solid #fecaca;
+}
+.btn.btn--warning:hover {
+    background: #fde68a;
+}
+.btn.btn--danger:hover {
+    background: #fecaca;
+}
 
 /* pagination (Laravel default) */
-.pagination{
-  display:flex; gap:6px; align-items:center; justify-content:flex-end; padding:12px 4px;
+.pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 12px 4px;
 }
-.page-link{
-  display:inline-flex; align-items:center; justify-content:center;
-  min-width:34px; height:34px; padding:0 12px;
-  border:1px solid var(--bb-line); border-radius:999px; background:#fff; color:var(--bb-text);
-  font-weight:700; text-decoration:none;
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--bb-line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--bb-text);
+    font-weight: 700;
+    text-decoration: none;
 }
-.page-item.active .page-link{ background:var(--bb-accent); border-color:var(--bb-accent); color:#fff; }
-.page-link:hover{ background:var(--bb-soft); }
+.page-item.active .page-link {
+    background: var(--bb-accent);
+    border-color: var(--bb-accent);
+    color: #fff;
+}
+.page-link:hover {
+    background: var(--bb-soft);
+}
 
 /* =========================================================
    FORM (Create/Edit + partial _form)
    ========================================================= */
-.form{
-  padding:16px;
+.form {
+    padding: 16px;
 }
-.form-section{
-  background:var(--bb-bg); border:1px solid var(--bb-line);
-  border-radius:14px; padding:16px; margin-bottom:14px;
-  box-shadow:0 6px 18px rgba(2,6,23,.04);
+.form-section {
+    background: var(--bb-bg);
+    border: 1px solid var(--bb-line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.04);
 }
-.form-title{
-  font-size:16px; font-weight:800; color:var(--bb-text);
-  margin-bottom:12px; letter-spacing:.2px;
+.form-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--bb-text);
+    margin-bottom: 12px;
+    letter-spacing: 0.2px;
 }
 
 /* grid responsif */
-.form-grid{
-  display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px;
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
-.form-grid .span-2{ grid-column: span 2 / span 2; }
-@media (max-width: 800px){
-  .form-grid{ grid-template-columns: 1fr; }
-  .form-grid .span-2{ grid-column: auto; }
+.form-grid .span-2 {
+    grid-column: span 2 / span 2;
+}
+@media (max-width: 800px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-grid .span-2 {
+        grid-column: auto;
+    }
 }
 
 /* field, input, textarea */
-.form-field label, .form-check label{
-  display:block; font-size:13px; font-weight:700; color:#334155; margin-bottom:6px;
+.form-field label,
+.form-check label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
 }
-.form-input, .form-textarea{
-  width:100%; border:1px solid var(--bb-line); border-radius:10px;
-  background:#fff; color:var(--bb-text);
-  padding:10px 12px; font-size:14px;
+.form-input,
+.form-textarea {
+    width: 100%;
+    border: 1px solid var(--bb-line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--bb-text);
+    padding: 10px 12px;
+    font-size: 14px;
 }
-.form-input:focus, .form-textarea:focus{
-  outline:none; border-color:#94d5cc; box-shadow:0 0 0 4px rgba(16,185,129,.15);
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #3b281c;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
 }
-.form-textarea{ min-height:120px; resize:vertical; }
+.form-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
 
 /* checkbox */
-.form-check{ display:flex; align-items:center; gap:10px; }
-.form-check input[type="checkbox"]{
-  width:16px; height:16px; accent-color:var(--bb-accent);
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--bb-accent);
 }
 
 /* help text */
-.form-help{ margin-top:6px; color:var(--bb-muted); font-size:12px; }
+.form-help {
+    margin-top: 6px;
+    color: var(--bb-muted);
+    font-size: 12px;
+}
 
 /* dropdown di form (pakai .dd yang sama) */
-.form .dd .dd-toggle{ height:40px; }
-.form .dd .dd-menu{ top:48px; }
+.form .dd .dd-toggle {
+    height: 40px;
+}
+.form .dd .dd-menu {
+    top: 48px;
+}
 
 /* file input */
-.file-field{
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-  border:1px dashed var(--bb-line); border-radius:12px; padding:10px 12px;
-  background:#fff;
+.file-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+
+    width: 100%; /* ⬅️ ini yang bikin full span */
+
+    /* ⬇️ ganti dari hijau ke abu netral */
+    border: 1px solid #d1d5db; /* gray-300 */
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #fff;
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease,
+        background 0.15s ease;
 }
-.file-input{ position:absolute; left:-9999px; }
-.file-btn{
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  padding:8px 14px; border-radius:10px; background:var(--bb-soft);
-  color:#0f172a; font-weight:700; cursor:pointer; border:1px solid var(--bb-line);
+
+/* hover coklat */
+.file-field:hover {
+    border-color: #3b2f2f; /* coklat */
+    background: #faf5f0;
 }
-.file-btn:hover{ background:#eef2f7; }
-.file-name{ color:var(--bb-muted); font-size:14px; }
-.file-name.is-empty{ opacity:.8; font-style:italic; }
-.file-field.is-focus{ box-shadow:0 0 0 4px rgba(16,185,129,.12); }
+
+/* fokus (waktu input di-select) -> coklat juga */
+.file-field.is-focus {
+    border-color: #3b2f2f !important;
+    box-shadow: 0 0 0 3px rgba(59, 47, 47, 0.2) !important;
+}
+
+.file-input {
+    position: absolute;
+    left: -9999px;
+}
+.file-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: var(--bb-soft);
+    color: #0f172a;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--bb-line);
+}
+.file-btn:hover {
+    background: #eef2f7;
+}
+.file-name {
+    color: var(--bb-muted);
+    font-size: 14px;
+}
+.file-name.is-empty {
+    opacity: 0.8;
+    font-style: italic;
+}
 
 /* preview image */
-.preview-img{
-  display:block; max-width:220px; max-height:160px; object-fit:cover;
-  border-radius:12px; border:1px solid var(--bb-line);
+.preview-img {
+    display: block;
+    max-width: 220px;
+    max-height: 160px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid var(--bb-line);
 }
 
 /* aksi form */
-.form-actions{
-  display:flex; justify-content:flex-end; gap:10px; padding:14px 0 2px;
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 0 2px;
 }
-.form-actions .btn{
-  padding:10px 16px; border-radius:12px; font-weight:800; border:1px solid var(--bb-line);
-  background:#fff; color:#0f172a;
+.form-actions .btn {
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 800;
+    border: 1px solid var(--bb-line);
+    background: #fff;
+    color: #0f172a;
 }
-.form-actions .btn:hover{ background:var(--bb-soft); }
-.form-actions .btn--filled.btn--success{
-  background:var(--bb-accent); border-color:var(--bb-accent); color:#fff;
+.form-actions .btn:hover {
+    background: var(--bb-soft);
 }
-.form-actions .btn--filled.btn--success:hover{ background:#0e665f; }
+/* .form-actions .btn--filled.btn--success {
+    background: var(--bb-accent);
+    border-color: var(--bb-accent);
+    color: #fff;
+}
+.form-actions .btn--filled.btn--success:hover {
+    background: #0e665f;
+} */
 
 /* =========================================================
    DARK / COFFEE THEME (opsional – bila body ada class)
    ========================================================= */
-body.theme-coffee{
-  --bb-bg:#2e221c;
-  --bb-soft:#3a2c25;
-  --bb-line:#3c2e26;
-  --bb-text:#f2e9e4;
-  --bb-muted:#c8bdb6;
-  --bb-surface:#35271f;
-}
+/* body.theme-coffee {
+    --bb-bg: #2e221c;
+    --bb-soft: #3a2c25;
+    --bb-line: #3c2e26;
+    --bb-text: #f2e9e4;
+    --bb-muted: #c8bdb6;
+    --bb-surface: #35271f;
+} */
 
 /* ==== FIX: Bahan Baku – no horizontal scroll + inline actions ==== */
 
 /* Table should fit container (no forced min-width) */
-.table-wrap{ overflow-x: hidden; }               /* jangan auto; kita rapikan lebar cell */
-.table{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0;
-  table-layout:auto;                             /* biar kolom fleksibel */
-  min-width:0 !important;                        /* override min-width sebelumnya */
+.table-wrap {
+    overflow-x: hidden;
+} /* jangan auto; kita rapikan lebar cell */
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto; /* biar kolom fleksibel */
+    min-width: 0 !important; /* override min-width sebelumnya */
 }
 
 /* Izinkan teks membungkus agar tidak melar ke kanan */
 .table thead th,
-.table tbody td{
-  white-space: normal !important;
-  word-break: break-word;
-  padding:12px 10px;                             /* sedikit lebih rapat */
+.table tbody td {
+    white-space: normal !important;
+    word-break: break-word;
+    padding: 12px 10px; /* sedikit lebih rapat */
 }
 
 /* Kolom angka tetap rapi */
-.table .num{ text-align:right; font-variant-numeric: tabular-nums; }
+.table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
 
 /* Aksi: pastikan 1 baris, bukan menumpuk */
-.table td:last-child .actions{
-  display:flex !important;
-  flex-wrap:nowrap;
-  gap:8px;
-  justify-content:flex-start;                    /* atau flex-end jika mau nempel kanan */
-  align-items:center;
-  white-space:nowrap;                            /* cegah wrap di antara tombol */
+.table td:last-child .actions {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 8px;
+    justify-content: flex-start; /* atau flex-end jika mau nempel kanan */
+    align-items: center;
+    white-space: nowrap; /* cegah wrap di antara tombol */
 }
 
 /* Form hapus jangan block */
-.table td:last-child .actions form{ display:inline; margin:0; }
+.table td:last-child .actions form {
+    display: inline;
+    margin: 0;
+}
 
 /* Tombol kecil agar muat 2 dalam kolom ~130px */
-.table td:last-child .actions .btn{
-  display:inline-flex;
-  width:auto;
-  padding:6px 8px;
-  font-size:12px;
-  line-height:1;
-  border-radius:10px;
+.table td:last-child .actions .btn {
+    display: inline-flex;
+    width: auto;
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 10px;
 }
 
 /* Badge kategori sedikit lebih kecil biar hemat lebar */
-.badge{ padding:3px 8px; font-size:12px; }
+.badge {
+    padding: 3px 8px;
+    font-size: 12px;
+}
 
 /* Jika masih ada halaman yang memaksa nowrap global, ini hajar habis */
-.table *{ white-space: normal; }
+.table * {
+    white-space: normal;
+}
+
+/* => COUPLE OF BUTTON ====================================================== */
+
+/* ====== FILTER BUTTON – pill outline dark ====== */
+
+/* base button di filter-bar (dan umum di halaman ini) */
+.filter-bar .btn,
+.actions .btn,
+.card .card-header .btn {
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 18px;
+
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+
+    background: transparent;
+    color: var(--bb-text);
+}
+
+/* ---------- outline utama (Terapkan & Reset) ---------- */
+.filter-bar .btn--outline-coffee {
+    border-color: #111827 !important; /* dark slate */
+    color: #111827 !important;
+}
+
+.filter-bar .btn--outline-coffee:hover {
+    background: #111827 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
+}
+
+/* kalau button-nya <a> biar ga ketimpa underline */
+.filter-bar a.btn--outline-coffee {
+    text-decoration: none;
+}
+
+/* =========================================================
+   VARIAN GLOBAL: success / warning / danger (pill outline)
+   Dipakai untuk:
+   - Tombol Tambah/Buat Baru  -> btn--outline-success
+   - Tombol Edit              -> btn--outline-warning
+   - Tombol Hapus/Delete      -> btn--outline-danger
+   ========================================================= */
+
+/* SUCCESS (Tambah/Buat Baru) */
+.btn.btn--outline-success {
+    border-color: #16a34a !important; /* hijau */
+    color: #16a34a !important;
+    background: transparent !important;
+}
+.btn.btn--outline-success:hover {
+    background: #16a34a !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+}
+
+/* WARNING (Edit) */
+.btn.btn--outline-warning {
+    border-color: #f59e0b !important; /* kuning */
+    color: #b45309 !important;
+    background: transparent !important;
+}
+.btn.btn--outline-warning:hover {
+    background: #f59e0b !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
+}
+
+/* DANGER (Hapus) */
+.btn.btn--outline-danger {
+    border-color: #ef4444 !important; /* merah */
+    color: #b91c1c !important;
+    background: transparent !important;
+}
+.btn.btn--outline-danger:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+}
+
+/* tombol icon di kolom Aksi */
+.actions .btn.btn--icon {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0; /* biar gak ada jarak teks */
+    line-height: 1;
+}
+
+/* SVG di dalam tombol icon */
+.actions .btn.btn--icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+}
+
+/* sr-only buat teks aksesibilitas */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.table thead th {
+    /* ... properti lain biarin */
+    text-align: center;
+}
+
+/* isi kolom angka (tbody) tetap rata kanan */
+/* Body tabel: center juga */
+.table tbody td {
+    padding: 14px;
+    border-top: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: var(--bb-text);
+    text-align: center; /* <- center isi */
+}
+
+/* Tombol dengan icon + text (contoh: Buat Baru) */
+.btn--with-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px; /* jarak icon–text */
+}
+
+/* Icon kecil di dalam tombol (Heroicons) */
+.btn--with-icon .icon-inline {
+    width: 16px;
+    height: 16px;
+    stroke-width: 1.8;
+    color: currentColor; /* ikut warna teks tombol */
+}
+
+/* =========================================================
+   FOCUS STATE COFFEE THEME
+   ========================================================= */
+
+/* Semua input & textarea saat fokus */
+.form-input:focus,
+.form-textarea:focus,
+.input-with-icon__field:focus {
+    outline: none;
+    border-color: #3b2f2f !important; /* coffee dark */
+    box-shadow: 0 0 0 3px rgba(59, 47, 47, 0.25) !important;
+}
+
+.file-field .file-input:focus {
+    outline: none;
+    box-shadow: none;
+}
+s
+/* warna hover dropdown = coklat lembut */
+.dd .dd-item:hover {
+    background: #f3ebe5; /* coklat creamy */
+    color: #5b3a29; /* text coklat gelap */
+}
+
+.dd .dd-item.active {
+    background: #f3ebe5;
+    color: #5b3a29;
+    font-weight: 700;
+}
+
+.dd .dd-item {
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* =========================================================
+   FIX: Hapus aksen hijau di dropdown, ganti coffee
+   ========================================================= */
+
+/* state default tombol dropdown */
+.dd .dd-toggle {
+    border-color: var(--bb-line);
+    box-shadow: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* hover, focus, dan saat dropdown kebuka */
+.dd .dd-toggle:hover,
+.dd .dd-toggle:focus,
+.dd .dd-toggle:focus-visible,
+.dd.open .dd-toggle {
+    outline: none;
+    border-color: #3b2f2f !important; /* coffee dark */
+    box-shadow: 0 0 0 3px rgba(59, 47, 47, 0.25) !important;
+}
+
+/* =========================================================
+   SWITCH / SAKLAR UNTUK CHECKBOX
+   ========================================================= */
+
+/* layout dasar form-check */
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* label biasa di dalam form-check (kecuali .form-switch) */
+.form-check > label:not(.form-switch) {
+    margin-bottom: 0;
+}
+
+/* ------ SWITCH WRAPPER ------ */
+.form-switch {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+/* SEMUA styling lama untuk checkbox di dalam switch di-reset */
+.form-switch input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+
+    position: absolute;
+    opacity: 0;
+}
+
+/* ------ TRACK (jalur) ------ */
+.form-switch-track {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ------ THUMB (bulatan) ------ */
+.form-switch-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.35);
+    transition: transform 0.2s ease;
+}
+
+/* ------ LABEL TEKS ------ */
+.form-switch-label {
+    font-weight: 600;
+    color: var(--bb-text);
+}
+
+/* ------ STATE ON (checked) ------ */
+.form-switch input[type="checkbox"]:checked + .form-switch-track {
+    background: #3b2f2f; /* kalau mau coffee ganti nanti */
+}
+
+.form-switch
+    input[type="checkbox"]:checked
+    + .form-switch-track
+    .form-switch-thumb {
+    transform: translateX(18px);
+}
+
+/* Fokus (tab) */
+.form-switch input[type="checkbox"]:focus-visible + .form-switch-track {
+    box-shadow: 0 0 0 3px rgba(59, 47, 47, 0.25);
+}
+
+.file-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+
+    border: 1px solid var(--bb-line); /* sebelumnya dashed */
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #fff;
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease,
+        background 0.15s ease;
+}
+
+.file-input {
+    position: absolute;
+    left: -9999px;
+}
+
+.file-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 14px;
+    border-radius: 8px;
+
+    background: #f3f4f6;
+    color: #111827;
+    font-weight: 600;
+    border: 1px solid #e5e7eb;
+
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* hover coklat */
+.file-btn:hover {
+    background: #3b2f2f;
+    color: #ffffff;
+    border-color: #3b2f2f;
+    box-shadow: 0 4px 10px rgba(59, 47, 47, 0.25);
+}
+
+.file-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 14px;
+    border-radius: 8px;
+
+    background: #f3f4f6;
+    color: #111827;
+    font-weight: 600;
+    border: 1px solid #e5e7eb;
+
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0; /* tombolnya gak ikut gepeng */
+}
+
+.file-name {
+    flex: 1; /* isi sisa lebar */
+    color: var(--bb-muted);
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-name.is-empty {
+    opacity: 0.8;
+    font-style: italic;
+}
+
+/* focus ring coklat saat input fokus */
+.file-field.is-focus {
+    box-shadow: 0 0 0 3px rgba(59, 47, 47, 0.2);
+    border-color: #3b2f2f;
+}
+
+/* =================== FORM FIELD GLOBAL ===================
+
+/* semua .form-field di dalam grid ambil penuh kolomnya */
+.form-section .form-grid .form-field {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* khusus yang span-2 (Foto + Catatan) ambil semua kolom grid */
+.form-section .form-grid .form-field.span-2 {
+    grid-column: 1 / -1;
+}
+
+/* ================== LAMPIRAN FULL WIDTH ================== */
+/* anggap Lampiran itu form-section terakhir */
+.form-section:last-of-type .form-grid {
+    /* ubah grid jadi 1 kolom penuh */
+    grid-template-columns: 1fr;
+}
+
+/* semua field di Lampiran ambil 1 kolom penuh */
+.form-section:last-of-type .form-grid .form-field {
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+/* file-field & textarea di Lampiran full lebar card */
+.form-section:last-of-type .file-field,
+.form-section:last-of-type .form-textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ===== input + icon di dalamnya ===== */
+.field-with-icon {
+    position: relative;
+}
+
+/* kasih space buat icon di kanan */
+.field-with-icon .form-input {
+    padding-right: 40px;
+}
+
+/* posisi icon */
+.field-with-icon .field-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 18px;
+    height: 18px;
+    color: var(--bb-muted);
+    pointer-events: none;
+    transition: color 0.15s ease;
+}
+
+/* kalau input fokus, icon ikut coklat */
+.field-with-icon .form-input:focus + .field-icon {
+    color: #3b2f2f;
+}
+
+.field-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.dd-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.dd-label {
+    flex: 1;
+}
+
+/* wrapper icon */
+.dd-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af; /* abu-abu halus */
+}
+
+/* pastikan svg-nya kelihatan */
+.dd-toggle svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* wrapper tombol di kanan + jarak */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+/* base button */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 22px;
+    border-radius: 14px;
+    font-weight: 600;
+    font-size: 15px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #111827;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+/* SUCCESS (Simpan) – outline default, hijau pas hover */
+.btn.btn--success {
+    border-color: #16a34a;
+    color: #16a34a;
+}
+
+.btn.btn--success:hover {
+    background: #16a34a;
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+/* DANGER (Batal) – outline default, merah pas hover */
+.btn.btn--danger {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.btn.btn--danger:hover {
+    background: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* efek kecil saat di-focus via keyboard */
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+}
+
+/*STYLING UNTUK PANAH KIRI DAN KANAN TABLE YANG LEBIH 10 LINE*/
+/* =========================================
+   Cofit EV Pagination – coffee style
+   ========================================= */
+.cofit-pagination {
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 1px solid #f1ece4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.875rem;
+}
+
+.cofit-pagination__info {
+    margin: 0;
+    color: #8f8b80; /* teks abu-krem */
+}
+
+/* list angka halaman */
+.cofit-pagination__list {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.cofit-pagination__list li a,
+.cofit-pagination__list li span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    text-decoration: none;
+    color: #45403a; /* coklat gelap teks */
+    font-size: 0.85rem;
+    transition: all 0.18s ease-out;
+}
+
+/* default (bukan aktif) */
+.cofit-pagination__list li a {
+    background: #f7f3ec; /* krem sangat muda */
+    border-color: #f7f3ec;
+}
+
+/* hover: cream */
+.cofit-pagination__list li a:hover {
+    background: #f1e4d2; /* cream */
+    border-color: #f1e4d2;
+    color: #3e2b1f; /* coklat teks */
+}
+
+/* aktif: coklat solid + shadow */
+.cofit-pagination__list li.active span {
+    background: #7a4b2b; /* coklat utama */
+    border-color: #7a4b2b;
+    color: #ffffff;
+    box-shadow: 0 6px 14px rgba(122, 75, 43, 0.35);
+}
+
+/* disabled prev/next */
+.cofit-pagination__list li.disabled span {
+    background: #f9f5ee;
+    border-color: #f9f5ee;
+    color: #b0a698;
+    opacity: 0.7;
+    cursor: default;
+}
