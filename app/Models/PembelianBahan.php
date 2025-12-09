@@ -26,11 +26,11 @@ class PembelianBahan extends Model
         return $this->hasMany(PembelianBahanDetail::class, 'pembelian_bahan_id');
     }
 
-    /** Generate kode harian: CFF-YYMMDD-0001 */
+    /** Generate kode harian: PBL-YYMMDD-0001 */
     public static function generateKodeHarian(): string
     {
         $today = now()->format('ymd');
-        $prefix = "CFF-{$today}-";
+        $prefix = "PBL-{$today}-";
 
         $last = static::whereDate('tanggal', now()->toDateString())
             ->where('kode_pembelian', 'like', $prefix.'%')
@@ -38,7 +38,7 @@ class PembelianBahan extends Model
             ->value('kode_pembelian');
 
         $next = 1;
-        if ($last && preg_match('/^CFF-\d{6}-(\d{4})$/', $last, $m)) {
+        if ($last && preg_match('/^PBL-\d{6}-(\d{4})$/', $last, $m)) {
             $next = (int) $m[1] + 1;
         }
 

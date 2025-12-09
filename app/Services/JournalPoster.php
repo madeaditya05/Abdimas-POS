@@ -7,6 +7,7 @@ use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\Penjualan;
 use App\Models\PembelianBahan;
+use App\Models\StokMutasi;
 use Illuminate\Support\Facades\DB;
 
 class JournalPoster
@@ -154,4 +155,77 @@ class JournalPoster
         }
         return (int) $id;
     }
+
+        /** Post jurnal HPP dari PENYESUAIAN STOK (mode minus = pemakaian bahan) */
+    public function postForPenyesuaianStok(StokMutasi $mutasi): void
+    {
+        // Kita cuma mau handle stok KELUAR (out / OUT)
+        $tipe = strtolower((string) $mutasi->tipe);
+        if ($tipe !== StokMutasi::TYPE_OUT) {
+            // kalau bukan OUT, pastikan nggak ada jurnal sisa
+            $this->deleteFor(StokMutasi::class, $mutasi->id);
+            return;
+        }
+
+        $qty = (float) ($mutasi->qty ?? 0);
+        if ($qty <= 0) {
+            $this->deleteFor(StokMutasi::class, $mutasi->id);
+            return;
+        }
+
+        $bahanId = (int) $mutasi->bahan_baku_id;
+
+        // Hitung HPP rata-rata: total nilai pembelian / total qty IN
+        $stats = DB::table('pembelian_bahan_detail as d')
+            ->where('d.bahan_baku_id', $bahanId)
+            ->selectRaw('
+                SUM(d.subtotal) AS total_value,
+                SUM(d.qty_beli * d.isi_per_kemasan * d.konversi_ke_pakai) AS total_qty
+            ')
+            ->first();
+
+        if (! $stats || (float) $stats->total_qty <= 0) {
+            // belum pernah ada pembelian bahan ini → nggak usah paksa posting
+            $this->deleteFor(StokMutasi::class, $mutasi->id);
+            return;
+        }
+
+        $hppPerUnit = (float) $stats->total_value / (float) $stats->total_qty;
+        $amount     = $qty * $hppPerUnit;
+
+        if ($amount <= 0) {
+            $this->deleteFor(StokMutasi::class, $mutasi->id);
+            return;
+        }
+
+        $namaBahan = $mutasi->bahan?->nama_bahan ?? 'Bahan ID '.$bahanId;
+        $memoLine  = "Pemakaian bahan {$namaBahan}";
+
+        $lines = [
+            // Debit: HPP
+            [
+                'account_code' => config('account_map.hpp_bahan'),
+                'debit'        => $amount,
+                'credit'       => 0,
+                'memo'         => $memoLine,
+            ],
+            // Kredit: Persediaan Bahan
+            [
+                'account_code' => config('account_map.persediaan_bahan'),
+                'debit'        => 0,
+                'credit'       => $amount,
+                'memo'         => $memoLine,
+            ],
+        ];
+
+        $this->upsertEntry(
+            sourceType: StokMutasi::class,
+            sourceId:   $mutasi->id,
+            date:       $mutasi->tanggal?->toDateString() ?? now()->toDateString(),
+            ref:        'ADJ-'.$mutasi->id,
+            memo:       'Auto HPP dari Penyesuaian Stok',
+            lines:      $lines,
+        );
+    }
+
 }

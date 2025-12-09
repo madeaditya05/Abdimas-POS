@@ -112,7 +112,7 @@ a.kr-btn{ color:inherit; text-decoration:none; }
 
 @section('content')
 @php
-  // default: semua seksi aktif (termasuk laba rugi)
+  // default: semua seksi aktif
   $secDefault = ['labarugi','items','payments','unified','journal','ledger'];
   $secSel = request('sec', $secDefault);
 @endphp
@@ -143,12 +143,11 @@ a.kr-btn{ color:inherit; text-decoration:none; }
         <input type="date" name="end_date" value="{{ request('end_date', now()->toDateString()) }}">
       </div>
 
-      {{-- Dropdown pilih seksi laporan --}}
+      {{-- Dropdown --}}
       <details class="kr-dd">
         <summary class="kr-btn kr-btn-ghost">
           Pilih Laporan
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;">
+          <svg width="16" height="16" ...>
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </summary>
@@ -170,6 +169,7 @@ a.kr-btn{ color:inherit; text-decoration:none; }
 
       {{-- Tombol --}}
       <div class="kr-actions">
+
         <button class="kr-btn kr-btn-primary" type="submit">Tampilkan</button>
 
         @php
@@ -198,9 +198,9 @@ a.kr-btn{ color:inherit; text-decoration:none; }
         @php
           $rev   = (float)($lr['revenue'] ?? 0);
           $cogs  = (float)($lr['cogs'] ?? 0);
-          $gross = (float)($lr['gross'] ?? ($rev - $cogs));
+          $gross = (float)($rev - $cogs);
           $exp   = (float)($lr['expense'] ?? 0);
-          $net   = (float)($lr['net_income'] ?? ($gross - $exp));
+          $net   = (float)($gross - $exp);
         @endphp
         <table class="kr-table">
           <tbody>
@@ -229,7 +229,7 @@ a.kr-btn{ color:inherit; text-decoration:none; }
       </div>
     @endif
 
-    {{-- Seksi lain pakai partial yang sama dengan kasir --}}
+    {{-- Seksi lain pakai partial kasir --}}
     @if(in_array('items',$secSel))
       @include('reports.partials.kasir_items',['items'=>$items])
     @endif

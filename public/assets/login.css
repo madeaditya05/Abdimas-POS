@@ -1,0 +1,503 @@
+/* =======================================
+   GLOBAL AUTH STYLING (LOGIN + REGISTER)
+   Cofit EV - Coffee Cream Theme
+   ======================================= */
+
+:root {
+    /* warna dasar tema coffee */
+    --auth-bg: #f6ede3; /* background utama (cream) */
+    --auth-bg-soft: #f9f2ea; /* varian lebih terang */
+    --auth-card-bg: #ffffff; /* card/form putih */
+    --auth-border-soft: #e0cdb9; /* border lembut */
+    --auth-text-main: #3b2a24; /* teks utama coklat gelap */
+    --auth-text-muted: #8a7463; /* teks sekunder */
+    --auth-btn: #3b2a24; /* tombol coklat tua (mirip choose file) */
+    --auth-btn-hover: #2c1f1a; /* versi hover */
+    --auth-btn-soft: #efe1d5; /* bg soft / hover ringan */
+    --auth-danger: #d9534f; /* merah untuk error */
+    --auth-success: #4caf50; /* hijau untuk success */
+}
+
+/* Reset ringan */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, sans-serif;
+    background-color: var(--auth-bg);
+    color: var(--auth-text-main);
+}
+
+/* ======================
+   LAYOUT UTAMA AUTH PAGE
+   ====================== */
+
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+    justify-content: flex-end;
+    overflow: hidden;
+    background-color: var(--auth-bg); /* cream di belakang */
+}
+
+/* KIRI: gambar full-height (cover) */
+.auth-hero {
+    flex: 1.4; /* kiri lebih lebar dari kanan */
+    min-width: 0;
+    min-height: 100vh;
+    padding: 0;
+    display: block;
+}
+
+.auth-hero-inner {
+    width: 100%;
+    height: 100%;
+}
+
+.auth-hero-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* BIKIN FULL, ala wallpaper */
+}
+
+/* KANAN: panel putih berisi form */
+.auth-panel {
+    flex: 0 0 420px; /* lebar tetap, mirip Sneat */
+    max-width: 480px;
+    min-width: 0;
+    min-height: 100vh;
+    background-color: #ffffff; /* panel putih */
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.08);
+    padding: 32px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Di dalam panel kanan, card kita jadikan konten biasa */
+.login-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 360px;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+/* ======================
+   HEADER / BRANDING
+   ====================== */
+
+.login-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.logo-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    background: var(--auth-bg-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.login-logo-text h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--auth-text-main);
+}
+
+.login-logo-text p {
+    margin: 2px 0 0;
+    font-size: 0.82rem;
+    color: var(--auth-text-muted);
+}
+
+.login-header {
+    margin-bottom: 18px;
+}
+
+.login-header h2 {
+    margin: 0 0 4px;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--auth-text-main);
+}
+
+.login-header p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--auth-text-muted);
+}
+
+/* ======================
+   ALERTS (ERROR/SUCCESS)
+   ====================== */
+
+.alert {
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.86rem;
+    margin-bottom: 12px;
+}
+
+.alert ul {
+    margin: 4px 0 0 18px;
+    padding: 0;
+}
+
+.alert-success {
+    background-color: rgba(76, 175, 80, 0.06);
+    border: 1px solid rgba(76, 175, 80, 0.4);
+    color: #2f7d32;
+}
+
+.alert-danger {
+    background-color: rgba(217, 83, 79, 0.06);
+    border: 1px solid rgba(217, 83, 79, 0.5);
+    color: var(--auth-danger);
+}
+
+/* ======================
+   FORM & INPUT
+   ====================== */
+
+form {
+    margin-top: 4px;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--auth-text-main);
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+/* Input & select */
+.form-input {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--auth-border-soft);
+    padding: 9px 12px;
+    font-size: 0.93rem;
+    outline: none;
+    background-color: #fdf9f3;
+    color: var(--auth-text-main);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+/* Select biar nggak jadul */
+.form-input[type="text"],
+.form-input[type="password"],
+.form-input[type="email"],
+.form-input select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Tambah ikon arrow untuk select */
+.input-wrapper select.form-input {
+    padding-right: 34px;
+}
+
+.input-wrapper select.form-input::-ms-expand {
+    display: none;
+}
+
+.input-wrapper::after {
+    content: "";
+    position: absolute;
+    right: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    border-right: 2px solid #9c8672;
+    border-bottom: 2px solid #9c8672;
+    transform-origin: center;
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
+}
+
+/* Fokus */
+.form-input:focus {
+    border-color: var(--auth-btn);
+    background-color: #fff;
+    box-shadow: 0 0 0 1px rgba(59, 42, 36, 0.08);
+}
+
+/* Error text kecil */
+.text-danger {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: var(--auth-danger);
+}
+
+.text-muted {
+    font-size: 0.8rem;
+    color: var(--auth-text-muted);
+}
+
+/* ======================
+   REMEMBER ME
+   ====================== */
+
+.form-remember {
+    margin-top: 2px;
+    margin-bottom: 12px;
+}
+
+.remember-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    color: var(--auth-text-main);
+    cursor: pointer;
+}
+
+.remember-checkbox input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+/* ======================
+   BUTTON LOGIN / DAFTAR
+   ====================== */
+
+.btn-login {
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 0.96rem;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: var(--auth-btn);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.15s ease, box-shadow 0.12s ease,
+        transform 0.08s ease;
+    box-shadow: 0 10px 24px rgba(59, 42, 36, 0.35);
+}
+
+.btn-login:hover {
+    background-color: var(--auth-btn-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(59, 42, 36, 0.35);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+    box-shadow: 0 8px 18px rgba(59, 42, 36, 0.25);
+}
+
+/* ======================
+   FOOTER TEXT (link ke login/register)
+   ====================== */
+
+.auth-footer-text {
+    margin-top: 14px;
+    font-size: 0.86rem;
+    text-align: center;
+    color: var(--auth-text-muted);
+}
+
+.auth-footer-text a {
+    color: var(--auth-btn);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-footer-text a:hover {
+    text-decoration: underline;
+}
+
+/* ======================
+   RESPONSIVE
+   ====================== */
+
+@media (max-width: 992px) {
+    .auth-hero {
+        padding-left: 32px;
+    }
+
+    .auth-panel {
+        padding-right: 32px;
+    }
+}
+
+@media (max-width: 768px) {
+    .auth-page {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .auth-hero {
+        display: none; /* di HP, fokus ke form aja */
+    }
+
+    .auth-panel {
+        padding: 24px 18px 32px;
+    }
+
+    .login-card {
+        max-width: 480px;
+    }
+}
+
+/* ======================
+   CUSTOM SELECT (User Group)
+   ====================== */
+
+.custom-select {
+    position: relative;
+    width: 100%;
+    font-size: 0.93rem;
+}
+
+.cs-trigger {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--auth-border-soft);
+    padding: 9px 12px;
+    background-color: #fdf9f3;
+    color: var(--auth-text-main);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.cs-trigger-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cs-trigger-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #a2886f;
+    transition: transform 0.15s ease;
+}
+
+/* fokus / ada value = border coklat tua */
+.custom-select.open .cs-trigger,
+.custom-select.has-value .cs-trigger {
+    border-color: var(--auth-btn);
+    background-color: #fff;
+    box-shadow: 0 0 0 1px rgba(59, 42, 36, 0.12);
+}
+
+.custom-select.open .cs-trigger-icon {
+    transform: rotate(180deg);
+}
+
+/* menu dropdown */
+.cs-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+    padding: 6px 0;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 30;
+    display: none;
+}
+
+.custom-select.open .cs-menu {
+    display: block;
+}
+
+/* opsi */
+.cs-option {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--auth-text-main);
+    transition: background-color 0.12s ease;
+}
+
+.cs-option-text {
+    flex: 1;
+}
+
+/* icon heroicon di opsi */
+.cs-option-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* hover = coklat muda */
+.cs-option:hover {
+    background-color: #f3e3d4; /* hover (mirip ungu muda tapi versi coffee) */
+}
+
+/* selected/active = coklat muda lebih pekat */
+.cs-option.is-active {
+    background-color: #e9d3bf;
+    font-weight: 500;
+}

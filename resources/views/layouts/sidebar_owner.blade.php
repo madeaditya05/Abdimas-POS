@@ -12,10 +12,39 @@
   </div>
 
   @php
-    // status aktif per grup
-    $isProdukActive = request()->routeIs('product.*') || request()->is('kategori*');
-    $isInvActive    = request()->routeIs('bahan-baku.*') || request()->is('inventaris*');
-    $isLapActive    = request()->is('laporan*') || request()->routeIs('owner.labarugi');
+    // ====== STATUS AKTIF PER GRUP (dipakai untuk buka/tutup dropdown) ======
+
+    // Master Data: produk, kategori, bahan baku, resep
+    $isProdukActive =
+        request()->routeIs('produk.*')
+        || request()->is('kategori*')
+        || request()->routeIs('bahan-baku.*')
+        || request()->routeIs('resep.*');
+
+    // Persediaan: mutasi stok + penyesuaian stok
+    $isInvActive =
+        request()->routeIs('mutasi-stok.*')
+        || request()->is('persediaan/penyesuaian*');
+
+    // Transaksi: penjualan + pembelian + penyesuaian stok (versi route baru)
+    $isTransActive =
+        request()->is('penjualan*')
+        || request()->routeIs('pembelian-bahan.*')
+        || request()->routeIs('penyesuaian-stok.*');
+
+    // Cash Flow: sekarang cuma Laporan Jurnal (laporan.jurnal.*)
+    $isCashActive =
+        request()->routeIs('laporan.jurnal.*');
+
+    // Laporan: laporan penjualan + laporan pembelian
+    $isLapActive =
+        request()->is('laporan/penjualan*')
+        || request()->is('laporan/pembelian*');
+
+    // Manajemen User: pengguna + pelanggan
+    $isUserActive =
+        request()->is('users*')
+        || request()->is('pelanggan*');
   @endphp
 
   <nav class="sidebar-nav" id="ownerSidebarNav">
@@ -31,26 +60,77 @@
       <span class="nav-label">Dashboard</span>
     </a>
 
-    {{-- DATA PRODUK (dropdown) --}}
-    <div class="nav-group {{ $isProdukActive ? 'has-active is-open' : '' }}" data-key="produk">
+    {{-- ===== MASTER DATA (Produk, Kategori, Bahan Baku, Resep) ===== --}}
+    <div class="nav-group {{ $isProdukActive ? 'has-active is-open' : '' }}" data-key="master-data">
       <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isProdukActive ? 'true' : 'false' }}">
         <span class="nav-icon">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
-            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <path d="M3 10h18"/>
           </svg>
         </span>
-        <span class="nav-label">Data Produk</span>
+        <span class="nav-label">Master Data</span>
         <span class="nav-caret"></span>
       </button>
+
       <div class="subnav {{ $isProdukActive ? 'show' : '' }}">
-        <a href="{{ route('product.index') }}" class="subnav-item {{ request()->routeIs('product.*') ? 'is-active' : '' }}">Semua Produk</a>
-        <a href="{{ url('/kategori') }}" class="subnav-item {{ request()->is('kategori*') ? 'is-active' : '' }}">Kategori</a>
+        {{-- Produk --}}
+        <a href="{{ route('produk.index') }}"
+          class="subnav-item {{ request()->routeIs('produk.*') ? 'is-active' : '' }}">
+          {{-- <x-icon-shopping-cart class="nav-icon" /> --}}
+          <span>Produk</span>
+        </a>
+
+        {{-- Kategori --}}
+        {{-- <a href="{{ url('/kategori') }}"
+           class="subnav-item {{ request()->is('kategori*') ? 'is-active' : '' }}">
+          Kategori
+        </a> --}}
+
+        {{-- Bahan Baku --}}
+        <a href="{{ route('bahan-baku.index') }}"
+           class="subnav-item {{ request()->routeIs('bahan-baku.*') ? 'is-active' : '' }}">
+          Bahan Baku
+        </a>
+
+        {{-- Resep --}}
+        <a href="{{ route('resep.index') }}"
+           class="subnav-item {{ request()->routeIs('resep.*') ? 'is-active' : '' }}">
+          Resep
+        </a>
       </div>
     </div>
 
-    {{-- INVENTARIS (dropdown) --}}
-    <div class="nav-group {{ $isInvActive ? 'has-active is-open' : '' }}" data-key="inventaris">
+    {{-- ===== TRANSAKSI (Penjualan, Pembelian Bahan, Penyesuaian) ===== --}}
+    <div class="nav-group {{ $isTransActive ? 'has-active is-open' : '' }}" data-key="transaksi">
+      <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isTransActive ? 'true' : 'false' }}">
+        <span class="nav-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+            <path d="M2.05 2.05h2l2.66 12.42A2 2 0 0 0 8.71 16h9.78a2 2 0 0 0 1.95-1.57L22.09 7H5.12"/>
+          </svg>
+        </span>
+        <span class="nav-label">Transaksi</span>
+        <span class="nav-caret"></span>
+      </button>
+
+      <div class="subnav {{ $isTransActive ? 'show' : '' }}">
+        {{-- Penjualan --}}
+        <a href="{{ url('/penjualan') }}"
+           class="subnav-item {{ request()->is('penjualan*') ? 'is-active' : '' }}">
+          Penjualan
+        </a>
+
+        {{-- Pembelian Bahan --}}
+        <a href="{{ route('pembelian-bahan.index') }}"
+           class="subnav-item {{ request()->routeIs('pembelian-bahan.*') ? 'is-active' : '' }}">
+          Pembelian Bahan
+        </a>
+      </div>
+    </div>
+
+    {{-- ===== PERSEDIAAN (Mutasi Stok, Penyesuaian Stok versi lama) ===== --}}
+    <div class="nav-group {{ $isInvActive ? 'has-active is-open' : '' }}" data-key="persediaan">
       <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isInvActive ? 'true' : 'false' }}">
         <span class="nav-icon">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -58,42 +138,78 @@
             <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
           </svg>
         </span>
-        <span class="nav-label">Inventaris</span>
+        <span class="nav-label">Persediaan</span>
         <span class="nav-caret"></span>
       </button>
+
       <div class="subnav {{ $isInvActive ? 'show' : '' }}">
-        <a href="{{ route('bahan-baku.index') }}" class="subnav-item {{ request()->routeIs('bahan-baku.*') ? 'is-active' : '' }}">Bahan Baku</a>
-        <a href="{{ url('/inventaris/mutasi') }}" class="subnav-item {{ request()->is('inventaris/mutasi*') ? 'is-active' : '' }}">Mutasi Stok</a>
+        {{-- Mutasi Stok --}}
+        <a href="{{ route('mutasi-stok.index') }}"
+           class="subnav-item {{ request()->routeIs('mutasi-stok.*') ? 'is-active' : '' }}">
+          Mutasi Stok
+        </a>
+
+        {{-- Penyesuaian Stok (versi route baru) --}}
+        <a href="{{ route('penyesuaian-stok.index') }}"
+           class="subnav-item {{ request()->routeIs('penyesuaian-stok.*') ? 'is-active' : '' }}">
+          Penyesuaian Stok
+        </a>
       </div>
     </div>
 
-    {{-- DATA PELANGGAN (single link) --}}
-    <a href="{{ url('/pelanggan') }}" class="nav-item {{ request()->is('pelanggan*') ? 'is-active' : '' }}">
-      <span class="nav-icon">
-        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-      </span>
-      <span class="nav-label">Data Pelanggan</span>
-    </a>
-
-    {{-- LAPORAN (dropdown) --}}
-    <div class="nav-group {{ $isLapActive ? 'has-active is-open' : '' }}" data-key="laporan">
-      <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isLapActive ? 'true' : 'false' }}">
+    {{-- ===== CASH FLOW (CUMA LAPORAN JURNAL) ===== --}}
+    <div class="nav-group {{ $isCashActive ? 'has-active is-open' : '' }}" data-key="cashflow">
+      <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isCashActive ? 'true' : 'false' }}">
         <span class="nav-icon">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/>
-            <line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            <path d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M5 9h2M17 9h2M5 15h2M17 15h2"/>
           </svg>
         </span>
-        <span class="nav-label">Laporan</span>
+        <span class="nav-label">Cash Flow</span>
         <span class="nav-caret"></span>
       </button>
-      <div class="subnav {{ $isLapActive ? 'show' : '' }}">
-        <a href="{{ route('owner.labarugi') }}" class="subnav-item {{ request()->routeIs('owner.labarugi') ? 'is-active' : '' }}">Laba-Rugi</a>
-        <a href="{{ url('/laporan/penjualan') }}" class="subnav-item {{ request()->is('laporan/penjualan*') ? 'is-active' : '' }}">Penjualan</a>
+
+      <div class="subnav {{ $isCashActive ? 'show' : '' }}">
+        {{-- Laporan Jurnal (laporan.jurnal.index) --}}
+        {{-- <a href="{{ route('laporan.jurnal.index') }}"
+           class="subnav-item {{ request()->routeIs('laporan.jurnal.*') ? 'is-active' : '' }}">
+          Laporan Keuangan
+        </a> --}}
+
+        <a href="{{ route('owner.labarugi') }}" 
+        class="subnav-item {{ request()->routeIs('owner.labarugi') ? 'is-active' : '' }}">
+        Laba-Rugi
+      </a>
+      </div>
+    </div>
+
+    {{-- ===== MANAJEMEN USER (Pengguna, Pelanggan) ===== --}}
+    <div class="nav-group {{ $isUserActive ? 'has-active is-open' : '' }}" data-key="users">
+      <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isUserActive ? 'true' : 'false' }}">
+        <span class="nav-icon">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span class="nav-label">Manajemen User</span>
+        <span class="nav-caret"></span>
+      </button>
+
+      <div class="subnav {{ $isUserActive ? 'show' : '' }}">
+        {{-- Pengguna --}}
+        {{-- <a href="{{ url('/users') }}"
+           class="subnav-item {{ request()->is('users*') ? 'is-active' : '' }}">
+          Pengguna
+        </a> --}}
+
+        {{-- Pelanggan --}}
+        <a href="{{ route('customer.index') }}"
+          class="subnav-item {{ request()->routeIs('customer.*') ? 'is-active' : '' }}">
+          Customer
+        </a>
       </div>
     </div>
 
@@ -164,4 +280,3 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
-

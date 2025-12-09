@@ -3,64 +3,67 @@
 namespace App\Http\Controllers;
 
 use App\Models\StokMutasi;
-use App\Http\Requests\StoreStokMutasiRequest;
-use App\Http\Requests\UpdateStokMutasiRequest;
+use Illuminate\Http\Request;
 
 class StokMutasiController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Halaman list mutasi stok (view only).
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-    }
+        $search       = $request->input('q', '');
+        $selectedTipe = $request->input('tipe', '');
+        $sort         = $request->input('sort', 'tanggal');
+        $dir          = $request->input('dir',  'desc');
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        // filter tanggal (opsional)
+        $from = $request->input('from', '');
+        $to   = $request->input('to',   '');
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreStokMutasiRequest $request)
-    {
-        //
-    }
+        $query = StokMutasi::with('bahan');
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(StokMutasi $stokMutasi)
-    {
-        //
-    }
+        // Search berdasarkan nama / kode bahan
+        if ($search !== '') {
+            $query->whereHas('bahan', function ($q) use ($search) {
+                $q->where('nama_bahan', 'like', "%{$search}%")
+                  ->orWhere('kode_bahan', 'like', "%{$search}%");
+            });
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(StokMutasi $stokMutasi)
-    {
-        //
-    }
+        // Filter tipe IN / OUT / ADJ
+        if ($selectedTipe !== '') {
+            $query->where('tipe', $selectedTipe);
+        }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateStokMutasiRequest $request, StokMutasi $stokMutasi)
-    {
-        //
-    }
+        // Filter tanggal
+        if ($from !== '') {
+            $query->whereDate('tanggal', '>=', $from);
+        }
+        if ($to !== '') {
+            $query->whereDate('tanggal', '<=', $to);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(StokMutasi $stokMutasi)
-    {
-        //
+        // Sort sederhana, default tanggal desc
+        if (! in_array($sort, ['tanggal', 'qty'])) {
+            $sort = 'tanggal';
+        }
+        if (! in_array($dir, ['asc', 'desc'])) {
+            $dir = 'desc';
+        }
+
+        $query->orderBy($sort, $dir);
+
+        $items = $query->paginate(15)->withQueryString();
+
+        return view('Mutasi-Stok.index', [
+            'items'        => $items,
+            'search'       => $search,
+            'selectedTipe' => $selectedTipe,
+            'sort'         => $sort,
+            'dir'          => $dir,
+            'from'         => $from,
+            'to'           => $to,
+        ]);
     }
 }

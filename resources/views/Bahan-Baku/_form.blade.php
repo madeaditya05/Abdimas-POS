@@ -31,29 +31,69 @@
 
   {{-- IDENTITAS --}}
   <div class="form-section">
-    <div class="form-title">Identitas</div>
+    <div class="form-title">Data Bahan</div>
     <div class="form-grid">
       <div class="form-field">
         <label>Kode Bahan</label>
-        <input class="form-input" type="text" value="{{ $row->kode_bahan ?? '' }}" disabled>
+        {{-- <input class="form-input" type="text" value="{{ $row->kode_bahan ?? '' }}" disabled> --}}
+        <div class="field-with-icon">
+            <input
+                class="form-input"
+                type="text"
+                value="{{ $row->kode_bahan ?? '' }}"
+                disabled
+            >
+            <span class="field-icon">
+                <x-heroicon-o-hashtag class="hi hi-5" />
+            </span>
+        </div>
+
         <div class="form-help">Kode diisi otomatis (format BHK####).</div>
       </div>
 
-      <div class="form-field">
+      {{-- <div class="form-field">
         <label>Nama Bahan <span style="color:#ef4444">*</span></label>
         <input class="form-input" name="nama_bahan" value="{{ old('nama_bahan', $row->nama_bahan ?? '') }}" required>
         <div class="form-help"></div>
-      </div>
+      </div> --}}
 
       <div class="form-field">
+          <label>Nama Bahan <span style="color:#ef4444">*</span></label>
+          <div class="field-with-icon">
+              <input
+                  class="form-input"
+                  name="nama_bahan"
+                  value="{{ old('nama_bahan', $row->nama_bahan ?? '') }}"
+                  required>
+              <span class="field-icon">
+                  <x-heroicon-o-cube class="hi hi-5" />
+              </span>
+          </div>
+          <div class="form-help"></div>
+      </div>
+
+  <div class="form-field">
         <label>Kategori</label>
         <div class="dd" data-select="kategori">
-          <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
+
+          {{-- <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
             <span class="dd-label">
               {{ $selectedKategori && isset($opsiKategori[$selectedKategori]) ? $opsiKategori[$selectedKategori] : 'Pilih kategori' }}
             </span>
             <span class="dd-caret"></span>
+          </button> --}}
+
+          <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
+              <span class="dd-label">
+                  {{ $selectedKategori && isset($opsiKategori[$selectedKategori]) ? $opsiKategori[$selectedKategori] : 'Pilih kategori' }}
+              </span>
+
+              <span class="dd-icon">
+                  <x-heroicon-o-tag class="hi hi-4" />
+              </span>
           </button>
+
+
           <div class="dd-menu" role="listbox">
             <div class="dd-item {{ $selectedKategori=='' ? 'active':'' }}" data-value="">Pilih kategori</div>
             @foreach($opsiKategori as $val => $label)
@@ -65,11 +105,29 @@
         <div class="form-help"></div>
       </div>
 
-      <div class="form-check">
+      {{-- <div class="form-check">
         <input type="checkbox" name="aktif" value="1" {{ old('aktif', $row->aktif ?? true) ? 'checked' : '' }}>
         <label>Aktif</label>
         <div class="form-help"></div>
+      </div> --}}
+
+      <div class="form-check">
+          <label class="form-switch">
+              <input
+                  type="checkbox"
+                  name="aktif"
+                  value="1"
+                  {{ old('aktif', $row->aktif ?? true) ? 'checked' : '' }}
+              >
+              <span class="form-switch-track">
+                  <span class="form-switch-thumb"></span>
+              </span>
+              <span class="form-switch-label">Aktif</span>
+          </label>
+          <div class="form-help"></div>
       </div>
+
+
     </div>
   </div>
 
@@ -80,12 +138,21 @@
       <div class="form-field">
         <label>Satuan Pakai <span style="color:#ef4444">*</span></label>
         <div class="dd" data-select="satuan_pakai">
-          <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
+          {{-- <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
             <span class="dd-label">
               {{ $selectedSatuanPakai && isset($opsiSatuan[$selectedSatuanPakai]) ? $opsiSatuan[$selectedSatuanPakai] : 'Pilih satuan' }}
             </span>
             <span class="dd-caret"></span>
+          </button> --}}
+          <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
+            <span class="dd-label">
+              {{ $selectedSatuanPakai && isset($opsiSatuan[$selectedSatuanPakai]) ? $opsiSatuan[$selectedSatuanPakai] : 'Pilih satuan' }}
+            </span>
+            <span class="dd-icon">
+              <x-heroicon-o-scale class="hi hi-4" />
+            </span>
           </button>
+
           <div class="dd-menu" role="listbox">
             <div class="dd-item {{ $selectedSatuanPakai=='' ? 'active':'' }}" data-value="">Pilih satuan</div>
             @foreach($opsiSatuan as $v => $t)
@@ -100,12 +167,21 @@
       <div class="form-field">
         <label>Satuan Beli</label>
         <div class="dd" data-select="satuan_beli">
-          <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
+          {{-- <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
             <span class="dd-label">
               {{ $selectedSatuanBeli && isset($opsiSatuan[$selectedSatuanBeli]) ? $opsiSatuan[$selectedSatuanBeli] : 'Sama dengan satuan pakai' }}
             </span>
             <span class="dd-caret"></span>
+          </button> --}}
+          <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
+            <span class="dd-label">
+              {{ $selectedSatuanBeli && isset($opsiSatuan[$selectedSatuanBeli]) ? $opsiSatuan[$selectedSatuanBeli] : 'Sama dengan satuan pakai' }}
+            </span>
+            <span class="dd-icon">
+              <x-heroicon-o-cube class="hi hi-4" />
+            </span>
           </button>
+
           <div class="dd-menu" role="listbox">
             <div class="dd-item {{ $selectedSatuanBeli=='' ? 'active':'' }}" data-value="">Sama dengan satuan pakai</div>
             @foreach($opsiSatuan as $v => $t)
@@ -119,61 +195,121 @@
 
       <div class="form-field">
         <label>Konversi Beli → Pakai</label>
-        <input class="form-input" type="number" step="0.001" name="konversi_beli_ke_pakai"
-               value="{{ old('konversi_beli_ke_pakai', $row->konversi_beli_ke_pakai ?? 1) }}">
+        {{-- <input class="form-input" type="number" step="0.001" name="konversi_beli_ke_pakai"
+               value="{{ old('konversi_beli_ke_pakai', $row->konversi_beli_ke_pakai ?? 1) }}"> --}}
+        <div class="field-with-icon">
+            <input
+                class="form-input"
+                type="number"
+                step="0.001"
+                name="konversi_beli_ke_pakai"
+                value="{{ old('konversi_beli_ke_pakai', $row->konversi_beli_ke_pakai ?? 1) }}"
+            >
+            <span class="field-icon">
+                <x-heroicon-o-arrows-right-left class="hi hi-5" />
+            </span>
+        </div>
+
         <div class="form-help"></div>
       </div>
 
       <div class="form-field">
         <label>Isi per Kemasan</label>
-        <input class="form-input" type="number" step="0.001" name="isi_per_kemasan"
-               value="{{ old('isi_per_kemasan', $row->isi_per_kemasan ?? '') }}">
+        {{-- <input class="form-input" type="number" step="0.001" name="isi_per_kemasan"
+               value="{{ old('isi_per_kemasan', $row->isi_per_kemasan ?? '') }}"> --}}
+        <div class="field-with-icon">
+            <input
+                class="form-input"
+                type="number"
+                step="0.001"
+                name="isi_per_kemasan"
+                value="{{ old('isi_per_kemasan', $row->isi_per_kemasan ?? '') }}">
+            <span class="field-icon">
+                <x-heroicon-o-archive-box class="hi hi-5" />
+            </span>
+        </div>
+
         <div class="form-help"></div>
       </div>
     </div>
   </div>
 
   {{-- PENYIMPANAN & SHELF-LIFE --}}
-  <div class="form-section">
-    <div class="form-title">Penyimpanan & Shelf-life</div>
-    <div class="form-grid">
-      <div class="form-field">
-        <label>Penyimpanan</label>
-        <div class="dd" data-select="penyimpanan">
-          <button type="button" class="dd-toggle">
-            <span class="dd-label">{{ $opsiPenyimpanan[$selPeny] ?? 'Pilih' }}</span>
-            <span class="dd-caret"></span>
-          </button>
-          <div class="dd-menu">
-            @foreach($opsiPenyimpanan as $v => $t)
-              <div class="dd-item {{ $selPeny===$v ? 'active':'' }}" data-value="{{ $v }}">{{ $t }}</div>
-            @endforeach
-          </div>
-          <input type="hidden" name="penyimpanan" value="{{ $selPeny }}">
+<div class="form-section">
+  <div class="form-title">Penyimpanan & Shelf-life</div>
+  <div class="form-grid">
+    <div class="form-field">
+      <label>Penyimpanan</label>
+      <div class="dd" data-select="penyimpanan">
+        <button type="button" class="dd-toggle">
+          <span class="dd-label">{{ $opsiPenyimpanan[$selPeny] ?? 'Pilih' }}</span>
+          <span class="dd-icon">
+            <x-heroicon-o-archive-box class="hi hi-4" />
+          </span>
+        </button>
+        <div class="dd-menu">
+          @foreach($opsiPenyimpanan as $v => $t)
+            <div class="dd-item {{ $selPeny===$v ? 'active':'' }}" data-value="{{ $v }}">{{ $t }}</div>
+          @endforeach
         </div>
-        <div class="form-help"></div>
+        <input type="hidden" name="penyimpanan" value="{{ $selPeny }}">
       </div>
-
-      <div class="form-check">
-        <input type="checkbox" name="is_perishable" value="1" {{ old('is_perishable',$row->is_perishable ?? false) ? 'checked' : '' }}>
-        <label>Mudah Rusak?</label>
-        <div class="form-help"></div>
-      </div>
-
-      <div class="form-field">
-        <label>Masa Simpan (hari)</label>
-        <input class="form-input" type="number" step="1" name="masa_simpan_hari"
-               value="{{ old('masa_simpan_hari', $row->masa_simpan_hari ?? '') }}">
-        <div class="form-help"></div>
-      </div>
-
-      <div class="form-check">
-        <input type="checkbox" name="kelola_expired" value="1" {{ old('kelola_expired',$row->kelola_expired ?? false) ? 'checked' : '' }}>
-        <label>Kelola Expired</label>
-        <div class="form-help"></div>
-      </div>
+      <div class="form-help"></div>
     </div>
-  </div>
+
+    <div class="form-check">
+      <label class="form-switch">
+        <input
+          type="checkbox"
+          name="is_perishable"
+          value="1"
+          {{ old('is_perishable',$row->is_perishable ?? false) ? 'checked' : '' }}
+        >
+        <span class="form-switch-track">
+          <span class="form-switch-thumb"></span>
+        </span>
+        <span class="form-switch-label">Mudah Rusak?</span>
+      </label>
+      <div class="form-help"></div>
+    </div>
+
+    <div class="form-field">
+      <label>Masa Simpan (hari)</label>
+      <div class="field-with-icon">
+        <input
+          class="form-input"
+          type="number"
+          step="1"
+          name="masa_simpan_hari"
+          value="{{ old('masa_simpan_hari', $row->masa_simpan_hari ?? '') }}"
+        >
+        <span class="field-icon">
+          <x-heroicon-o-clock class="hi hi-5" />
+        </span>
+      </div>
+      <div class="form-help"></div>
+    </div>
+
+    {{-- KeloIa Expired MASUK ke grid juga --}}
+    <div class="form-check">
+      <label class="form-switch">
+        <input
+          type="checkbox"
+          name="kelola_expired"
+          value="1"
+          {{ old('kelola_expired',$row->kelola_expired ?? false) ? 'checked' : '' }}
+        >
+        <span class="form-switch-track">
+          <span class="form-switch-thumb"></span>
+        </span>
+        <span class="form-switch-label">Kelola Expired</span>
+      </label>
+      <div class="form-help"></div>
+    </div>
+  </div> {{-- tutup .form-grid --}}
+</div>   {{-- tutup .form-section --}}
+
+
 
   {{-- KEAMANAN & KEHALALAN --}}
   <div class="form-section">
@@ -182,12 +318,22 @@
       <div class="form-field">
         <label>Alergen</label>
         <div class="dd" data-select="allergen_flag">
-          <button type="button" class="dd-toggle">
+          {{-- <button type="button" class="dd-toggle">
             <span class="dd-label">
               {{ $selAlergen==='' ? 'Tidak ada' : ($opsiAlergen[$selAlergen] ?? 'Tidak ada') }}
             </span>
             <span class="dd-caret"></span>
+          </button> --}}
+
+          <button type="button" class="dd-toggle">
+            <span class="dd-label">
+              {{ $selAlergen==='' ? 'Tidak ada' : ($opsiAlergen[$selAlergen] ?? 'Tidak ada') }}
+            </span>
+            <span class="dd-icon">
+              <x-heroicon-o-exclamation-triangle class="hi hi-4" />
+            </span>
           </button>
+
           <div class="dd-menu">
             <div class="dd-item {{ $selAlergen==='' ? 'active':'' }}" data-value="">Tidak ada</div>
             @foreach($opsiAlergen as $v => $t)
@@ -202,12 +348,21 @@
       <div class="form-field">
         <label>Status Halal</label>
         <div class="dd" data-select="status_halal">
-          <button type="button" class="dd-toggle">
+          {{-- <button type="button" class="dd-toggle">
             <span class="dd-label">
               {{ $selHalal==='' ? 'Pilih status' : ($opsiStatusHalal[$selHalal] ?? 'Pilih status') }}
             </span>
             <span class="dd-caret"></span>
+          </button> --}}
+          <button type="button" class="dd-toggle">
+            <span class="dd-label">
+              {{ $selHalal==='' ? 'Pilih status' : ($opsiStatusHalal[$selHalal] ?? 'Pilih status') }}
+            </span>
+            <span class="dd-icon">
+              <x-heroicon-o-shield-check class="hi hi-4" />
+            </span>
           </button>
+
           <div class="dd-menu">
             <div class="dd-item {{ $selHalal==='' ? 'active':'' }}" data-value="">Pilih status</div>
             @foreach($opsiStatusHalal as $v => $t)
@@ -227,24 +382,52 @@
     <div class="form-grid">
       <div class="form-field">
         <label>Supplier Default</label>
-        <input class="form-input" name="default_supplier_nama"
-               value="{{ old('default_supplier_nama',$row->default_supplier_nama ?? '') }}">
+        {{-- <input class="form-input" name="default_supplier_nama"
+               value="{{ old('default_supplier_nama',$row->default_supplier_nama ?? '') }}"> --}}
+        <div class="field-with-icon">
+            <input
+                class="form-input"
+                name="default_supplier_nama"
+                value="{{ old('default_supplier_nama',$row->default_supplier_nama ?? '') }}"
+            >
+            <span class="field-icon">
+                <x-heroicon-o-truck class="hi hi-5" />
+            </span>
+        </div>
         <div class="form-help"></div>
       </div>
 
       <div class="form-field">
         <label>Kontak Supplier</label>
-        <input class="form-input" name="supplier_kontak"
-               value="{{ old('supplier_kontak',$row->supplier_kontak ?? '') }}">
+        {{-- <input class="form-input" name="supplier_kontak"
+               value="{{ old('supplier_kontak',$row->supplier_kontak ?? '') }}"> --}}
+
+        <div class="field-with-icon">
+            <input
+                class="form-input"
+                name="supplier_kontak"
+                value="{{ old('supplier_kontak',$row->supplier_kontak ?? '') }}"
+            >
+            <span class="field-icon">
+                <x-heroicon-o-phone class="hi hi-5" />
+            </span>
+        </div>
+
         <div class="form-help"></div>
       </div>
 
       <div class="form-field">
         <label>Lead Time (hari)</label>
         <div class="dd" data-select="lead_time_hari">
-          <button type="button" class="dd-toggle">
+          {{-- <button type="button" class="dd-toggle">
             <span class="dd-label">{{ $selLead==='' ? 'Opsional' : $selLead }}</span>
             <span class="dd-caret"></span>
+          </button> --}}
+          <button type="button" class="dd-toggle">
+            <span class="dd-label">{{ $selLead==='' ? 'Opsional' : $selLead }}</span>
+            <span class="dd-icon">
+              <x-heroicon-o-clock class="hi hi-4" />
+            </span>
           </button>
           <div class="dd-menu">
             <div class="dd-item {{ $selLead==='' ? 'active':'' }}" data-value="">Opsional</div>
@@ -260,10 +443,17 @@
       <div class="form-field">
         <label>Min Order Qty</label>
         <div class="dd" data-select="min_order_qty">
-          <button type="button" class="dd-toggle">
+          {{-- <button type="button" class="dd-toggle">
             <span class="dd-label">{{ $selMin==='' ? 'Opsional' : $selMin }}</span>
             <span class="dd-caret"></span>
+          </button> --}}
+          <button type="button" class="dd-toggle">
+            <span class="dd-label">{{ $selMin==='' ? 'Opsional' : $selMin }}</span>
+            <span class="dd-icon">
+              <x-heroicon-o-hashtag class="hi hi-4" />
+            </span>
           </button>
+
           <div class="dd-menu">
             <div class="dd-item {{ $selMin==='' ? 'active':'' }}" data-value="">Opsional</div>
             @foreach($opsiMinOrder as $v => $t)
@@ -278,62 +468,121 @@
   </div>
 
   {{-- PRODUKSI --}}
-  <div class="form-section">
+<div class="form-section">
     <div class="form-title">Produksi</div>
+
     <div class="form-grid">
-      <div class="form-field">
-        <label>Yield (%) <span style="color:#ef4444">*</span></label>
-        <div class="dd" data-select="yield_persen">
-          <button type="button" class="dd-toggle">
-            <span class="dd-label">{{ $opsiYield[$selYield] ?? $selYield }}</span>
-            <span class="dd-caret"></span>
-          </button>
-          <div class="dd-menu">
-            @foreach($opsiYield as $v => $t)
-              <div class="dd-item {{ (string)$selYield===(string)$v ? 'active':'' }}" data-value="{{ $v }}">{{ $t }}</div>
-            @endforeach
-          </div>
-          <input type="hidden" name="yield_persen" value="{{ $selYield }}" required>
+        <div class="form-field">
+            <label>Yield (%) <span style="color:#ef4444">*</span></label>
+            <div class="dd" data-select="yield_persen">
+                <button type="button" class="dd-toggle">
+                    <span class="dd-icon">
+                        <x-heroicon-o-chart-pie class="hi hi-4" />
+                    </span>
+                    <span class="dd-label">{{ $opsiYield[$selYield] ?? $selYield }}</span>
+                </button>
+
+                <div class="dd-menu">
+                    @foreach($opsiYield as $v => $t)
+                        <div class="dd-item {{ (string)$selYield===(string)$v ? 'active':'' }}"
+                             data-value="{{ $v }}">
+                            {{ $t }}
+                        </div>
+                    @endforeach
+                </div>
+
+                <input type="hidden" name="yield_persen" value="{{ $selYield }}" required>
+            </div>
+            <div class="form-help"></div>
         </div>
-        <div class="form-help"></div>
-      </div>
 
-      <div class="form-check">
-        <input type="checkbox" name="dipakai_di_resep" value="1" {{ old('dipakai_di_resep',$row->dipakai_di_resep ?? true) ? 'checked' : '' }}>
-        <label>Dipakai di Resep</label>
-        <div class="form-help"></div>
-      </div>
+        {{-- 🔽 PINDAHIN SWITCH KE SINI --}}
+        <div class="form-check">
+            <label class="form-switch">
+                <input
+                    type="checkbox"
+                    name="dipakai_di_resep"
+                    value="1"
+                    {{ old('dipakai_di_resep',$row->dipakai_di_resep ?? true) ? 'checked' : '' }}
+                >
+                <span class="form-switch-track">
+                    <span class="form-switch-thumb"></span>
+                </span>
+                <span class="form-switch-label">Dipakai di Resep</span>
+            </label>
+            <div class="form-help"></div>
+        </div>
+        {{-- 🔼 sampe sini masih di dalam .form-grid --}}
     </div>
-  </div>
+</div>
 
-  {{-- LAMPIRAN --}}
+
+
   <div class="form-section" style="padding-bottom:0;">
     <div class="form-title">Lampiran</div>
     <div class="form-grid">
+
       <div class="form-field span-2">
-        <label>Foto</label>
+    <label>Foto</label>
+
         @if(!empty($row->foto_path))
-          <img class="preview-img" src="{{ asset('storage/'.$row->foto_path) }}" alt="foto" style="margin-bottom:10px;">
+            {{-- preview lama (satu file) masih bisa dipakai kalau perlu --}}
+            <img class="preview-img"
+                src="{{ asset('storage/'.$row->foto_path) }}"
+                alt="foto"
+                style="margin-bottom:10px;">
         @endif
+
         <div class="file-field" id="ff-foto">
-          <input id="foto_path" class="file-input" type="file" name="foto_path" accept="image/*">
-          <label for="foto_path" class="file-btn">Choose File</label>
-          <span class="file-name is-empty">No file chosen</span>
+            {{-- multiple files --}}
+            <input
+                id="foto_path"
+                class="file-input"
+                type="file"
+                name="foto_path[]"
+                accept="image/*"
+                multiple
+            >
+          <label for="foto_path" class="file-btn">Choose Files</label>
+
+            <span class="file-name is-empty">Belum ada file dipilih</span>
         </div>
-        <div class="form-help"></div>
-      </div>
+
+        <div class="form-help">Kamu bisa memilih lebih dari satu file.</div>
+    </div>
+
 
       <div class="form-field span-2">
         <label>Catatan</label>
-        <textarea class="form-textarea" name="catatan">{{ old('catatan', $row->catatan ?? '') }}</textarea>
+        {{-- <textarea class="form-textarea" name="catatan">{{ old('catatan', $row->catatan ?? '') }}</textarea> --}}
+
+        <div class="field-with-icon">
+            <textarea
+                class="form-textarea"
+                name="catatan"
+            >{{ old('catatan', $row->catatan ?? '') }}</textarea>
+
+            <span class="field-icon">
+                <x-heroicon-o-pencil-square class="hi hi-5" />
+            </span>
+        </div>
+
         <div class="form-help"></div>
       </div>
     </div>
 
     <div class="form-actions">
-      <a class="btn" href="{{ route('bahan-baku.index') }}">Batal</a>
-      <button type="submit" class="btn btn--filled btn--success">Simpan</button>
-    </div>
+    <a class="btn btn--danger" href="{{ route('bahan-baku.index') }}">
+        Batal
+    </a>
+
+    <button type="submit" class="btn btn--success">
+        Simpan
+    </button>
+</div>
+
+
+
   </div>
 </form>
 @endsection
@@ -371,15 +620,42 @@
   });
 
   /* ========== File field (#ff-foto) ========== */
+//   const wrap = document.getElementById('ff-foto');
+//   if (wrap) {
+//     const input  = wrap.querySelector('.file-input');
+//     const nameEl = wrap.querySelector('.file-name');
+//     input.addEventListener('change', () => {
+//       const file = input.files && input.files[0];
+//       if (file) { nameEl.textContent = file.name; nameEl.classList.remove('is-empty'); }
+//       else      { nameEl.textContent = 'No file chosen'; nameEl.classList.add('is-empty'); }
+//     });
+//     input.addEventListener('focus', () => wrap.classList.add('is-focus'));
+//     input.addEventListener('blur',  () => wrap.classList.remove('is-focus'));
+//   }
+// })();
+
+  /* ========== File field (#ff-foto) ========== */
   const wrap = document.getElementById('ff-foto');
   if (wrap) {
     const input  = wrap.querySelector('.file-input');
     const nameEl = wrap.querySelector('.file-name');
+
     input.addEventListener('change', () => {
-      const file = input.files && input.files[0];
-      if (file) { nameEl.textContent = file.name; nameEl.classList.remove('is-empty'); }
-      else      { nameEl.textContent = 'No file chosen'; nameEl.classList.add('is-empty'); }
+      const files = input.files;
+
+      if (files && files.length > 0) {
+        if (files.length === 1) {
+          nameEl.textContent = files[0].name;
+        } else {
+          nameEl.textContent = files.length + ' file dipilih';
+        }
+        nameEl.classList.remove('is-empty');
+      } else {
+        nameEl.textContent = 'Belum ada file dipilih';
+        nameEl.classList.add('is-empty');
+      }
     });
+
     input.addEventListener('focus', () => wrap.classList.add('is-focus'));
     input.addEventListener('blur',  () => wrap.classList.remove('is-focus'));
   }
