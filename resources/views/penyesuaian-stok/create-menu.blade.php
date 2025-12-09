@@ -9,7 +9,7 @@
 @section('content')
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-    <h2 style="margin:0;">Penyesuaian Stok (Per Bahan)</h2>
+    <h2 style="margin:0;">Penyesuaian Stok (Per Menu)</h2>
 
     <a href="{{ route('penyesuaian-stok.index') }}"
        class="btn btn--outline-coffee">
@@ -31,55 +31,37 @@
   </div>
 
   <div class="card-body">
-    <form method="POST" action="{{ route('penyesuaian-stok.store') }}" class="form">
+    <form method="POST" action="{{ route('penyesuaian-stok.menu.store') }}" class="form">
       @csrf
 
-      {{-- Bahan Baku --}}
+      {{-- Produk / Menu --}}
       <div class="form-group">
-        <label for="bahan_baku_id">Bahan Baku</label>
-        <select name="bahan_baku_id" id="bahan_baku_id" required>
-          <option value="">-- pilih bahan --</option>
-          @foreach($bahanList as $bahan)
-            <option value="{{ $bahan->id }}" {{ old('bahan_baku_id') == $bahan->id ? 'selected' : '' }}>
-              {{ $bahan->kode_bahan }} — {{ $bahan->nama_bahan }}
+        <label for="produk_id">Produk / Menu</label>
+        <select name="produk_id" id="produk_id" required>
+          <option value="">-- pilih produk --</option>
+          @foreach($produkList as $p)
+            <option value="{{ $p->id }}" {{ old('produk_id') == $p->id ? 'selected' : '' }}>
+              {{ $p->kode_barang }} — {{ $p->nama_barang }}
             </option>
           @endforeach
         </select>
-        @error('bahan_baku_id')
+        @error('produk_id')
           <p class="form-error">{{ $message }}</p>
         @enderror
       </div>
 
-      {{-- Jenis penyesuaian (plus/minus) --}}
+      {{-- Qty Menu --}}
       <div class="form-group">
-        <label>Jenis Penyesuaian</label>
-        <div style="display:flex;gap:12px;align-items:center;">
-          <label style="display:flex;align-items:center;gap:6px;">
-            <input type="radio" name="mode" value="plus" {{ old('mode','plus') === 'plus' ? 'checked' : '' }}>
-            <span>Tambah stok</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;">
-            <input type="radio" name="mode" value="minus" {{ old('mode') === 'minus' ? 'checked' : '' }}>
-            <span>Kurangi stok</span>
-          </label>
-        </div>
-        @error('mode')
-          <p class="form-error">{{ $message }}</p>
-        @enderror
-      </div>
-
-      {{-- Qty per Bahan --}}
-      <div class="form-group">
-        <label for="qty">Jumlah (dalam satuan pakai)</label>
+        <label for="qty_menu">Jumlah Menu Terjual</label>
         <input type="number"
-               id="qty"
-               name="qty"
+               id="qty_menu"
+               name="qty_menu"
                step="0.01"
                min="0"
-               value="{{ old('qty') }}"
-               placeholder="contoh: 60 (ml)"
+               value="{{ old('qty_menu') }}"
+               placeholder="contoh: 3 (gelas)"
                required>
-        @error('qty')
+        @error('qty_menu')
           <p class="form-error">{{ $message }}</p>
         @enderror
       </div>
@@ -101,7 +83,7 @@
       <div class="form-group">
         <label for="note">Catatan (opsional)</label>
         <textarea id="note" name="note" rows="3"
-                  placeholder="contoh: penyesuaian karena stok fisik kurang 2 botol">{{ old('note') }}</textarea>
+                  placeholder="contoh: penyesuaian karena penjualan Aren Latte 3 gelas">{{ old('note') }}</textarea>
         @error('note')
           <p class="form-error">{{ $message }}</p>
         @enderror

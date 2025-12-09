@@ -11,9 +11,9 @@ return [
 
     // PENDAPATAN & HPP & PERSEDIAAN
     'pendapatan_penjualan' => '4001',
-    'hpp'                   => '5001',   // opsional (kalau nanti aktifkan COGS)
+    'hpp_bahan'            => '5001',   // ⬅ tambahin ini (HPP Bahan Baku Minuman)
     'persediaan_bahan'     => '1201',
 
-    // Pembelian: pakai kas atau ke utang?
-    'pembelian_ke_hutang_default' => false, // true = default ke utang usaha
+    'pembelian_ke_hutang_default' => false,
 ];
+

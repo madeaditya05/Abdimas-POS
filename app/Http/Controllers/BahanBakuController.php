@@ -47,7 +47,15 @@ class BahanBakuController extends Controller
 
         // sort
         $allowedSort = ['kode_bahan','nama_bahan','kategori','satuan_beli','satuan_pakai','created_at'];
-        $sort = in_array($req->input('sort'), $allowedSort) ? $req->input('sort') : 'nama_bahan';
+
+        // default lama: urut nama_bahan
+        // $sort = in_array($req->input('sort'), $allowedSort) ? $req->input('sort') : 'nama_bahan';
+
+        // default baru: urut kode_bahan (BHK0001, BHK0002, ...)
+        $defaultSort = 'kode_bahan';
+        $sortInput   = $req->input('sort');
+        $sort        = in_array($sortInput, $allowedSort) ? $sortInput : $defaultSort;
+
         $dir  = $req->input('dir') === 'desc' ? 'desc' : 'asc';
 
         $items = $q->orderBy($sort, $dir)

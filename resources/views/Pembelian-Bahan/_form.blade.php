@@ -71,7 +71,7 @@
             <x-heroicon-o-hashtag class="hi hi-5" />
           </span>
         </div>
-        <div class="form-help">Kode akan diisi otomatis (format CFF-YYMMDD-####).</div>
+        <div class="form-help">Kode akan diisi otomatis (format PBL-YYMMDD-####).</div>
       </div>
 
       {{-- Tanggal --}}

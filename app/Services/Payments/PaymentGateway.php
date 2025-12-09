@@ -45,4 +45,14 @@ class PaymentGateway
         $res = \Midtrans\CoreApi::charge($params);
         return json_decode(json_encode($res), true);
     }
+
+    /** Cek status transaksi ke Midtrans */
+    public function status(string $kodePenjualan): array
+    {
+        // Midtrans PHP SDK biasa pakainya Transaction::status($orderId)
+        $res = \Midtrans\Transaction::status($kodePenjualan);
+
+        // samain gaya return dengan chargeQris / chargeVa (array, bukan object)
+        return json_decode(json_encode($res), true);
+    }
 }

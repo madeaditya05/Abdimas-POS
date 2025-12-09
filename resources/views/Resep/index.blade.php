@@ -90,10 +90,12 @@
         <tr>
           <th>Produk</th>
           <th>Kategori</th>
-          <th>Aktif</th>
-          <th># Bahan</th>
-          <th>Catatan</th>
-          <th>Diupdate</th>
+          <th>Status</th>
+
+          {{-- <th># Bahan</th> --}}
+          {{-- <th>Catatan</th> --}}
+          {{-- <th>Diupdate</th> --}}
+
           <th style="width:130px;">Aksi</th>
         </tr>
       </thead>
@@ -112,7 +114,7 @@
               @endif
             </td>
 
-            {{-- Aktif --}}
+            {{-- Status (sebelumnya "Aktif") --}}
             <td>
               <span class="bool {{ $row->is_active ? 'bool--yes' : 'bool--no' }}">
                 <span class="bool-dot"></span>
@@ -121,23 +123,23 @@
             </td>
 
             {{-- Jumlah bahan (from withCount details) --}}
-            <td style="text-align:center;">
+            {{-- <td style="text-align:center;">
               {{ $row->details_count ?? 0 }}
-            </td>
+            </td> --}}
 
             {{-- Catatan --}}
-            <td>
+            {{-- <td>
               @if($row->catatan)
                 {{ \Illuminate\Support\Str::limit($row->catatan, 60) }}
               @else
                 <span class="muted">–</span>
               @endif
-            </td>
+            </td> --}}
 
             {{-- Diupdate --}}
-            <td>
+            {{-- <td>
               {{ optional($row->updated_at)->format('d M Y H:i') }}
-            </td>
+            </td> --}}
 
             {{-- Aksi --}}
             <td>
@@ -168,7 +170,8 @@
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="muted" style="text-align:center;">
+            {{-- <td colspan="7" class="muted" style="text-align:center;"> --}}
+            <td colspan="4" class="muted" style="text-align:center;">
               Belum ada resep.
             </td>
           </tr>

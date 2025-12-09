@@ -9,6 +9,9 @@ use App\Models\Produk;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
+use App\Models\StokMutasi;
+use App\Models\BahanBaku;
+
 class DashboardController extends Controller
 {
     public function index()
@@ -49,55 +52,140 @@ class DashboardController extends Controller
             ->with('product:id,name')
             ->get();
 
-        // Ambil data lain seperti sebelumnya
+        // ---- KPI lain (masih sama)
         $salesToday = \App\Models\Order::where('status','paid')
             ->whereDate('created_at', now())
             ->sum('grand_total');
 
         $newOrders = \App\Models\Order::where('status','pending')->count();
-        $lowStockCount = Produk::where('stok', '<=', 0)->count();
         $newCustomers = 12;
-        $lowStockItems = Produk::where('stok', '<=', 0)->get();
 
+        // ===============================
+        //   Peringatan Stok (pakai stok_mutasi + min_stock bahan baku)
+        // ===============================
+
+        // Hitung stok current per bahan dari stok_mutasi (IN - OUT)
+        $stokPerBahan = StokMutasi::select(
+                'bahan_baku_id',
+                DB::raw("SUM(CASE WHEN tipe = 'in'  THEN qty ELSE 0 END) as total_in"),
+                DB::raw("SUM(CASE WHEN tipe = 'out' THEN qty ELSE 0 END) as total_out")
+            )
+            ->groupBy('bahan_baku_id')
+            ->get()
+            ->mapWithKeys(function ($row) {
+                $stok = (float) $row->total_in - (float) $row->total_out;
+                return [$row->bahan_baku_id => $stok];
+            });
+
+        // Ambil semua bahan baku (atau boleh difilter aktif saja kalau mau)
+        $allBahan = BahanBaku::all();
+
+        // Tentukan mana yang stoknya sudah di bawah min_stock
+        $lowStockItems = $allBahan->filter(function ($bahan) use ($stokPerBahan) {
+                // stok real dari mutasi, default 0 kalau belum pernah ada mutasi
+                $currentStock = $stokPerBahan[$bahan->id] ?? 0.0;
+
+                // override property stok di instance ini (hanya buat tampilan, tidak di-save)
+                $bahan->stok = $currentStock;
+
+                $min = (float) ($bahan->min_stock ?? 0);
+
+                // kalau min_stock <= 0, anggap tidak dipantau
+                if ($min <= 0) {
+                    return false;
+                }
+
+                return $currentStock <= $min;
+            })
+            ->values(); // reset index
+
+        $lowStockCount = $lowStockItems->count();
 
         return view('tampilan.dashboard', compact(
-            'salesToday', 'newOrders', 'lowStockCount', 'newCustomers',
-            'weekly', 'monthly', 'yearly', 'topProductsChart', 'lowStockItems'
+            'salesToday',
+            'newOrders',
+            'lowStockCount',
+            'newCustomers',
+            'weekly',
+            'monthly',
+            'yearly',
+            'topProductsChart',
+            'lowStockItems'
         ));
     }
 
     // Endpoint JSON untuk tombol lonceng
     public function notifications()
     {
-        $rows = Produk::query()
-            ->select('id', 'nama_barang', 'stok', 'min_stock', 'kategori')
-            // Habis atau menipis (stok <= min_stock, min_stock > 0)
-            ->where(function ($q) {
-                $q->whereNull('stok')->orWhere('stok', '<=', 0);
-            })
-            ->orWhere(function ($q) {
-                $q->whereRaw('COALESCE(stok,0) <= COALESCE(min_stock,0)')
-                  ->whereRaw('COALESCE(min_stock,0) > 0');
-            })
-            ->orderByRaw('COALESCE(stok,0) ASC')
-            ->limit(50)
+        // batas stok rendah global (boleh kamu ubah: 5, 10, dll)
+        $minThreshold = 10;
+
+        // 1) Hitung stok current per bahan dari tabel stok_mutasi (IN - OUT)
+        $stokPerBahan = StokMutasi::select(
+                'bahan_baku_id',
+                DB::raw("SUM(CASE WHEN tipe = 'in'  THEN qty ELSE 0 END) as total_in"),
+                DB::raw("SUM(CASE WHEN tipe = 'out' THEN qty ELSE 0 END) as total_out")
+            )
+            ->groupBy('bahan_baku_id')
+            ->get()
+            ->mapWithKeys(function ($row) {
+                $stok = (float) $row->total_in - (float) $row->total_out;
+                return [$row->bahan_baku_id => $stok];
+            });
+
+        // Ambil data nama/kode bahan untuk ditampilkan di notif
+        $bahan = BahanBaku::whereIn('id', $stokPerBahan->keys())
+            ->get()
+            ->keyBy('id');
+
+        $items = collect();
+
+        // 2) Notif untuk stok habis / rendah
+        foreach ($stokPerBahan as $bahanId => $stok) {
+            $row = $bahan->get($bahanId);
+            if (! $row) {
+                continue;
+            }
+
+            if ($stok <= 0) {
+                $items->push([
+                    'title'    => 'Stok Habis',
+                    'subtitle' => "{$row->nama_bahan} — {$stok} (<= 0)",
+                    'color'    => '#ef4444', // merah
+                ]);
+            } elseif ($stok <= $minThreshold) {
+                $items->push([
+                    'title'    => 'Stok Rendah',
+                    'subtitle' => "{$row->nama_bahan} — {$stok} (<= {$minThreshold})",
+                    'color'    => '#f59e0b', // oranye
+                ]);
+            }
+        }
+
+        // 3) Notif khusus setiap ada penyesuaian stok
+        $adjustments = StokMutasi::with('bahan')
+            ->where('sumber_type', StokMutasi::SUMBER_PENYESUAIAN)
+            ->orderByDesc('tanggal')
+            ->limit(5)
             ->get();
 
-        $items = $rows->map(function ($p) {
-            $stok = (int) ($p->stok ?? 0);
-            $min  = (int) ($p->min_stock ?? 0);
-            $habis = $stok <= 0;
+        foreach ($adjustments as $adj) {
+            $nama = $adj->bahan->nama_bahan ?? 'Bahan tidak diketahui';
+            $sign = $adj->tipe === 'in' ? '+' : '-';
+            $qty  = (float) $adj->qty;
+            $tgl  = optional($adj->tanggal)->format('d M Y');
 
-            return [
-                'title'    => $habis ? 'Stok Habis' : 'Stok Rendah',
-                'subtitle' => "{$p->nama_barang} — {$stok} (min {$min})",
-                'color'    => $habis ? '#ef4444' : '#f59e0b', // merah / oranye
-            ];
-        });
+            $items->push([
+                'title'    => 'Penyesuaian Stok',
+                'subtitle' => "{$nama} {$sign}{$qty} ({$tgl})",
+                'color'    => '#3b82f6', // biru
+            ]);
+        }
 
+        // 4) Balikin JSON ke front-end
         return response()->json([
             'count' => $items->count(),
-            'items' => $items->values(),
+            'items' => $items->take(50)->values(), // batasi max 50 item
         ]);
     }
 }

@@ -1169,3 +1169,93 @@ s
     opacity: 0.7;
     cursor: default;
 }
+
+/* Layout pagination */
+.cofit-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cofit-pagination__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Khusus dropdown per-page biar nggak segede gaban */
+.per-page-dd {
+    min-width: auto;
+}
+
+.per-page-dd .dd-toggle {
+    min-width: 110px;
+    max-width: 130px;
+    padding: 4px 26px 4px 10px;
+    font-size: 0.8rem;
+    border-radius: 999px;
+}
+
+/* menu kecil dan rapih */
+.per-page-dd .dd-menu {
+    min-width: 130px;
+}
+
+/* optional: label tengah */
+.per-page-dd .dd-label {
+    text-align: center;
+    width: 100%;
+}
+
+/* Layout kanan pagination */
+.cofit-pagination__right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Bungkus select per page */
+.per-page-form {
+    margin: 0;
+}
+
+.per-page-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+/* Select jadi pill kecil */
+.per-page-select {
+    border-radius: 999px;
+    border: 1px solid #c9b7aa;
+    background-color: #fffdf8;
+    padding: 4px 24px 4px 10px;
+    font-size: 0.8rem;
+    color: #5b3b2a;
+    cursor: pointer;
+
+    /* buang default arrow & style basic */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7L10 12L15 7' stroke='%235b3b2a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.per-page-select:hover {
+    background-color: #fff7ed;
+    border-color: #b89d86;
+}
+
+.per-page-select:focus {
+    outline: none;
+    border-color: #c0864a;
+    box-shadow: 0 0 0 2px rgba(192, 134, 74, 0.25);
+}

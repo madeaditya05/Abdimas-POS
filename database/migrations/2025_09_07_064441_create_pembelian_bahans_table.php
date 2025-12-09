@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('pembelian_bahan', function (Blueprint $table) {
             $table->id();
-            $table->string('kode_pembelian')->unique();   // CFF-YYMMDD-0001
+            $table->string('kode_pembelian')->unique();   // PBL-YYMMDD-0001
             $table->timestamp('tanggal')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
 

@@ -12,9 +12,9 @@
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
     <h2 style="margin:0;">Bahan Baku</h2>
     <a href="{{ route('bahan-baku.create') }}"
-   class="btn btn--outline-success btn--with-icon">
-    <x-heroicon-o-plus class="icon-inline" />
-    <span>Buat Baru</span>
+       class="btn btn--outline-success btn--with-icon">
+      <x-heroicon-o-plus class="icon-inline" />
+      <span>Buat Baru</span>
     </a>
   </div>
 
@@ -78,14 +78,18 @@
         <tr>
           <th>Kode</th>
           <th>Nama</th>
-          <th>Kategori</th>
-          <th>Satuan</th>
+
+          {{-- <th>Kategori</th> --}}
+          {{-- <th>Satuan</th> --}}
+
           <th>Satuan Pakai</th>
           <th class="num">Stok</th>
-          <th>Min Stok</th>
-          <th class="num">Harga Beli</th>
-          <th>Aktif</th>
-          <th>Created</th>
+
+          {{-- <th>Min Stok</th> --}}
+          {{-- <th class="num">Harga Beli</th> --}}
+          {{-- <th>Aktif</th> --}}
+          {{-- <th>Created</th> --}}
+
           <th style="width:130px;">Aksi</th>
         </tr>
       </thead>
@@ -101,34 +105,42 @@
             <td>{{ $row->kode_bahan }}</td>
             <td>{{ $row->nama_bahan }}</td>
 
-            <td>
+            {{-- KATEGORI --}}
+            {{-- <td>
               @if ($row->kategori)
                 <span class="badge">{{ $row->kategori }}</span>
               @else
                 <span class="muted">–</span>
               @endif
-            </td>
+            </td> --}}
 
-            <td>{{ $row->satuan_beli ?? '–' }}</td>
+            {{-- SATUAN BELI --}}
+            {{-- <td>{{ $row->satuan_beli ?? '–' }}</td> --}}
+
+            {{-- SATUAN PAKAI (TETAP DITAMPILKAN) --}}
             <td>{{ $row->satuan_pakai }}</td>
 
             {{-- STOK SAAT INI (dari accessor BahanBaku::getStokAttribute) --}}
             <td class="num">{{ $row->stok }}</td>
 
-            <td>–</td>
+            {{-- MIN STOK --}}
+            {{-- <td>–</td> --}}
 
-            <td class="num">
+            {{-- HARGA BELI --}}
+            {{-- <td class="num">
               {{ $harga ? 'Rp '.number_format((float) $harga, 0, ',', '.') : '–' }}
-            </td>
+            </td> --}}
 
-            <td>
+            {{-- STATUS AKTIF --}}
+            {{-- <td>
               <span class="bool {{ $row->aktif ? 'bool--yes' : 'bool--no' }}">
                 <span class="bool-dot"></span>
                 {{ $row->aktif ? 'Aktif' : 'Nonaktif' }}
               </span>
-            </td>
+            </td> --}}
 
-            <td>{{ optional($row->created_at)->diffForHumans() }}</td>
+            {{-- CREATED --}}
+            {{-- <td>{{ optional($row->created_at)->diffForHumans() }}</td> --}}
 
             <td>
               <div class="actions">
@@ -159,7 +171,8 @@
           </tr>
         @empty
           <tr>
-            <td colspan="11" class="muted" style="text-align:center;">
+            {{-- <td colspan="11" class="muted" style="text-align:center;"> --}}
+            <td colspan="5" class="muted" style="text-align:center;">
               Belum ada data.
             </td>
           </tr>

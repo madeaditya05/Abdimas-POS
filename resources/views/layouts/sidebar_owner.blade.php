@@ -16,7 +16,7 @@
 
     // Master Data: produk, kategori, bahan baku, resep
     $isProdukActive =
-        request()->routeIs('product.*')
+        request()->routeIs('produk.*')
         || request()->is('kategori*')
         || request()->routeIs('bahan-baku.*')
         || request()->routeIs('resep.*');
@@ -75,16 +75,17 @@
 
       <div class="subnav {{ $isProdukActive ? 'show' : '' }}">
         {{-- Produk --}}
-        <a href="{{ route('product.index') }}"
-           class="subnav-item {{ request()->routeIs('product.*') ? 'is-active' : '' }}">
-          Produk
+        <a href="{{ route('produk.index') }}"
+          class="subnav-item {{ request()->routeIs('produk.*') ? 'is-active' : '' }}">
+          {{-- <x-icon-shopping-cart class="nav-icon" /> --}}
+          <span>Produk</span>
         </a>
 
         {{-- Kategori --}}
-        <a href="{{ url('/kategori') }}"
+        {{-- <a href="{{ url('/kategori') }}"
            class="subnav-item {{ request()->is('kategori*') ? 'is-active' : '' }}">
           Kategori
-        </a>
+        </a> --}}
 
         {{-- Bahan Baku --}}
         <a href="{{ route('bahan-baku.index') }}"
@@ -172,10 +173,15 @@
 
       <div class="subnav {{ $isCashActive ? 'show' : '' }}">
         {{-- Laporan Jurnal (laporan.jurnal.index) --}}
-        <a href="{{ route('laporan.jurnal.index') }}"
+        {{-- <a href="{{ route('laporan.jurnal.index') }}"
            class="subnav-item {{ request()->routeIs('laporan.jurnal.*') ? 'is-active' : '' }}">
           Laporan Keuangan
-        </a>
+        </a> --}}
+
+        <a href="{{ route('owner.labarugi') }}" 
+        class="subnav-item {{ request()->routeIs('owner.labarugi') ? 'is-active' : '' }}">
+        Laba-Rugi
+      </a>
       </div>
     </div>
 
@@ -194,15 +200,15 @@
 
       <div class="subnav {{ $isUserActive ? 'show' : '' }}">
         {{-- Pengguna --}}
-        <a href="{{ url('/users') }}"
+        {{-- <a href="{{ url('/users') }}"
            class="subnav-item {{ request()->is('users*') ? 'is-active' : '' }}">
           Pengguna
-        </a>
+        </a> --}}
 
         {{-- Pelanggan --}}
-        <a href="{{ url('/pelanggan') }}"
-           class="subnav-item {{ request()->is('pelanggan*') ? 'is-active' : '' }}">
-          Pelanggan
+        <a href="{{ route('customer.index') }}"
+          class="subnav-item {{ request()->routeIs('customer.*') ? 'is-active' : '' }}">
+          Customer
         </a>
       </div>
     </div>
