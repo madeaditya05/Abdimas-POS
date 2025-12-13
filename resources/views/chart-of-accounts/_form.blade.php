@@ -2,7 +2,7 @@
   $selName  = old('name',        $row->name        ?? '');
   $selType  = old('type',        $row->type        ?? '');
   $selNorm  = old('normal_side', $row->normal_side ?? '');
-  $selAct   = old('is_active',   $row->is_active ?? true);
+  $selAct   = old('is_active',   isset($row) ? (bool) $row->is_active : true);
 @endphp
 
 {{-- ERROR --}}
@@ -25,7 +25,6 @@
   @csrf
   @if($mode === 'edit') @method('PUT') @endif
 
-  {{-- DATA AKUN --}}
   <div class="form-section">
     <div class="form-title">Data Akun</div>
 
@@ -47,7 +46,6 @@
             <x-heroicon-o-hashtag class="hi hi-5" />
           </span>
         </div>
-        <div class="form-help"></div>
       </div>
 
       {{-- NAMA AKUN --}}
@@ -64,12 +62,9 @@
           </button>
 
           <div class="dd-menu">
-            <div class="dd-item {{ $selName==='' ? 'active':'' }}" data-value="">
-              Pilih nama akun
-            </div>
+            <div class="dd-item {{ $selName==='' ? 'active':'' }}" data-value="">Pilih nama akun</div>
             @foreach($opsiAccountNames as $k => $label)
-              <div class="dd-item {{ $selName===$k ? 'active':'' }}"
-                   data-value="{{ $k }}">
+              <div class="dd-item {{ $selName===$k ? 'active':'' }}" data-value="{{ $k }}">
                 {{ $label }}
               </div>
             @endforeach
@@ -93,12 +88,9 @@
           </button>
 
           <div class="dd-menu">
-            <div class="dd-item {{ $selType==='' ? 'active':'' }}" data-value="">
-              Pilih tipe akun
-            </div>
+            <div class="dd-item {{ $selType==='' ? 'active':'' }}" data-value="">Pilih tipe akun</div>
             @foreach($opsiType as $k => $label)
-              <div class="dd-item {{ $selType===$k ? 'active':'' }}"
-                   data-value="{{ $k }}">
+              <div class="dd-item {{ $selType===$k ? 'active':'' }}" data-value="{{ $k }}">
                 {{ $label }}
               </div>
             @endforeach
@@ -122,12 +114,9 @@
           </button>
 
           <div class="dd-menu">
-            <div class="dd-item {{ $selNorm==='' ? 'active':'' }}" data-value="">
-              Pilih saldo normal
-            </div>
+            <div class="dd-item {{ $selNorm==='' ? 'active':'' }}" data-value="">Pilih saldo normal</div>
             @foreach($opsiNormalSide as $k => $label)
-              <div class="dd-item {{ $selNorm===$k ? 'active':'' }}"
-                   data-value="{{ $k }}">
+              <div class="dd-item {{ $selNorm===$k ? 'active':'' }}" data-value="{{ $k }}">
                 {{ $label }}
               </div>
             @endforeach
@@ -140,10 +129,7 @@
       {{-- AKTIF --}}
       <div class="form-check">
         <label class="form-switch">
-          <input type="checkbox"
-                 name="is_active"
-                 value="1"
-                 {{ $selAct ? 'checked' : '' }}>
+          <input type="checkbox" name="is_active" value="1" {{ $selAct ? 'checked' : '' }}>
           <span class="form-switch-track">
             <span class="form-switch-thumb"></span>
           </span>
@@ -154,17 +140,10 @@
     </div>
   </div>
 
-  {{-- ACTION --}}
   <div class="form-section" style="padding-bottom:0;">
     <div class="form-actions">
-      <a class="btn btn--danger"
-         href="{{ route('chart-of-accounts.index') }}">
-        Batal
-      </a>
-
-      <button type="submit" class="btn btn--success">
-        Simpan
-      </button>
+      <a class="btn btn--danger" href="{{ route('chart-of-accounts.index') }}">Batal</a>
+      <button type="submit" class="btn btn--success">Simpan</button>
     </div>
   </div>
 </form>
@@ -172,17 +151,10 @@
 @push('scripts')
 <script>
 (() => {
-  const closeAll = () =>
-    document.querySelectorAll('.dd.open')
-      .forEach(dd => dd.classList.remove('open'));
+  const closeAll = () => document.querySelectorAll('.dd.open').forEach(dd => dd.classList.remove('open'));
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.dd')) closeAll();
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeAll();
-  });
+  document.addEventListener('click', e => { if (!e.target.closest('.dd')) closeAll(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
 
   document.querySelectorAll('.dd').forEach(dd => {
     const btn   = dd.querySelector('.dd-toggle');
@@ -199,9 +171,7 @@
 
     menu?.querySelectorAll('.dd-item').forEach(item => {
       item.addEventListener('click', () => {
-        menu.querySelectorAll('.dd-item.active')
-          .forEach(x => x.classList.remove('active'));
-
+        menu.querySelectorAll('.dd-item.active').forEach(x => x.classList.remove('active'));
         item.classList.add('active');
         input.value = item.dataset.value ?? '';
         label.textContent = item.textContent.trim();

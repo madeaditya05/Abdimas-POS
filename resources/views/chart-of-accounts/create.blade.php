@@ -8,6 +8,8 @@
 @section('content')
   <div class="card">
     <h2 style="margin:0 0 12px 0;">Create Daftar Akun (COA)</h2>
-    @include('app.chart-of-accounts._form', ['mode' => 'create'])
+
+    {{-- PENTING: path include ikut folder bener --}}
+    @include('chart-of-accounts._form', ['mode' => 'create'])
   </div>
 @endsection
