@@ -80,12 +80,11 @@
           {{-- <x-icon-shopping-cart class="nav-icon" /> --}}
           <span>Produk</span>
         </a>
-
-        {{-- Kategori --}}
-        {{-- <a href="{{ url('/kategori') }}"
-           class="subnav-item {{ request()->is('kategori*') ? 'is-active' : '' }}">
-          Kategori
-        </a> --}}
+        
+        <a href="{{ route('chart-of-accounts.index') }}"
+          class="subnav-item {{ request()->routeIs('chart-of-accounts.*') ? 'is-active' : '' }}">
+          <span>Daftar Akun</span>
+        </a>
 
         {{-- Bahan Baku --}}
         <a href="{{ route('bahan-baku.index') }}"
@@ -116,10 +115,12 @@
 
       <div class="subnav {{ $isTransActive ? 'show' : '' }}">
         {{-- Penjualan --}}
+        {{--
         <a href="{{ url('/penjualan') }}"
            class="subnav-item {{ request()->is('penjualan*') ? 'is-active' : '' }}">
           Penjualan
         </a>
+        --}}
 
         {{-- Pembelian Bahan --}}
         <a href="{{ route('pembelian-bahan.index') }}"
@@ -180,7 +181,7 @@
 
         <a href="{{ route('owner.labarugi') }}" 
         class="subnav-item {{ request()->routeIs('owner.labarugi') ? 'is-active' : '' }}">
-        Laba-Rugi
+        Arus Kas
       </a>
       </div>
     </div>
@@ -214,6 +215,7 @@
     </div>
 
     {{-- PENGATURAN (single link) --}}
+    {{--
     <a href="{{ url('/pengaturan') }}" class="nav-item {{ request()->is('pengaturan*') ? 'is-active' : '' }}">
       <span class="nav-icon">
         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -223,6 +225,7 @@
       </span>
       <span class="nav-label">Pengaturan</span>
     </a>
+    --}}
 
   </nav>
 

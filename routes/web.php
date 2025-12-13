@@ -16,6 +16,8 @@ use App\Http\Controllers\PenyesuaianStokController;
 use App\Http\Controllers\LaporanJurnalController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ChartOfAccountController;
+
 
 
 use Illuminate\Support\Facades\Auth;
@@ -103,6 +105,10 @@ Route::prefix('app')->middleware('auth')->group(function () {
      Route::resource('resep', \App\Http\Controllers\ResepController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->names('resep');
+        
+    Route::resource('chart-of-accounts', ChartOfAccountController::class)
+        ->only(['index','create','store','edit','update','destroy'])
+        ->names('chart-of-accounts');
 
      Route::get('resep-detail', [\App\Http\Controllers\ResepDetailController::class, 'index'])
         ->name('resep-detail.index');
