@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\ChartOfAccount;
 use App\Models\JournalEntry;
-use App\Models\JournalLine;
 use App\Models\Penjualan;
 use App\Models\PembelianBahan;
 use App\Models\StokMutasi;
@@ -34,9 +33,9 @@ class JournalPoster
 
         // Tentukan akun kas/bank/piutang berdasarkan metode
         $metode = strtolower((string) $sale->metode);
-        if (in_array($metode, ['cash', 'tunai'])) {
+        if (in_array($metode, ['cash', 'tunai'], true)) {
             $debitAccountCode = config('account_map.kas');
-        } elseif (in_array($metode, ['qris', 'transfer', 'debit', 'kartu'])) {
+        } elseif (in_array($metode, ['qris', 'transfer', 'debit', 'kartu'], true)) {
             $debitAccountCode = config('account_map.bank');
         } else {
             // anggap sebagai kredit (piutang) jika tak dikenal
@@ -112,57 +111,14 @@ class JournalPoster
         );
     }
 
-    /** Helper: buat/replace 1 JournalEntry + lines */
-    private function upsertEntry(string $sourceType, int $sourceId, string $date, ?string $ref, ?string $memo, array $lines): void
-    {
-        DB::transaction(function () use ($sourceType, $sourceId, $date, $ref, $memo, $lines) {
-            $entry = JournalEntry::firstOrNew([
-                'source_type' => $sourceType,
-                'source_id'   => $sourceId,
-            ]);
-
-            $entry->date  = $date;
-            $entry->memo  = $memo;
-            $entry->ref_no ??= $ref; // biar generator di model jalan saat create
-            $entry->save();          // kalau baru → generator entry_no/ref_no akan mengisi
-
-            // reset lines
-            $entry->lines()->delete();
-
-            $payload = [];
-            foreach ($lines as $i => $l) {
-                $payload[] = [
-                    'account_id' => $this->accountIdByCode($l['account_code']),
-                    'debit'      => (float) $l['debit'],
-                    'credit'     => (float) $l['credit'],
-                    'memo'       => $l['memo'] ?? null,
-                    'line_no'    => $i + 1,
-                ];
-            }
-
-            if (! empty($payload)) {
-                $entry->lines()->createMany($payload);
-            }
-        });
-    }
-
-    /** Helper: ambil ID akun dari kode COA */
-    private function accountIdByCode(string $code): int
-    {
-        $id = ChartOfAccount::query()->where('code', $code)->value('id');
-        if (! $id) {
-            throw new \RuntimeException("Kode COA {$code} tidak ditemukan. Cek config/account_map.php & master COA.");
-        }
-        return (int) $id;
-    }
-
-        /** Post jurnal HPP dari PENYESUAIAN STOK (mode minus = pemakaian bahan) */
+    /** Post jurnal HPP dari PENYESUAIAN STOK (stok keluar / pemakaian bahan) */
     public function postForPenyesuaianStok(StokMutasi $mutasi): void
     {
-        // Kita cuma mau handle stok KELUAR (out / OUT)
-        $tipe = strtolower((string) $mutasi->tipe);
+        // DB kamu enum: 'IN','OUT','ADJ' -> kita compare uppercase biar aman.
+        $tipe = strtoupper((string) $mutasi->tipe);
+
+        // hanya handle stok keluar
         if ($tipe !== StokMutasi::TYPE_OUT) {
-            // kalau bukan OUT, pastikan nggak ada jurnal sisa
             $this->deleteFor(StokMutasi::class, $mutasi->id);
             return;
         }
@@ -175,7 +131,8 @@ class JournalPoster
 
         $bahanId = (int) $mutasi->bahan_baku_id;
 
-        // Hitung HPP rata-rata: total nilai pembelian / total qty IN
+        // Hitung HPP rata-rata:
+        // total nilai pembelian / total qty IN (qty_beli * isi_per_kemasan * konversi_ke_pakai)
         $stats = DB::table('pembelian_bahan_detail as d')
             ->where('d.bahan_baku_id', $bahanId)
             ->selectRaw('
@@ -185,7 +142,7 @@ class JournalPoster
             ->first();
 
         if (! $stats || (float) $stats->total_qty <= 0) {
-            // belum pernah ada pembelian bahan ini → nggak usah paksa posting
+            // belum pernah ada pembelian bahan ini -> jangan posting jurnal HPP
             $this->deleteFor(StokMutasi::class, $mutasi->id);
             return;
         }
@@ -198,7 +155,7 @@ class JournalPoster
             return;
         }
 
-        $namaBahan = $mutasi->bahan?->nama_bahan ?? 'Bahan ID '.$bahanId;
+        $namaBahan = $mutasi->bahan?->nama_bahan ?? ('Bahan ID '.$bahanId);
         $memoLine  = "Pemakaian bahan {$namaBahan}";
 
         $lines = [
@@ -228,4 +185,60 @@ class JournalPoster
         );
     }
 
+    /** Helper: buat/replace 1 JournalEntry + lines */
+    private function upsertEntry(
+        string $sourceType,
+        int $sourceId,
+        string $date,
+        ?string $ref,
+        ?string $memo,
+        array $lines
+    ): void {
+        DB::transaction(function () use ($sourceType, $sourceId, $date, $ref, $memo, $lines) {
+            $entry = JournalEntry::firstOrNew([
+                'source_type' => $sourceType,
+                'source_id'   => $sourceId,
+            ]);
+
+            $entry->date  = $date;
+            $entry->memo  = $memo;
+
+            // biar generator ref_no/entry_no di model jalan saat create
+            $entry->ref_no ??= $ref;
+
+            $entry->save();
+
+            // reset lines
+            $entry->lines()->delete();
+
+            $payload = [];
+            foreach ($lines as $i => $l) {
+                $payload[] = [
+                    'account_id' => $this->accountIdByCode($l['account_code']),
+                    'debit'      => (float) ($l['debit'] ?? 0),
+                    'credit'     => (float) ($l['credit'] ?? 0),
+                    'memo'       => $l['memo'] ?? null,
+                    'line_no'    => $i + 1,
+                ];
+            }
+
+            if (! empty($payload)) {
+                $entry->lines()->createMany($payload);
+            }
+        });
+    }
+
+    /** Helper: ambil ID akun dari kode COA */
+    private function accountIdByCode(string $code): int
+    {
+        $id = ChartOfAccount::query()->where('code', $code)->value('id');
+
+        if (! $id) {
+            throw new \RuntimeException(
+                "Kode COA {$code} tidak ditemukan. Cek config/account_map.php & master COA."
+            );
+        }
+
+        return (int) $id;
+    }
 }

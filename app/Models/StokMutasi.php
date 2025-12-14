@@ -8,9 +8,12 @@ class StokMutasi extends Model
 {
     protected $table = 'stok_mutasi'; // karena bukan jamak
 
-    public const TYPE_IN  = 'in';
-    public const TYPE_OUT = 'out';
+    // === PENTING: DB kamu pakai ENUM 'IN','OUT','ADJ' (UPPERCASE) ===
+    public const TYPE_IN  = 'IN';
+    public const TYPE_OUT = 'OUT';
+    public const TYPE_ADJ = 'ADJ';
 
+    // penanda sumber untuk penyesuaian stok manual (controller kamu pakai ini)
     public const SUMBER_PENYESUAIAN = 'penyesuaian_stok';
 
     protected $fillable = [
@@ -41,6 +44,8 @@ class StokMutasi extends Model
             ]);
     }
 
+    // ===================== SCOPES =====================
+
     public function scopeIn($query)
     {
         return $query->where('tipe', self::TYPE_IN);
@@ -56,6 +61,8 @@ class StokMutasi extends Model
         return $query->where('sumber_type', self::SUMBER_PENYESUAIAN);
     }
 
+    // ===================== HELPERS =====================
+
     public static function getStock($bahanBakuId)
     {
         $in = self::where('bahan_baku_id', $bahanBakuId)
@@ -66,9 +73,13 @@ class StokMutasi extends Model
             ->where('tipe', self::TYPE_OUT)
             ->sum('qty');
 
-        return $in - $out;
+        return (float)$in - (float)$out;
     }
 
+    /**
+     * Buat record stok_mutasi dari delta.
+     * +delta => IN, -delta => OUT
+     */
     public static function adjustStock(
         int $bahanBakuId,
         float $deltaQty,
@@ -87,7 +98,7 @@ class StokMutasi extends Model
             'qty'           => abs($deltaQty),
             'tanggal'       => $tanggal,
             'sumber_type'   => self::SUMBER_PENYESUAIAN,
-            'sumber_id'     => 0,           // ⬅ DI SINI yang tadinya null
+            'sumber_id'     => 0, // aman (di DB kamu sumber_id nullable juga boleh, tapi ini konsisten)
             'note'          => $note,
         ]);
     }

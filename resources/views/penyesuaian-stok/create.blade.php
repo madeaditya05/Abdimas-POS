@@ -33,7 +33,7 @@
   <div class="card-body">
     <form method="POST" action="{{ route('penyesuaian-stok.store') }}" class="form">
       @csrf
-
+      <input type="hidden" name="input_type" value="bahan">
       {{-- Bahan Baku --}}
       <div class="form-group">
         <label for="bahan_baku_id">Bahan Baku</label>

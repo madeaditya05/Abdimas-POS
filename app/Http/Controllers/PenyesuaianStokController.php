@@ -126,7 +126,7 @@ class PenyesuaianStokController extends Controller
      * Jalur PER MENU (dipanggil dari store() kalau input_type = menu).
      * Mengurangi stok semua bahan berdasarkan resep aktif * qty_menu.
      */
-    protected function storeMenu(Request $request, JournalPoster $poster)
+    public function storeMenu(Request $request, JournalPoster $poster)
     {
         $data = $request->validate([
             'input_type' => ['required', 'in:bahan,menu'],

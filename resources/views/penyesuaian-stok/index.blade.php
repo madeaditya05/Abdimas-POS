@@ -34,17 +34,32 @@
         @forelse($items as $row)
           @php
             $bahan = $row->bahan;
-            $jenis = $row->tipe === 'in' ? 'Bertambah' : 'Berkurang';
-            $sign  = $row->tipe === 'in' ? '+' : '-';
+
+            // DB: IN / OUT / ADJ
+            $tipe  = strtoupper((string) $row->tipe);
+
+            if ($tipe === 'IN') {
+              $jenis = 'Bertambah';
+              $sign  = '+';
+            } elseif ($tipe === 'OUT') {
+              $jenis = 'Berkurang';
+              $sign  = '-';
+            } else {
+              $jenis = 'Penyesuaian';
+              $sign  = '';
+            }
+
+            // qty di DB sudah angka positif
+            $qtyText = rtrim(rtrim(number_format((float) $row->qty, 2, ',', '.'), '0'), ',');
           @endphp
+
           <tr>
             <td>{{ optional($row->tanggal)->format('d M Y') ?? '-' }}</td>
             <td>{{ $bahan?->kode_bahan ?? '-' }}</td>
             <td>{{ $bahan?->nama_bahan ?? '(bahan dihapus)' }}</td>
             <td>{{ $jenis }}</td>
             <td class="num">
-              {{ $sign }}
-              {{ rtrim(rtrim(number_format($row->qty, 2, ',', '.'), '0'), ',') }}
+              {{ $sign }} {{ $qtyText }}
             </td>
             <td>{{ $row->note ?: '—' }}</td>
           </tr>
