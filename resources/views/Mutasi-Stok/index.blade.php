@@ -1,6 +1,10 @@
 @push('styles')
   {{-- Reuse CSS bahanbaku biar tampilannya konsisten --}}
   <link rel="stylesheet" href="{{ asset('assets/bahanbaku.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/stokmutasi.css') }}">
+
+  {{-- Flatpickr (biar datepicker popup bisa di-theme) --}}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 @endpush
 
 @extends('layouts.main')
@@ -27,36 +31,54 @@
 
     {{-- Filter tipe --}}
     @php $selTipe = $selectedTipe ?? ''; @endphp
-    <div class="dd" style="min-width:200px">
-      <button type="button" class="dd-toggle">
-        <span class="dd-label">
-          @switch($selTipe)
-            @case('IN')  IN (Masuk) @break
-            @case('OUT') OUT (Keluar) @break
-            @case('ADJ') ADJ (Penyesuaian) @break
-            @default Semua tipe
-          @endswitch
-        </span>
-        <span class="dd-caret"></span>
-      </button>
-      <div class="dd-menu">
-        <div class="dd-item {{ $selTipe==='' ? 'active':'' }}" data-value="">Semua tipe</div>
-        <div class="dd-item {{ $selTipe==='IN'  ? 'active':'' }}" data-value="IN">IN (Masuk)</div>
-        <div class="dd-item {{ $selTipe==='OUT' ? 'active':'' }}" data-value="OUT">OUT (Keluar)</div>
-        <div class="dd-item {{ $selTipe==='ADJ' ? 'active':'' }}" data-value="ADJ">ADJ (Penyesuaian)</div>
+
+    <div class="form-field" style="margin:0;">
+      <label style="font-size:12px;display:block;margin-bottom:2px;">Tipe</label>
+
+      <div class="dd" style="min-width:200px">
+        <button type="button" class="dd-toggle">
+          <span class="dd-label">
+            @switch($selTipe)
+              @case('IN')  IN (Masuk) @break
+              @case('OUT') OUT (Keluar) @break
+              @case('ADJ') ADJ (Penyesuaian) @break
+              @default Semua tipe
+            @endswitch
+          </span>
+          <span class="dd-caret"></span>
+        </button>
+
+        <div class="dd-menu">
+          <div class="dd-item {{ $selTipe==='' ? 'active':'' }}" data-value="">Semua tipe</div>
+          <div class="dd-item {{ $selTipe==='IN'  ? 'active':'' }}" data-value="IN">IN (Masuk)</div>
+          <div class="dd-item {{ $selTipe==='OUT' ? 'active':'' }}" data-value="OUT">OUT (Keluar)</div>
+          <div class="dd-item {{ $selTipe==='ADJ' ? 'active':'' }}" data-value="ADJ">ADJ (Penyesuaian)</div>
+        </div>
+
+        <input type="hidden" name="tipe" value="{{ $selTipe }}">
       </div>
-      <input type="hidden" name="tipe" value="{{ $selTipe }}">
     </div>
 
-    {{-- Filter tanggal --}}
+
+    {{-- Filter tanggal (Flatpickr) --}}
     <div class="form-field" style="margin:0;">
       <label style="font-size:12px;display:block;margin-bottom:2px;">Dari</label>
-      <input type="date" name="from" value="{{ $from }}" />
+      <input type="text"
+             name="from"
+             value="{{ $from }}"
+             class="js-date"
+             placeholder="yyyy-mm-dd"
+             autocomplete="off" />
     </div>
 
     <div class="form-field" style="margin:0;">
       <label style="font-size:12px;display:block;margin-bottom:2px;">Sampai</label>
-      <input type="date" name="to" value="{{ $to }}" />
+      <input type="text"
+             name="to"
+             value="{{ $to }}"
+             class="js-date"
+             placeholder="yyyy-mm-dd"
+             autocomplete="off" />
     </div>
 
     <input type="hidden" name="sort" value="{{ $sort }}">
@@ -86,6 +108,8 @@
           @php
             $bahan  = $row->bahan;
             $tipe   = $row->tipe;
+
+            // Badge warna: IN hijau, OUT merah, ADJ kuning
             $badgeClass = match ($tipe) {
               'IN'  => 'badge--success',
               'OUT' => 'badge--danger',
@@ -123,7 +147,7 @@
 
             {{-- Tanggal --}}
             <td>
-              {{ optional($row->tanggal)->format('d M Y H:i') }}
+              {{ \Carbon\Carbon::parse($row->tanggal)->format('d M Y') }}
             </td>
 
             {{-- Sumber --}}
@@ -139,7 +163,10 @@
 
             {{-- ID sumber --}}
             <td>
-              {{ $row->sumber_id ?? '-' }}
+              @php
+                $srcId = (int) ($row->sumber_id ?? 0);
+              @endphp
+              {{ $srcId > 0 ? $srcId : '-' }}
             </td>
 
             {{-- Catatan --}}
@@ -165,42 +192,54 @@
 @endsection
 
 @push('scripts')
-<script>
-(() => {
-  const closeAll = () => document.querySelectorAll('.dd.open')
-    .forEach(dd => dd.classList.remove('open'));
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.dd')) closeAll();
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeAll();
-  });
-
-  document.querySelectorAll('.dd').forEach(dd => {
-    const btn   = dd.querySelector('.dd-toggle');
-    const menu  = dd.querySelector('.dd-menu');
-    const label = dd.querySelector('.dd-label');
-    const input = dd.querySelector('input[type="hidden"]');
-
-    btn?.addEventListener('click', e => {
-      e.stopPropagation();
-      const willOpen = !dd.classList.contains('open');
-      closeAll();
-      if (willOpen) dd.classList.add('open');
-    });
-
-    menu?.querySelectorAll('.dd-item').forEach(item => {
-      item.addEventListener('click', () => {
-        menu.querySelectorAll('.dd-item.active').forEach(x => x.classList.remove('active'));
-        item.classList.add('active');
-        input.value = item.dataset.value ?? '';
-        label.textContent = item.textContent.trim();
-        dd.classList.remove('open');
+  {{-- Flatpickr --}}
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    document.querySelectorAll('.js-date').forEach(el => {
+      flatpickr(el, {
+        dateFormat: "Y-m-d", // sesuai filter backend whereDate
+        allowInput: true,
       });
     });
-  });
-})();
-</script>
+  </script>
+
+  {{-- Dropdown custom --}}
+  <script>
+  (() => {
+    const closeAll = () => document.querySelectorAll('.dd.open')
+      .forEach(dd => dd.classList.remove('open'));
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.dd')) closeAll();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeAll();
+    });
+
+    document.querySelectorAll('.dd').forEach(dd => {
+      const btn   = dd.querySelector('.dd-toggle');
+      const menu  = dd.querySelector('.dd-menu');
+      const label = dd.querySelector('.dd-label');
+      const input = dd.querySelector('input[type="hidden"]');
+
+      btn?.addEventListener('click', e => {
+        e.stopPropagation();
+        const willOpen = !dd.classList.contains('open');
+        closeAll();
+        if (willOpen) dd.classList.add('open');
+      });
+
+      menu?.querySelectorAll('.dd-item').forEach(item => {
+        item.addEventListener('click', () => {
+          menu.querySelectorAll('.dd-item.active').forEach(x => x.classList.remove('active'));
+          item.classList.add('active');
+          input.value = item.dataset.value ?? '';
+          label.textContent = item.textContent.trim();
+          dd.classList.remove('open');
+        });
+      });
+    });
+  })();
+  </script>
 @endpush

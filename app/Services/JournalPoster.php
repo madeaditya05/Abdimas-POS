@@ -48,14 +48,14 @@ class JournalPoster
                 'account_code' => $debitAccountCode,
                 'debit'  => $amount,
                 'credit' => 0,
-                'memo'   => 'Penjualan '.$sale->kode_penjualan,
+                'memo'   => 'Penjualan ' . $sale->kode_penjualan,
             ],
             // Kredit: pendapatan penjualan
             [
                 'account_code' => config('account_map.pendapatan_penjualan'),
                 'debit'  => 0,
                 'credit' => $amount,
-                'memo'   => 'Penjualan '.$sale->kode_penjualan,
+                'memo'   => 'Penjualan ' . $sale->kode_penjualan,
             ],
         ];
 
@@ -90,14 +90,14 @@ class JournalPoster
                 'account_code' => config('account_map.persediaan_bahan'),
                 'debit'  => $amount,
                 'credit' => 0,
-                'memo'   => 'Pembelian '.$buy->kode_pembelian,
+                'memo'   => 'Pembelian ' . $buy->kode_pembelian,
             ],
             // Kredit: kas / utang
             [
                 'account_code' => $creditAccount,
                 'debit'  => 0,
                 'credit' => $amount,
-                'memo'   => 'Pembelian '.$buy->kode_pembelian,
+                'memo'   => 'Pembelian ' . $buy->kode_pembelian,
             ],
         ];
 
@@ -114,7 +114,6 @@ class JournalPoster
     /** Post jurnal HPP dari PENYESUAIAN STOK (stok keluar / pemakaian bahan) */
     public function postForPenyesuaianStok(StokMutasi $mutasi): void
     {
-        // DB kamu enum: 'IN','OUT','ADJ' -> kita compare uppercase biar aman.
         $tipe = strtoupper((string) $mutasi->tipe);
 
         // hanya handle stok keluar
@@ -137,11 +136,11 @@ class JournalPoster
             ->where('d.bahan_baku_id', $bahanId)
             ->selectRaw('
                 SUM(d.subtotal) AS total_value,
-                SUM(d.qty_beli * d.isi_per_kemasan * d.konversi_ke_pakai) AS total_qty
+                SUM(d.qty_beli * COALESCE(d.isi_per_kemasan, 0) * COALESCE(d.konversi_ke_pakai, 1)) AS total_qty
             ')
             ->first();
 
-        if (! $stats || (float) $stats->total_qty <= 0) {
+        if (! $stats || (float) ($stats->total_qty ?? 0) <= 0) {
             // belum pernah ada pembelian bahan ini -> jangan posting jurnal HPP
             $this->deleteFor(StokMutasi::class, $mutasi->id);
             return;
@@ -155,7 +154,7 @@ class JournalPoster
             return;
         }
 
-        $namaBahan = $mutasi->bahan?->nama_bahan ?? ('Bahan ID '.$bahanId);
+        $namaBahan = $mutasi->bahan?->nama_bahan ?? ('Bahan ID ' . $bahanId);
         $memoLine  = "Pemakaian bahan {$namaBahan}";
 
         $lines = [
@@ -179,7 +178,7 @@ class JournalPoster
             sourceType: StokMutasi::class,
             sourceId:   $mutasi->id,
             date:       $mutasi->tanggal?->toDateString() ?? now()->toDateString(),
-            ref:        'ADJ-'.$mutasi->id,
+            ref:        'ADJ-' . $mutasi->id,
             memo:       'Auto HPP dari Penyesuaian Stok',
             lines:      $lines,
         );
@@ -200,11 +199,13 @@ class JournalPoster
                 'source_id'   => $sourceId,
             ]);
 
-            $entry->date  = $date;
-            $entry->memo  = $memo;
+            $entry->date = $date;
+            $entry->memo = $memo;
 
             // biar generator ref_no/entry_no di model jalan saat create
-            $entry->ref_no ??= $ref;
+            if (!empty($ref) && empty($entry->ref_no)) {
+                $entry->ref_no = $ref;
+            }
 
             $entry->save();
 

@@ -11,166 +11,115 @@ use App\Services\JournalPoster;
 
 class PenyesuaianStokController extends Controller
 {
-    /**
-     * Tampilkan daftar penyesuaian stok (riwayat).
-     */
     public function index(Request $request)
     {
         $items = StokMutasi::query()
-            ->with('bahan') // relasi ke BahanBaku
+            ->with('bahan')
             ->orderByDesc('tanggal')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(15);
 
         return view('penyesuaian-stok.index', compact('items'));
     }
 
-    /**
-     * Form buat input penyesuaian stok (default: per bahan).
-     */
     public function create()
     {
-        // list bahan aktif
         $bahanList = BahanBaku::where('aktif', true)
             ->orderBy('nama_bahan')
             ->get();
 
-        // list produk yang punya resep aktif
         $produkList = Produk::with('resepAktif.details.bahanBaku')
             ->whereHas('resepAktif')
             ->orderBy('nama_barang')
             ->get();
 
-        $today = now()->toDateString();
-
         return view('penyesuaian-stok.create', [
             'bahanList'  => $bahanList,
             'produkList' => $produkList,
-            'today'      => $today,
+            'today'      => now()->toDateString(),
         ]);
     }
 
-    /**
-     * Alias route GET /penyesuaian-stok/menu
-     * → tetap pakai view yang sama, cuma kasih hint mode=menu.
-     */
     public function createMenu()
     {
-        // reuse create() biar nggak dobel logic
-        $bahanList = BahanBaku::where('aktif', true)
-            ->orderBy('nama_bahan')
-            ->get();
-
         $produkList = Produk::with('resepAktif.details.bahanBaku')
             ->whereHas('resepAktif')
             ->orderBy('nama_barang')
             ->get();
 
-        $today = now()->toDateString();
-
-        // kirim query param mode = 'menu'
-        return view('penyesuaian-stok.create', [
-            'bahanList'  => $bahanList,
+        return view('penyesuaian-stok.create-menu', [
             'produkList' => $produkList,
-            'today'      => $today,
-        ])->with(['mode' => 'menu']);
+            'today'      => now()->toDateString(),
+        ]);
     }
 
-    /**
-     * Simpan penyesuaian stok:
-     * - kalau input_type = 'bahan' → jalur lama
-     * - kalau input_type = 'menu'  → jalur baru (per menu / resep)
-     */
     public function store(Request $request, JournalPoster $poster)
     {
-        $inputType = $request->input('input_type', 'bahan');
-
-        if ($inputType === 'menu') {
+        if ($request->input('input_type') === 'menu') {
             return $this->storeMenu($request, $poster);
         }
 
-        // ================== JALUR PER BAHAN (LAMA) ==================
         $data = $request->validate([
-            'input_type'    => ['required', 'in:bahan,menu'],
             'bahan_baku_id' => ['required', 'exists:bahan_baku,id'],
-            'mode'          => ['required', 'in:plus,minus'],   // plus = tambah stok, minus = kurangi
+            'mode'          => ['required', 'in:plus,minus'],
             'qty'           => ['required', 'numeric', 'min:0.0001'],
             'tanggal'       => ['required', 'date'],
             'note'          => ['nullable', 'string'],
         ]);
 
         $deltaQty = $data['mode'] === 'plus'
-            ? (float) $data['qty']     // stok bertambah
-            : -1 * (float) $data['qty']; // stok berkurang
+            ? (float) $data['qty']
+            : -1 * (float) $data['qty'];
 
         $mutasi = StokMutasi::adjustStock(
-            bahanBakuId:  (int) $data['bahan_baku_id'],
-            deltaQty:     $deltaQty,
-            note:         $data['note'] ?? null,
-            tanggal:      Carbon::parse($data['tanggal'])
+            bahanBakuId: (int) $data['bahan_baku_id'],
+            deltaQty:    $deltaQty,
+            note:        $data['note'] ?? null,
+            tanggal:     Carbon::parse($data['tanggal'])
         );
 
-        // kalau stok berkurang → auto-post HPP
-        if ($deltaQty < 0) {
-            $poster->postForPenyesuaianStok($mutasi);
-        } else {
-            // kalau stok nambah, pastikan jurnal HPP untuk mutasi ini nggak ada
-            $poster->deleteFor(StokMutasi::class, $mutasi->id);
-        }
+        // PERIODIK: pastikan tidak ada jurnal HPP realtime
+        $poster->deleteFor(StokMutasi::class, $mutasi->id);
 
         return redirect()
             ->route('penyesuaian-stok.index')
-            ->with('success', 'Penyesuaian stok per bahan berhasil disimpan.');
+            ->with('success', 'Penyesuaian stok berhasil disimpan.');
     }
 
-    /**
-     * Jalur PER MENU (dipanggil dari store() kalau input_type = menu).
-     * Mengurangi stok semua bahan berdasarkan resep aktif * qty_menu.
-     */
     public function storeMenu(Request $request, JournalPoster $poster)
     {
         $data = $request->validate([
-            'input_type' => ['required', 'in:bahan,menu'],
-            'produk_id'  => ['required', 'exists:produk,id'],
-            'qty_menu'   => ['required', 'numeric', 'min:0.0001'],
-            'tanggal'    => ['required', 'date'],
-            'note'       => ['nullable', 'string'],
+            'produk_id' => ['required', 'exists:produk,id'],
+            'qty_menu'  => ['required', 'integer', 'min:1'],
+            'tanggal'   => ['required', 'date'],
+            'note'      => ['nullable', 'string'],
         ]);
 
-        $produk   = Produk::with('resepAktif.details.bahanBaku')->findOrFail($data['produk_id']);
-        $resep    = $produk->resepAktif;
+        $produk = Produk::with('resepAktif.details.bahanBaku')->findOrFail($data['produk_id']);
+        $resep  = $produk->resepAktif;
 
         if (! $resep || $resep->details->isEmpty()) {
-            return back()
-                ->withInput()
-                ->withErrors(['produk_id' => 'Produk ini belum punya resep aktif / detail bahan.']);
+            return back()->withErrors(['produk_id' => 'Produk belum punya resep aktif.']);
         }
 
-        $qtyMenu  = (float) $data['qty_menu'];
-        $tanggal  = Carbon::parse($data['tanggal']);
+        $qtyMenu = (int) $data['qty_menu'];
+        $tanggal = Carbon::parse($data['tanggal']);
         $noteBase = $data['note'] ?: "Penyesuaian per menu {$produk->nama_barang} x {$qtyMenu}";
 
         foreach ($resep->details as $detail) {
-            // berapa banyak bahan per menu * jumlah menu
             $delta = -1 * ($qtyMenu * (float) $detail->qty_per_porsi);
-
-            if ($delta === 0.0) {
-                continue;
-            }
-
-            $note = $noteBase;
-            if (! empty($detail->keterangan)) {
-                $note .= " ({$detail->keterangan})";
-            }
+            if ($delta == 0.0) continue;
 
             $mutasi = StokMutasi::adjustStock(
-                bahanBakuId:  (int) $detail->bahan_baku_id,
-                deltaQty:     $delta,
-                note:         $note,
-                tanggal:      $tanggal
+                bahanBakuId: (int) $detail->bahan_baku_id,
+                deltaQty:    $delta,
+                note:        $noteBase,
+                tanggal:     $tanggal
             );
 
-            // setiap kali stok keluar → post HPP
-            $poster->postForPenyesuaianStok($mutasi);
+            // PERIODIK: tidak posting jurnal HPP realtime
+            $poster->deleteFor(StokMutasi::class, $mutasi->id);
         }
 
         return redirect()

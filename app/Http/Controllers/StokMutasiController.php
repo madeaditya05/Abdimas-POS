@@ -52,7 +52,26 @@ class StokMutasiController extends Controller
             $dir = 'desc';
         }
 
+        // Primary sort
         $query->orderBy($sort, $dir);
+
+        /**
+         * ✅ Tie-breaker penting:
+         * Karena tanggal kamu biasanya "date" (jam 00:00), banyak row jadi "kembar".
+         * Maka kalau sort = tanggal, kita urutkan lagi berdasarkan created_at + id,
+         * supaya data yang BARU DIBUAT muncul paling atas.
+         */
+        if ($sort === 'tanggal') {
+            $query->orderByDesc('created_at')
+                  ->orderByDesc('id');
+        }
+
+        // (opsional) kalau sort qty, biar stabil juga
+        if ($sort === 'qty') {
+            $query->orderByDesc('tanggal')
+                  ->orderByDesc('created_at')
+                  ->orderByDesc('id');
+        }
 
         $items = $query->paginate(15)->withQueryString();
 

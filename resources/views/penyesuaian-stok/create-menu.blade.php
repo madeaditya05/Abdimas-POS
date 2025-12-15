@@ -56,8 +56,8 @@
         <input type="number"
                id="qty_menu"
                name="qty_menu"
-               step="0.01"
-               min="0"
+               step="1" 
+               min="1"
                value="{{ old('qty_menu') }}"
                placeholder="contoh: 3 (gelas)"
                required>

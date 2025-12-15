@@ -54,7 +54,7 @@
           @endphp
 
           <tr>
-            <td>{{ optional($row->tanggal)->format('d M Y') ?? '-' }}</td>
+            <td>{{ \Carbon\Carbon::parse($row->tanggal)->format('d M Y') }}</td>
             <td>{{ $bahan?->kode_bahan ?? '-' }}</td>
             <td>{{ $bahan?->nama_bahan ?? '(bahan dihapus)' }}</td>
             <td>{{ $jenis }}</td>

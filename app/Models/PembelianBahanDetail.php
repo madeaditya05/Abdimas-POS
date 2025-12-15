@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\StokMutasiService;
+use App\Services\JournalPoster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -41,6 +42,7 @@ class PembelianBahanDetail extends Model
      * - Hitung subtotal otomatis.
      * - Snapshot field dari master BahanBaku (kalau belum terisi).
      * - Setelah save/delete: recalculating total header & sync StokMutasi (IN).
+     * - TAMBAHAN: auto-post jurnal pembelian (JournalPoster).
      */
     protected static function booted(): void
     {
@@ -64,21 +66,47 @@ class PembelianBahanDetail extends Model
 
         // setelah simpan (create/update)
         static::saved(function (PembelianBahanDetail $d) {
-            optional($d->header)->recalcTotal();
+            // 1) Recalc total header (ini yang bikin $buy->total bener)
+            $header = $d->header;
+            if ($header) {
+                $header->recalcTotal();
+                $header->refresh(); // pastiin total terbaru kebaca
+            }
 
-            // Sinkron stok: hapus mutasi lama milik record ini, lalu buat IN baru
-            app(\App\Services\StokMutasiService::class)->remove($d);
+            // 2) Sinkron stok: hapus mutasi lama milik record ini, lalu buat IN baru
+            app(StokMutasiService::class)->remove($d);
 
-            if ($d->bahan_baku_id && $d->qty_beli > 0) {
-                // cukup kirim model detail + bahan_id, biar service yang hitung qtyIn dari konversi
-                app(\App\Services\StokMutasiService::class)->in(
+            if ($d->bahan_baku_id && (float)$d->qty_beli > 0) {
+                app(StokMutasiService::class)->in(
                     $d,
                     (int) $d->bahan_baku_id,
                     0,          // <-- JANGAN kirim qty_beli di sini
                     'PURCHASE'
                 );
             }
+
+            // 3) TAMBAHAN PENTING: Auto-post jurnal pembelian berdasarkan TOTAL header
+            if ($header && (float)($header->total ?? 0) > 0) {
+                app(JournalPoster::class)->postForPembelianBahan($header);
+            }
         });
 
+        // kalau detail dihapus, total berubah => jurnal harus ikut update/hapus
+        static::deleted(function (PembelianBahanDetail $d) {
+            $header = $d->header;
+            if ($header) {
+                $header->recalcTotal();
+                $header->refresh();
+
+                if ((float)($header->total ?? 0) > 0) {
+                    app(JournalPoster::class)->postForPembelianBahan($header);
+                } else {
+                    app(JournalPoster::class)->deleteFor(PembelianBahan::class, (int)$header->id);
+                }
+            }
+
+            // rapihin stok mutasi terkait detail yang dihapus
+            app(StokMutasiService::class)->remove($d);
+        });
     }
 }

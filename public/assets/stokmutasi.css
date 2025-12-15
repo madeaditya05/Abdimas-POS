@@ -1,0 +1,133 @@
+.badge--success {
+    background: #e7f7ee;
+    color: #0f7a3a;
+    border: 1px solid #bfead0;
+}
+
+.badge--danger {
+    background: #ffe9e9;
+    color: #b42318;
+    border: 1px solid #ffc6c6;
+}
+
+.badge--warning {
+    background: #fff7e6;
+    color: #9a6700;
+    border: 1px solid #ffe0a3;
+}
+
+/* === Coffee tokens (sesuai vibes sidebar kamu) === */
+:root {
+    --coffee-900: #2b1d17; /* coklat gelap (patokan sidebar) */
+    --coffee-700: #4a3127;
+    --coffee-200: #eadfd7; /* coklat muda */
+    --coffee-100: #f5efea; /* coklat muda banget */
+    --coffee-ring: rgba(43, 29, 23, 0.25);
+}
+
+/* Input date field biar lebih modern */
+.js-date {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 12px;
+    outline: none;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.js-date:focus {
+    border-color: var(--coffee-700);
+    box-shadow: 0 0 0 4px var(--coffee-ring);
+}
+
+/* ===== Flatpickr calendar theming ===== */
+.flatpickr-calendar {
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+    border: 1px solid #eadfd7;
+    overflow: hidden;
+    font-family: inherit;
+}
+
+.flatpickr-months {
+    background: var(--coffee-900);
+    color: #fff;
+    padding: 10px 10px;
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    color: #fff;
+    fill: #fff;
+}
+
+.flatpickr-current-month {
+    color: #fff;
+    font-weight: 700;
+}
+
+.flatpickr-weekdays {
+    background: var(--coffee-100);
+    border-bottom: 1px solid var(--coffee-200);
+}
+
+span.flatpickr-weekday {
+    color: var(--coffee-700);
+    font-weight: 600;
+}
+
+.flatpickr-day {
+    border-radius: 12px;
+}
+
+/* Hover hari */
+.flatpickr-day:hover {
+    background: var(--coffee-100);
+    border-color: var(--coffee-100);
+}
+
+/* Start/End date (yang kamu bilang beda tone atas/bawah) */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: var(--coffee-900);
+    border-color: var(--coffee-900);
+    color: #fff;
+}
+
+/* Range yang “di tengah” */
+.flatpickr-day.inRange {
+    background: var(--coffee-200);
+    border-color: var(--coffee-200);
+    color: var(--coffee-900);
+}
+
+/* Hari ini */
+.flatpickr-day.today {
+    border-color: var(--coffee-700);
+}
+
+.flatpickr-day.today:not(.selected):not(.startRange):not(.endRange) {
+    background: transparent;
+}
+
+/* Flatpickr header (bulan & tahun) jadi putih */
+.flatpickr-months .flatpickr-month,
+.flatpickr-months .flatpickr-current-month,
+.flatpickr-months .flatpickr-current-month .cur-month,
+.flatpickr-months .flatpickr-current-month .cur-year {
+    color: #fff !important;
+}
+
+/* Panah prev/next jadi putih juga */
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month,
+.flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-months .flatpickr-next-month svg {
+    fill: #fff !important;
+    color: #fff !important;
+}
+
+/* Kalau ada dropdown month */
+.flatpickr-monthDropdown-months {
+    color: #fff !important;
+}

@@ -6,6 +6,7 @@ use App\Models\PembelianBahan;
 use App\Models\BahanBaku;
 use App\Http\Requests\StorePembelianBahanRequest;
 use App\Http\Requests\UpdatePembelianBahanRequest;
+use App\Services\JournalPoster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -16,10 +17,8 @@ class PembelianBahanController extends Controller
      */
     public function index(Request $request)
     {
-        // search sederhana: kode / supplier
         $search = trim((string) $request->get('q', ''));
 
-        // sort & direction
         $sort = $request->get('sort', 'tanggal');
         $dir  = $request->get('dir', 'desc');
 
@@ -27,7 +26,6 @@ class PembelianBahanController extends Controller
         if (! in_array($sort, $allowedSort, true)) {
             $sort = 'tanggal';
         }
-
         $dir = $dir === 'asc' ? 'asc' : 'desc';
 
         $query = PembelianBahan::query();
@@ -56,11 +54,9 @@ class PembelianBahanController extends Controller
      */
     public function create()
     {
-        // instance kosong untuk dioper ke form
         $row = new PembelianBahan();
         $row->tanggal = now();
 
-        // daftar bahan baku untuk dropdown di detail
         $bahanOptions = BahanBaku::orderBy('nama_bahan')->get();
 
         return view('Pembelian-Bahan.create', [
@@ -72,21 +68,18 @@ class PembelianBahanController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePembelianBahanRequest $request)
+    public function store(StorePembelianBahanRequest $request, JournalPoster $poster)
     {
         $data    = $request->validated();
         $details = $request->input('details', []);
 
-        // bersihkan & filter baris detail
         $cleanDetails = [];
         foreach ($details as $row) {
             $bahanId = $row['bahan_baku_id'] ?? null;
             $qty     = (float) ($row['qty_beli'] ?? 0);
             $harga   = (float) ($row['harga_satuan'] ?? 0);
 
-            if (!$bahanId || $qty <= 0) {
-                continue; // skip baris kosong / tidak valid
-            }
+            if (!$bahanId || $qty <= 0) continue;
 
             $cleanDetails[] = [
                 'bahan_baku_id' => $bahanId,
@@ -103,8 +96,8 @@ class PembelianBahanController extends Controller
                 ->withErrors(['details' => 'Minimal satu baris detail dengan bahan & qty > 0.']);
         }
 
-        DB::transaction(function () use ($request, $data, $cleanDetails, &$pembelian) {
-            // header – kode & total akan diurus oleh model (booted)
+        /** @var PembelianBahan $pembelian */
+        $pembelian = DB::transaction(function () use ($request, $data, $cleanDetails) {
             $pembelian = PembelianBahan::create([
                 'tanggal'         => $data['tanggal'] ?? now(),
                 'supplier_nama'   => $data['supplier_nama']   ?? null,
@@ -113,12 +106,16 @@ class PembelianBahanController extends Controller
                 'user_id'         => $request->user()?->id,
             ]);
 
-            // detail – subtotal, snapshot, mutasi stok, total & jurnal
-            // semua di-handle oleh event model PembelianBahanDetail & PembelianBahan
             foreach ($cleanDetails as $d) {
                 $pembelian->details()->create($d);
             }
+
+            return $pembelian;
         });
+
+        // ✅ setelah commit, post jurnal (biar total sudah final)
+        $pembelian = $pembelian->fresh();
+        $poster->postForPembelianBahan($pembelian);
 
         return redirect()
             ->route('pembelian-bahan.index')
@@ -130,7 +127,6 @@ class PembelianBahanController extends Controller
      */
     public function show(PembelianBahan $pembelianBahan)
     {
-        // tidak dipakai (pakai index + edit saja)
         abort(404);
     }
 
@@ -152,7 +148,7 @@ class PembelianBahanController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdatePembelianBahanRequest $request, PembelianBahan $pembelianBahan)
+    public function update(UpdatePembelianBahanRequest $request, PembelianBahan $pembelianBahan, JournalPoster $poster)
     {
         $data    = $request->validated();
         $details = $request->input('details', []);
@@ -163,9 +159,7 @@ class PembelianBahanController extends Controller
             $qty     = (float) ($row['qty_beli'] ?? 0);
             $harga   = (float) ($row['harga_satuan'] ?? 0);
 
-            if (!$bahanId || $qty <= 0) {
-                continue;
-            }
+            if (!$bahanId || $qty <= 0) continue;
 
             $cleanDetails[] = [
                 'bahan_baku_id' => $bahanId,
@@ -183,7 +177,6 @@ class PembelianBahanController extends Controller
         }
 
         DB::transaction(function () use ($request, $data, $cleanDetails, $pembelianBahan) {
-            // update header
             $pembelianBahan->update([
                 'tanggal'         => $data['tanggal'] ?? $pembelianBahan->tanggal,
                 'supplier_nama'   => $data['supplier_nama']   ?? null,
@@ -192,18 +185,18 @@ class PembelianBahanController extends Controller
                 'user_id'         => $request->user()?->id,
             ]);
 
-            // hapus semua detail lama satu per satu (supaya event deleted kepanggil,
-            // stok & jurnal ikut dibersihkan)
             $pembelianBahan->load('details');
             foreach ($pembelianBahan->details as $detail) {
                 $detail->delete();
             }
 
-            // buat ulang detail baru
             foreach ($cleanDetails as $d) {
                 $pembelianBahan->details()->create($d);
             }
         });
+
+        // ✅ re-post jurnal setelah update
+        $poster->postForPembelianBahan($pembelianBahan->fresh());
 
         return redirect()
             ->route('pembelian-bahan.index')
@@ -213,10 +206,11 @@ class PembelianBahanController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PembelianBahan $pembelianBahan)
+    public function destroy(PembelianBahan $pembelianBahan, JournalPoster $poster)
     {
-        // hapus header: relasi detail cascade + event di detail akan
-        // menghapus mutasi & update total/jurnal
+        // ✅ hapus jurnal dulu
+        $poster->deleteFor(PembelianBahan::class, (int) $pembelianBahan->id);
+
         $pembelianBahan->delete();
 
         return redirect()

@@ -11,7 +11,6 @@ class OwnerReportController extends Controller
 {
     public function index(Request $request)
     {
-        // Tentukan rentang tanggal
         [$mulai, $akhir] = $this->rentangTanggal($request);
         $bagian = $this->bagianLaporan($request);
 
@@ -24,10 +23,10 @@ class OwnerReportController extends Controller
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
 
-        // === LABA RUGI BERBASIS JURNAL ===
+        // === LABA RUGI (PERIODIK + AVERAGE) ===
         $labarugi   = $this->hitungLabaRugi($mulai, $akhir);
 
-        // === TAMBAHAN: REKAP PEMBELIAN BAHAN (boleh dipakai atau tidak) ===
+        // === REKAP PEMBELIAN BAHAN ===
         $pembelian = $this->ambilRekapPembelianBahan($mulai, $akhir);
 
         $meta = [
@@ -42,7 +41,7 @@ class OwnerReportController extends Controller
             'payUnified' => $payUnified,
             'journal'    => $jurnal,
             'ledger'     => $bukuBesar,
-            'pembelian'  => $pembelian, // <<— tambahan PEMBELIAN
+            'pembelian'  => $pembelian,
             'meta'       => $meta,
             'sections'   => $bagian,
         ]);
@@ -59,7 +58,6 @@ class OwnerReportController extends Controller
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
         $labarugi   = $this->hitungLabaRugi($mulai, $akhir);
-
         $pembelian  = $this->ambilRekapPembelianBahan($mulai, $akhir);
 
         $meta = [
@@ -82,17 +80,19 @@ class OwnerReportController extends Controller
         return $pdf->download("Laporan-Owner_{$mulai}_sd_{$akhir}.pdf");
     }
 
-    // ===================== LABA RUGI =====================
+    // ===================== LABA RUGI (PERIODIK + AVERAGE) =====================
 
     private function hitungLabaRugi(string $mulai, string $akhir): array
     {
         $mulaiTanggal = substr($mulai, 0, 10);
         $akhirTanggal = substr($akhir, 0, 10);
 
+        // Pendapatan & Beban dari jurnal (hanya akun type revenue/expense)
+        // NOTE: Pembelian bahan (Kas <-> Persediaan) itu ASSET, jadi tidak mempengaruhi LR.
         $rows = DB::table('journal_line as jl')
             ->join('chart_of_account as coa', 'coa.id', '=', 'jl.account_id')
             ->join('journal_entry as je', 'je.id', '=', 'jl.journal_entry_id')
-            ->whereBetween('je.date', [$mulaiTanggal, $akhirTanggal])
+            ->whereBetween('je.date', [$mulai, $akhir]) // ✅ pakai datetime full range
             ->select(
                 'coa.code',
                 'coa.name',
@@ -103,38 +103,101 @@ class OwnerReportController extends Controller
             ->groupBy('coa.code', 'coa.name', 'coa.type')
             ->get();
 
-        $pendapatan = 0;
-        $hpp        = 0;
-        $beban      = 0;
+        $pendapatan = 0.0;
+        $beban      = 0.0;
 
         foreach ($rows as $row) {
             $debit  = (float) $row->debit;
             $credit = (float) $row->credit;
+            $type   = strtolower((string) $row->type);
 
-            if ($row->type === 'revenue') {
+            if ($type === 'revenue') {
                 $pendapatan += ($credit - $debit);
             }
 
-            if ($row->type === 'expense') {
-                if (substr($row->code, 0, 1) === '5') {
-                    $hpp += ($debit - $credit); // HPP
-                } else {
-                    $beban += ($debit - $credit); // Beban operasional
+            if ($type === 'expense') {
+                // Periodik: HPP tidak diambil dari jurnal (skip akun 5xxx)
+                if (substr((string) $row->code, 0, 1) !== '5') {
+                    $beban += ($debit - $credit);
                 }
             }
         }
 
+        // Full 1 bulan?
+        $isFullMonth =
+            date('Y-m', strtotime($mulaiTanggal)) === date('Y-m', strtotime($akhirTanggal)) &&
+            $mulaiTanggal === date('Y-m-01', strtotime($mulaiTanggal)) &&
+            $akhirTanggal === date('Y-m-t', strtotime($akhirTanggal));
+
+        // HPP periodik dihitung dari OUT + average cost (hanya full month)
+        $hpp = $isFullMonth
+            ? $this->hitungHppAverageDariOut($mulaiTanggal, $akhirTanggal)
+            : 0.0;
+
+        $labaKotor  = $pendapatan - $hpp;
+        $labaBersih = $labaKotor - $beban;
+
         return [
             'revenue'    => $pendapatan,
             'cogs'       => $hpp,
-            'gross'      => $pendapatan - $hpp,
+            'gross'      => $labaKotor,
             'expense'    => $beban,
-            'net_income' => ($pendapatan - $hpp) - $beban,
+            'net_income' => $labaBersih,
             'rows'       => $rows,
+            'is_closed'  => $isFullMonth,
         ];
     }
 
-    // ===================== DATA PEMBELIAN (BARU DITAMBAHKAN) =====================
+    private function hitungHppAverageDariOut(string $startDate, string $endDate): float
+    {
+        $from = $startDate . ' 00:00:00';
+        $to   = $endDate   . ' 23:59:59';
+
+        $pemakaian = DB::table('stok_mutasi')
+            ->where('tipe', 'OUT')
+            ->whereBetween('tanggal', [$from, $to])
+            ->selectRaw('bahan_baku_id, SUM(qty) as qty_out')
+            ->groupBy('bahan_baku_id')
+            ->get();
+
+        if ($pemakaian->isEmpty()) {
+            return 0.0;
+        }
+
+        $avgRows = DB::table('pembelian_bahan_detail as d')
+            ->join('pembelian_bahan as pb', 'pb.id', '=', 'd.pembelian_bahan_id')
+            ->where('pb.tanggal', '<=', $to)
+            ->selectRaw('
+                d.bahan_baku_id,
+                SUM(d.subtotal) AS total_value,
+                SUM(d.qty_beli * COALESCE(d.isi_per_kemasan, 0) * COALESCE(d.konversi_ke_pakai, 1)) AS total_qty_pakai
+            ')
+            ->groupBy('d.bahan_baku_id')
+            ->get()
+            ->keyBy('bahan_baku_id');
+
+        $hpp = 0.0;
+
+        foreach ($pemakaian as $row) {
+            $bahanId = (int) $row->bahan_baku_id;
+            $qtyOut  = (float) $row->qty_out;
+            if ($qtyOut <= 0) continue;
+
+            $avg = $avgRows->get($bahanId);
+            if (!$avg) continue;
+
+            $totalValue    = (float) ($avg->total_value ?? 0);
+            $totalQtyPakai = (float) ($avg->total_qty_pakai ?? 0);
+            if ($totalValue <= 0 || $totalQtyPakai <= 0) continue;
+
+            $avgCost = $totalValue / $totalQtyPakai;
+            $hpp += ($qtyOut * $avgCost);
+        }
+
+        return (float) $hpp;
+    }
+
+    // ===================== DATA PEMBELIAN =====================
 
     private function ambilRekapPembelianBahan(string $mulai, string $akhir)
     {
@@ -191,9 +254,9 @@ class OwnerReportController extends Controller
             ->where('pay.transaction_status', 'settlement')
             ->whereBetween('pay.paid_at', [$mulai, $akhir])
             ->selectRaw("
-                CASE 
-                    WHEN pay.pg_payment_type='cash' THEN 'Tunai' 
-                    ELSE 'Non Tunai' 
+                CASE
+                    WHEN pay.pg_payment_type='cash' THEN 'Tunai'
+                    ELSE 'Non Tunai'
                 END as kategori,
                 COUNT(*) trx,
                 SUM(pay.gross_amount) total
@@ -210,7 +273,7 @@ class OwnerReportController extends Controller
         return DB::table('journal_entry as je')
             ->join('journal_line as jl', 'jl.journal_entry_id', '=', 'je.id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'jl.account_id')
-            ->whereBetween('je.date', [substr($mulai, 0, 10), substr($akhir, 0, 10)])
+            ->whereBetween('je.date', [$mulai, $akhir]) // ✅ pakai datetime full range
             ->orderBy('je.date')
             ->orderBy('je.entry_no')
             ->selectRaw('
@@ -228,19 +291,18 @@ class OwnerReportController extends Controller
             ->get();
     }
 
-    
     private function susunBukuBesar($jurnal): array
     {
         $bb = [];
 
         foreach ($jurnal as $row) {
-            $key    = $row->code.' - '.$row->name;
-            $normal = strtoupper($row->normal_side);
+            $key    = $row->code . ' - ' . $row->name;
+            $normal = strtoupper((string) $row->normal_side);
 
             if (!isset($bb[$key])) {
                 $bb[$key] = [
-                    'normal' => $normal,
-                    'rows'   => [],
+                    'normal'       => $normal,
+                    'rows'         => [],
                     'total_debit'  => 0,
                     'total_credit' => 0,
                     'balance'      => 0,
@@ -248,8 +310,8 @@ class OwnerReportController extends Controller
             }
 
             $change = ($normal === 'DEBIT')
-                ? ($row->debit - $row->credit)
-                : ($row->credit - $row->debit);
+                ? ((float)$row->debit - (float)$row->credit)
+                : ((float)$row->credit - (float)$row->debit);
 
             $bb[$key]['total_debit']  += (float)$row->debit;
             $bb[$key]['total_credit'] += (float)$row->credit;
@@ -276,13 +338,12 @@ class OwnerReportController extends Controller
         $mulai = $request->get('start_date') ?: now()->toDateString();
         $akhir = $request->get('end_date') ?: now()->toDateString();
 
-        return [$mulai.' 00:00:00', $akhir.' 23:59:59'];
+        return [$mulai . ' 00:00:00', $akhir . ' 23:59:59'];
     }
-
 
     private function bagianLaporan(Request $request): array
     {
-        $all = ['labarugi','items','payments','unified','journal','ledger'];
+        $all = ['labarugi', 'items', 'payments', 'unified', 'journal', 'ledger'];
         $pilih = $request->input('sec', $all);
 
         if (!is_array($pilih)) $pilih = [$pilih];
