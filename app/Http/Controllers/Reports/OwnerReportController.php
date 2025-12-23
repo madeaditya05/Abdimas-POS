@@ -296,4 +296,13 @@ class OwnerReportController extends Controller
             'ledger'   => in_array('ledger', $pilih),
         ];
     }
+
+    public function menu(Request $request)
+    {
+        $start = $request->get('start_date') ?: now()->toDateString();
+        $end   = $request->get('end_date') ?: now()->toDateString();
+
+        return view('reports.owner_menu', compact('start', 'end'));
+    }
+
 }

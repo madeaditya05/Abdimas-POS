@@ -19,32 +19,51 @@
         request()->routeIs('produk.*')
         || request()->is('kategori*')
         || request()->routeIs('bahan-baku.*')
-        || request()->routeIs('resep.*');
+        || request()->routeIs('resep.*')
+        || request()->routeIs('chart-of-accounts.*'); // (biar Daftar Akun ikut aktif)
 
     // Persediaan: mutasi stok + penyesuaian stok
     $isInvActive =
         request()->routeIs('mutasi-stok.*')
-        || request()->is('persediaan/penyesuaian*');
+        || request()->is('persediaan/penyesuaian*')
+        || request()->routeIs('penyesuaian-stok.*');
 
-    // Transaksi: penjualan + pembelian + penyesuaian stok (versi route baru)
+    // Transaksi: penjualan + pembelian + penyesuaian stok
     $isTransActive =
         request()->is('penjualan*')
         || request()->routeIs('pembelian-bahan.*')
         || request()->routeIs('penyesuaian-stok.*');
 
-    // Cash Flow: sekarang cuma Laporan Jurnal (laporan.jurnal.*)
-    $isCashActive =
-        request()->routeIs('laporan.jurnal.*');
+    // ==== Laporan kasir (pakai halaman owner.labarugi dengan filter sec[]) ====
+    $secParam = \Illuminate\Support\Arr::wrap(request('sec', []));
+    $isOwnerReport = request()->routeIs('owner.labarugi*');   // halaman laporan owner (yang kamu kirim)
+    $isKasirReport = request()->routeIs('kasir.rekap*');      // halaman laporan kasir (reports/kasir)
+    $isJurnalMaster = request()->routeIs('laporan.jurnal.*'); // halaman jurnal read-only (laporan/jurnal)
 
-    // Laporan: laporan penjualan + laporan pembelian
-    $isLapActive =
-        request()->is('laporan/penjualan*')
-        || request()->is('laporan/pembelian*');
+    // Group laporan dibuka kalau lagi di salah satu halaman laporan
+    $isCashActive = $isOwnerReport || $isKasirReport || $isJurnalMaster;
+
+    // highlight submenu laporan owner:
+    $isSecAll      = $isOwnerReport && empty($secParam);
+    $isSecLabaRugi = $isOwnerReport && in_array('labarugi', $secParam);
+    $isSecItems    = $isOwnerReport && in_array('items', $secParam);
+    $isSecPayments = $isOwnerReport && in_array('payments', $secParam);
+    $isSecUnified  = $isOwnerReport && in_array('unified', $secParam);
+    $isSecJournal  = $isOwnerReport && in_array('journal', $secParam);
+    $isSecLedger   = $isOwnerReport && in_array('ledger', $secParam);
 
     // Manajemen User: pengguna + pelanggan
     $isUserActive =
         request()->is('users*')
-        || request()->is('pelanggan*');
+        || request()->is('pelanggan*')
+        || request()->routeIs('customer.*');
+
+        $isLaporanActive =
+    request()->routeIs('owner.reports.menu')
+    || request()->routeIs('owner.labarugi*')
+    || request()->routeIs('kasir.rekap*')
+    || request()->routeIs('laporan.jurnal.*');
+
   @endphp
 
   <nav class="sidebar-nav" id="ownerSidebarNav">
@@ -158,33 +177,18 @@
       </div>
     </div>
 
-    {{-- ===== CASH FLOW (CUMA LAPORAN JURNAL) ===== --}}
-    <div class="nav-group {{ $isCashActive ? 'has-active is-open' : '' }}" data-key="cashflow">
-      <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isCashActive ? 'true' : 'false' }}">
-        <span class="nav-icon">
-          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M5 9h2M17 9h2M5 15h2M17 15h2"/>
-          </svg>
-        </span>
-        <span class="nav-label">Cash Flow</span>
-        <span class="nav-caret"></span>
-      </button>
+    <a href="{{ route('owner.reports.menu') }}" class="nav-item {{ $isLaporanActive ? 'is-active' : '' }}">
+  <span class="nav-icon">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M5 9h2M17 9h2M5 15h2M17 15h2"/>
+    </svg>
+  </span>
+  <span class="nav-label">Laporan</span>
+</a>
 
-      <div class="subnav {{ $isCashActive ? 'show' : '' }}">
-        {{-- Laporan Jurnal (laporan.jurnal.index) --}}
-        {{-- <a href="{{ route('laporan.jurnal.index') }}"
-           class="subnav-item {{ request()->routeIs('laporan.jurnal.*') ? 'is-active' : '' }}">
-          Laporan Keuangan
-        </a> --}}
 
-        <a href="{{ route('owner.labarugi') }}" 
-        class="subnav-item {{ request()->routeIs('owner.labarugi') ? 'is-active' : '' }}">
-        Arus Kas
-      </a>
-      </div>
-    </div>
 
     {{-- ===== MANAJEMEN USER (Pengguna, Pelanggan) ===== --}}
     <div class="nav-group {{ $isUserActive ? 'has-active is-open' : '' }}" data-key="users">
