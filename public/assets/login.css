@@ -248,21 +248,6 @@ form {
     display: none;
 }
 
-.input-wrapper::after {
-    content: "";
-    position: absolute;
-    right: 11px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    border-right: 2px solid #9c8672;
-    border-bottom: 2px solid #9c8672;
-    transform-origin: center;
-    transform: translateY(-70%) rotate(45deg);
-    pointer-events: none;
-}
 
 /* Fokus */
 .form-input:focus {

@@ -3,118 +3,32 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('assets/jurnal_kasir.css') }}">
-
-<style>
-/* Copy gaya dari kasir_rekap biar tampilan sama */
-
-/* Variables */
-.kr-page{
-  --bg:#fff; --soft:#f8fafc; --text:#0f172a; --muted:#64748b; --line:#e5e7eb; --accent:#10b981;
-  --btn-h:44px; --btn-r:12px;
-}
-
-/* Header */
-.kr-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
-.kr-title{ font-size:22px; font-weight:700; color:var(--text); }
-
-/* Card */
-.kr-card{
-  background:var(--bg); color:var(--text);
-  border:1px solid var(--line); border-radius:16px; padding:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,.06);
-}
-
-/* Filter area */
-.kr-filter{
-  display:grid; grid-template-columns: repeat(12, minmax(0,1fr));
-  gap:12px; margin-bottom:12px;
-}
-.kr-field{ grid-column: span 3 / span 3; }
-.kr-field label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
-.kr-field input[type="date"]{
-  width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
-  background:#fff; color:var(--text); height:var(--btn-h);
-}
-
-/* Actions row (buttons) */
-.kr-actions{
-  grid-column: 1 / -1;
-  display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:4px;
-}
-
-/* Buttons */
-.kr-btn{
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  height:var(--btn-h); padding:0 14px; border-radius:var(--btn-r);
-  font-weight:600; border:1px solid transparent; cursor:pointer; line-height:1; user-select:none;
-  text-decoration:none; -webkit-appearance:none; appearance:none;
-}
-.kr-btn:focus-visible{ outline:2px solid color-mix(in srgb, var(--accent) 35%, transparent); outline-offset:2px; }
-.kr-btn:hover{ filter:brightness(.98); }
-
-/* Primary */
-.kr-btn-primary{ background:var(--accent); border-color:var(--accent); color:#fff;
-  box-shadow:0 6px 18px rgba(16,185,129,.18);
-}
-
-/* Ghost */
-.kr-btn-ghost{ background:#fff; color:#0f172a; border-color:var(--line); }
-.kr-btn-ghost:hover{ background:#f9fafb; }
-
-a.kr-btn{ color:inherit; text-decoration:none; }
-
-/* Dropdown “Pilih Laporan” */
-.kr-dd{ grid-column: span 3 / span 3; align-self:end; position:relative; }
-.kr-dd summary{ list-style:none; cursor:pointer; }
-.kr-dd summary::-webkit-details-marker{ display:none; }
-.kr-dd summary.kr-btn{ display:inline-flex; height:var(--btn-h); }
-
-.kr-dd-menu{
-  position:absolute; z-index:30; top:calc(100% + 8px); left:0;
-  min-width:260px; padding:10px; background:#fff;
-  border:1px solid var(--line); border-radius:12px;
-  box-shadow:0 12px 30px rgba(2,6,23,.12);
-}
-.kr-dd:not([open]) .kr-dd-menu{ display:none; }
-.kr-dd[open] summary.kr-btn{ box-shadow:0 0 0 3px rgba(16,185,129,.15); }
-.kr-dd-menu label{ display:flex; gap:8px; padding:6px 4px; font-size:13px; }
-.kr-dd-menu hr{ border:none; height:1px; background:var(--line); margin:8px 0; }
-
-/* Chips */
-.kr-chipbar{ display:flex; gap:8px; flex-wrap:wrap; }
-.kr-chip{ background:var(--soft); color:#0f172a; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--line); }
-
-/* Table & section */
-.kr-sep{ height:1px; background:var(--line); margin:10px 0 16px; }
-.kr-section{ margin-top:12px; }
-.kr-section-title{ font-weight:700; font-size:14px; color:#0f172a; margin-bottom:8px; }
-
-.kr-table{ width:100%; border-collapse:collapse; font-size:14px; border:1px solid var(--line); background:#fff; }
-.kr-table th, .kr-table td{ padding:10px 12px; border:1px solid var(--line); }
-.kr-table th{ text-align:left; color:var(--muted); font-weight:600; background:var(--soft); }
-.kr-table tbody tr:hover{ background:#f9fbfd; }
-
-.kr-right{ text-align:right }
-.kr-money{ font-variant-numeric: tabular-nums; letter-spacing:.3px; }
-
-.kr-empty{ text-align:center; color:var(--muted); padding:24px 8px; background:var(--soft); border-radius:12px; }
-
-/* Responsive */
-@media (max-width: 920px){
-  .kr-field{ grid-column: span 6 / span 6; }
-  .kr-dd{ grid-column: span 6 / span 6; }
-}
-@media (max-width: 560px){
-  .kr-actions .kr-btn{ flex:1; min-width:140px; }
-}
-</style>
+<link rel="stylesheet" href="{{ asset('assets/owner_report.css') }}">
 @endpush
+
 
 @section('content')
 @php
   // default: semua seksi aktif
   $secDefault = ['labarugi','items','payments','unified','journal','ledger'];
   $secSel = request('sec', $secDefault);
+  $secSel = is_array($secSel) ? $secSel : [$secSel];
+
+  // buat judul otomatis
+  $secTitle = [
+    'labarugi' => 'Laba Rugi',
+    'items'    => 'Rekap Per Produk',
+    'payments' => 'Rekap Metode Pembayaran',
+    'unified'  => 'Tunai vs Non-Tunai',
+    'journal'  => 'Jurnal Umum',
+    'ledger'   => 'Buku Besar',
+  ];
+
+  $pageTitle = (count($secSel) === 1)
+      ? ($secTitle[$secSel[0]] ?? 'Laporan Owner')
+      : 'Laporan Owner';
+
+  $hidePicker = request()->has('sec'); // kalau klik dari sidebar, biasanya ada sec[]
 @endphp
 
 <div class="kr-page">
@@ -122,8 +36,13 @@ a.kr-btn{ color:inherit; text-decoration:none; }
 
     {{-- Header --}}
     <div class="kr-header">
-      <div class="kr-title">Laporan Owner</div>
+      <div class="kr-title">{{ $pageTitle }}</div>
       <div class="kr-chipbar">
+        <a class="kr-btn kr-btn-ghost"
+   href="{{ route('owner.reports.menu', ['start_date'=>request('start_date', now()->toDateString()), 'end_date'=>request('end_date', now()->toDateString())]) }}">
+  Ganti Laporan
+</a>
+
         <div class="kr-chip">
           Periode:
           {{ \Carbon\Carbon::parse($meta['start'])->format('d/m/Y') }}
@@ -143,11 +62,12 @@ a.kr-btn{ color:inherit; text-decoration:none; }
         <input type="date" name="end_date" value="{{ request('end_date', now()->toDateString()) }}">
       </div>
 
-      {{-- Dropdown --}}
+      {{-- Dropdown hanya tampil kalau tidak dari sidebar --}}
+      @if(!$hidePicker)
       <details class="kr-dd">
         <summary class="kr-btn kr-btn-ghost">
           Pilih Laporan
-          <svg width="16" height="16" ...>
+          <svg width="16" height="16">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </summary>
@@ -155,7 +75,7 @@ a.kr-btn{ color:inherit; text-decoration:none; }
           <label><input class="sec-check" type="checkbox" name="sec[]" value="labarugi" {{ in_array('labarugi',$secSel)?'checked':'' }}> Laba Rugi</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="items"    {{ in_array('items',$secSel)?'checked':'' }}> Rekap Per Produk</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="payments" {{ in_array('payments',$secSel)?'checked':'' }}> Rekap Per Metode Pembayaran</label>
-          <label><input class="sec-check" type="checkbox" name="sec[]" value="unified"  {{ in_array('unified',$secSel)?'checked':'' }}> Rekapitulasi Tunai vs Non-Tunai</label>
+          <label><input class="sec-check" type="checkbox" name="sec[]" value="unified"  {{ in_array('unified',$secSel)?'checked':'' }}> Tunai vs Non-Tunai</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="journal"  {{ in_array('journal',$secSel)?'checked':'' }}> Jurnal Umum</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="ledger"   {{ in_array('ledger',$secSel)?'checked':'' }}> Buku Besar</label>
           <hr>
@@ -166,27 +86,29 @@ a.kr-btn{ color:inherit; text-decoration:none; }
           </label>
         </div>
       </details>
+      @else
+        {{-- kalau dari sidebar: bawa sec[] yang sudah dipilih agar tidak hilang pas filter tanggal --}}
+        @foreach($secSel as $s)
+          <input type="hidden" name="sec[]" value="{{ $s }}">
+        @endforeach
+      @endif
 
       {{-- Tombol --}}
       <div class="kr-actions">
+      <button class="kr-btn kr-btn-primary" type="submit">Tampilkan</button>
 
-        <button class="kr-btn kr-btn-primary" type="submit">Tampilkan</button>
+      @php
+        $pdfSel = [
+          'start_date'=>request('start_date', now()->toDateString()),
+          'end_date'  =>request('end_date', now()->toDateString()),
+          'sec'       =>$secSel,
+        ];
+      @endphp
 
-        @php
-          $pdfSel = [
-            'start_date'=>request('start_date', now()->toDateString()),
-            'end_date'  =>request('end_date', now()->toDateString()),
-            'sec'       =>$secSel,
-          ];
-          $pdfAll = [
-            'start_date'=>request('start_date', now()->toDateString()),
-            'end_date'  =>request('end_date', now()->toDateString()),
-          ];
-        @endphp
-
-        <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('owner.labarugi.pdf', $pdfSel) }}">PDF (sesuai pilihan)</a>
-        <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('owner.labarugi.pdf', $pdfAll) }}">PDF (semua)</a>
-      </div>
+      <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('owner.labarugi.pdf', $pdfSel) }}">
+        PDF (sesuai pilihan)
+      </a>
+    </div>
     </form>
 
     <div class="kr-sep"></div>
@@ -204,26 +126,11 @@ a.kr-btn{ color:inherit; text-decoration:none; }
         @endphp
         <table class="kr-table">
           <tbody>
-            <tr>
-              <td>Pendapatan</td>
-              <td class="kr-right kr-money">Rp {{ number_format($rev,0,',','.') }}</td>
-            </tr>
-            <tr>
-              <td>HPP</td>
-              <td class="kr-right kr-money">Rp {{ number_format($cogs,0,',','.') }}</td>
-            </tr>
-            <tr>
-              <td>Laba Kotor</td>
-              <td class="kr-right kr-money">Rp {{ number_format($gross,0,',','.') }}</td>
-            </tr>
-            <tr>
-              <td>Beban</td>
-              <td class="kr-right kr-money">Rp {{ number_format($exp,0,',','.') }}</td>
-            </tr>
-            <tr>
-              <td>Laba Bersih</td>
-              <td class="kr-right kr-money">Rp {{ number_format($net,0,',','.') }}</td>
-            </tr>
+            <tr><td>Pendapatan</td><td class="kr-right kr-money">Rp {{ number_format($rev,0,',','.') }}</td></tr>
+            <tr><td>HPP</td><td class="kr-right kr-money">Rp {{ number_format($cogs,0,',','.') }}</td></tr>
+            <tr><td>Laba Kotor</td><td class="kr-right kr-money">Rp {{ number_format($gross,0,',','.') }}</td></tr>
+            <tr><td>Beban</td><td class="kr-right kr-money">Rp {{ number_format($exp,0,',','.') }}</td></tr>
+            <tr><td>Laba Bersih</td><td class="kr-right kr-money">Rp {{ number_format($net,0,',','.') }}</td></tr>
           </tbody>
         </table>
       </div>

@@ -72,6 +72,8 @@ Route::middleware('auth')->group(function () {
     //     Route::get('/product/search', [ProductController::class, 'search'])->name('product.search');
 
         // Laporan (Owner)
+        Route::get('/reports/owner', [OwnerReportController::class, 'menu'])
+        ->name('owner.reports.menu');
         Route::get('/reports/owner/laba-rugi',     [OwnerReportController::class, 'index'])->name('owner.labarugi');
         Route::get('/reports/owner/laba-rugi/pdf', [OwnerReportController::class, 'pdf'])->name('owner.labarugi.pdf');
     });
