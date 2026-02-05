@@ -9,6 +9,7 @@ use App\Http\Requests\UpdatePembelianBahanRequest;
 use App\Services\JournalPoster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PembelianBahanController extends Controller
 {
@@ -96,13 +97,25 @@ class PembelianBahanController extends Controller
                 ->withErrors(['details' => 'Minimal satu baris detail dengan bahan & qty > 0.']);
         }
 
+        // ✅ Upload bukti (kalau ada)
+        $buktiPath = null;
+        if ($request->hasFile('bukti_file')) {
+            $file = $request->file('bukti_file');
+
+            // Note: validasi idealnya di FormRequest, tapi di sini kita jaga-jaga
+            if ($file && $file->isValid()) {
+                $buktiPath = $file->store('bukti-pembelian', 'public');
+            }
+        }
+
         /** @var PembelianBahan $pembelian */
-        $pembelian = DB::transaction(function () use ($request, $data, $cleanDetails) {
+        $pembelian = DB::transaction(function () use ($request, $data, $cleanDetails, $buktiPath) {
             $pembelian = PembelianBahan::create([
                 'tanggal'         => $data['tanggal'] ?? now(),
                 'supplier_nama'   => $data['supplier_nama']   ?? null,
                 'supplier_kontak' => $data['supplier_kontak'] ?? null,
                 'catatan'         => $data['catatan']         ?? null,
+                'bukti_file'      => $buktiPath, // ✅ simpan path
                 'user_id'         => $request->user()?->id,
             ]);
 
@@ -176,12 +189,32 @@ class PembelianBahanController extends Controller
                 ->withErrors(['details' => 'Minimal satu baris detail dengan bahan & qty > 0.']);
         }
 
-        DB::transaction(function () use ($request, $data, $cleanDetails, $pembelianBahan) {
+        // ✅ kalau ada upload baru, simpan dan hapus yang lama
+        $newBuktiPath = null;
+        $hasNewUpload = $request->hasFile('bukti_file');
+
+        if ($hasNewUpload) {
+            $file = $request->file('bukti_file');
+            if ($file && $file->isValid()) {
+                $newBuktiPath = $file->store('bukti-pembelian', 'public');
+            }
+        }
+
+        DB::transaction(function () use ($request, $data, $cleanDetails, $pembelianBahan, $hasNewUpload, $newBuktiPath) {
+            // hapus file lama kalau ada upload baru & file baru berhasil tersimpan
+            if ($hasNewUpload && $newBuktiPath) {
+                $old = $pembelianBahan->bukti_file;
+                if ($old) {
+                    Storage::disk('public')->delete($old);
+                }
+            }
+
             $pembelianBahan->update([
                 'tanggal'         => $data['tanggal'] ?? $pembelianBahan->tanggal,
                 'supplier_nama'   => $data['supplier_nama']   ?? null,
                 'supplier_kontak' => $data['supplier_kontak'] ?? null,
                 'catatan'         => $data['catatan']         ?? null,
+                'bukti_file'      => ($hasNewUpload && $newBuktiPath) ? $newBuktiPath : $pembelianBahan->bukti_file,
                 'user_id'         => $request->user()?->id,
             ]);
 
@@ -210,6 +243,12 @@ class PembelianBahanController extends Controller
     {
         // ✅ hapus jurnal dulu
         $poster->deleteFor(PembelianBahan::class, (int) $pembelianBahan->id);
+
+        // ✅ hapus file bukti (kalau ada)
+        $old = $pembelianBahan->bukti_file;
+        if ($old) {
+            Storage::disk('public')->delete($old);
+        }
 
         $pembelianBahan->delete();
 

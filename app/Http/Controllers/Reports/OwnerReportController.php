@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClosingPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,20 +15,17 @@ class OwnerReportController extends Controller
         [$mulai, $akhir] = $this->rentangTanggal($request);
         $bagian = $this->bagianLaporan($request);
 
-        // === DATA PENJUALAN (SAMA SEPERTI KASIR) ===
         $items      = $this->ambilRekapProduk($mulai, $akhir);
         $payments   = $this->ambilRekapPembayaran($mulai, $akhir);
         $payUnified = $this->ambilRekapTunaiNonTunai($mulai, $akhir);
 
-        // === DATA JURNAL GABUNGAN (penjualan + pembelian + lainnya) ===
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
 
-        // === LABA RUGI (PERIODIK + AVERAGE) ===
-        $labarugi   = $this->hitungLabaRugi($mulai, $akhir);
+        // ✅ LABA RUGI: HPP hanya dari closing_periods (kalau belum ditutup => 0)
+        $labarugi   = $this->hitungLabaRugiDariClosing($mulai, $akhir);
 
-        // === REKAP PEMBELIAN BAHAN ===
-        $pembelian = $this->ambilRekapPembelianBahan($mulai, $akhir);
+        $pembelian  = $this->ambilRekapPembelianBahan($mulai, $akhir);
 
         $meta = [
             'start' => $mulai,
@@ -55,9 +53,13 @@ class OwnerReportController extends Controller
         $items      = $this->ambilRekapProduk($mulai, $akhir);
         $payments   = $this->ambilRekapPembayaran($mulai, $akhir);
         $payUnified = $this->ambilRekapTunaiNonTunai($mulai, $akhir);
+
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
-        $labarugi   = $this->hitungLabaRugi($mulai, $akhir);
+
+        // ✅ konsisten sama index
+        $labarugi   = $this->hitungLabaRugiDariClosing($mulai, $akhir);
+
         $pembelian  = $this->ambilRekapPembelianBahan($mulai, $akhir);
 
         $meta = [
@@ -80,19 +82,18 @@ class OwnerReportController extends Controller
         return $pdf->download("Laporan-Owner_{$mulai}_sd_{$akhir}.pdf");
     }
 
-    // ===================== LABA RUGI (PERIODIK + AVERAGE) =====================
+    // ===================== LABA RUGI (HPP dari CLOSING_PERIODS) =====================
 
-    private function hitungLabaRugi(string $mulai, string $akhir): array
+    private function hitungLabaRugiDariClosing(string $mulai, string $akhir): array
     {
         $mulaiTanggal = substr($mulai, 0, 10);
         $akhirTanggal = substr($akhir, 0, 10);
 
-        // Pendapatan & Beban dari jurnal (hanya akun type revenue/expense)
-        // NOTE: Pembelian bahan (Kas <-> Persediaan) itu ASSET, jadi tidak mempengaruhi LR.
+        // Pendapatan & Beban dari jurnal (akun type revenue/expense)
         $rows = DB::table('journal_line as jl')
             ->join('chart_of_account as coa', 'coa.id', '=', 'jl.account_id')
             ->join('journal_entry as je', 'je.id', '=', 'jl.journal_entry_id')
-            ->whereBetween('je.date', [$mulai, $akhir]) // ✅ pakai datetime full range
+            ->whereBetween('je.date', [$mulai, $akhir])
             ->select(
                 'coa.code',
                 'coa.name',
@@ -116,23 +117,23 @@ class OwnerReportController extends Controller
             }
 
             if ($type === 'expense') {
-                // Periodik: HPP tidak diambil dari jurnal (skip akun 5xxx)
+                // ✅ beban selain HPP (akun 5xxx kamu anggap HPP/COGS, tapi kita ambil dari closing)
                 if (substr((string) $row->code, 0, 1) !== '5') {
                     $beban += ($debit - $credit);
                 }
             }
         }
 
-        // Full 1 bulan?
-        $isFullMonth =
-            date('Y-m', strtotime($mulaiTanggal)) === date('Y-m', strtotime($akhirTanggal)) &&
-            $mulaiTanggal === date('Y-m-01', strtotime($mulaiTanggal)) &&
-            $akhirTanggal === date('Y-m-t', strtotime($akhirTanggal));
+        // ✅ Ambil closing kalau periode persis match
+        $closing = $this->getClosingForRange($mulaiTanggal, $akhirTanggal);
 
-        // HPP periodik dihitung dari OUT + average cost (hanya full month)
-        $hpp = $isFullMonth
-            ? $this->hitungHppAverageDariOut($mulaiTanggal, $akhirTanggal)
-            : 0.0;
+        $hpp = 0.0;
+        $isClosed = false;
+
+        if ($closing) {
+            $hpp = (float) ($closing->cogs_value ?? 0);
+            $isClosed = true;
+        }
 
         $labaKotor  = $pendapatan - $hpp;
         $labaBersih = $labaKotor - $beban;
@@ -144,57 +145,25 @@ class OwnerReportController extends Controller
             'expense'    => $beban,
             'net_income' => $labaBersih,
             'rows'       => $rows,
-            'is_closed'  => $isFullMonth,
+
+            // flag buat UI (kalau kamu mau tampilin “periode belum ditutup”)
+            'is_closed'  => $isClosed,
+            'closing'    => $closing ? [
+                'period_start' => $closing->period_start?->toDateString(),
+                'period_end'   => $closing->period_end?->toDateString(),
+                'closed_at'    => optional($closing->closed_at)->toDateTimeString(),
+                'cogs_value'   => (float) $closing->cogs_value,
+            ] : null,
         ];
     }
 
-    private function hitungHppAverageDariOut(string $startDate, string $endDate): float
+    private function getClosingForRange(string $startDate, string $endDate): ?ClosingPeriod
     {
-        $from = $startDate . ' 00:00:00';
-        $to   = $endDate   . ' 23:59:59';
-
-        $pemakaian = DB::table('stok_mutasi')
-            ->where('tipe', 'OUT')
-            ->whereBetween('tanggal', [$from, $to])
-            ->selectRaw('bahan_baku_id, SUM(qty) as qty_out')
-            ->groupBy('bahan_baku_id')
-            ->get();
-
-        if ($pemakaian->isEmpty()) {
-            return 0.0;
-        }
-
-        $avgRows = DB::table('pembelian_bahan_detail as d')
-            ->join('pembelian_bahan as pb', 'pb.id', '=', 'd.pembelian_bahan_id')
-            ->where('pb.tanggal', '<=', $to)
-            ->selectRaw('
-                d.bahan_baku_id,
-                SUM(d.subtotal) AS total_value,
-                SUM(d.qty_beli * COALESCE(d.isi_per_kemasan, 0) * COALESCE(d.konversi_ke_pakai, 1)) AS total_qty_pakai
-            ')
-            ->groupBy('d.bahan_baku_id')
-            ->get()
-            ->keyBy('bahan_baku_id');
-
-        $hpp = 0.0;
-
-        foreach ($pemakaian as $row) {
-            $bahanId = (int) $row->bahan_baku_id;
-            $qtyOut  = (float) $row->qty_out;
-            if ($qtyOut <= 0) continue;
-
-            $avg = $avgRows->get($bahanId);
-            if (!$avg) continue;
-
-            $totalValue    = (float) ($avg->total_value ?? 0);
-            $totalQtyPakai = (float) ($avg->total_qty_pakai ?? 0);
-            if ($totalValue <= 0 || $totalQtyPakai <= 0) continue;
-
-            $avgCost = $totalValue / $totalQtyPakai;
-            $hpp += ($qtyOut * $avgCost);
-        }
-
-        return (float) $hpp;
+        return ClosingPeriod::query()
+            ->where('period_start', $startDate)
+            ->where('period_end', $endDate)
+            ->where('is_closed', true)
+            ->first();
     }
 
     // ===================== DATA PEMBELIAN =====================
@@ -273,7 +242,7 @@ class OwnerReportController extends Controller
         return DB::table('journal_entry as je')
             ->join('journal_line as jl', 'jl.journal_entry_id', '=', 'je.id')
             ->join('chart_of_account as coa', 'coa.id', '=', 'jl.account_id')
-            ->whereBetween('je.date', [$mulai, $akhir]) // ✅ pakai datetime full range
+            ->whereBetween('je.date', [$mulai, $akhir])
             ->orderBy('je.date')
             ->orderBy('je.entry_no')
             ->selectRaw('
@@ -365,5 +334,4 @@ class OwnerReportController extends Controller
 
         return view('reports.owner_menu', compact('start', 'end'));
     }
-
 }

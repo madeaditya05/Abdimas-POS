@@ -1,0 +1,248 @@
+:root {
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --line: #e7e1d7;
+    --primary: #16a34a;
+    --primary-2: #0f9a3d;
+    --danger: #ef4444;
+    --shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
+    --radius: 18px;
+}
+
+.beban-page {
+    padding: 18px;
+}
+.beban-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+}
+
+.beban-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+}
+.beban-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+}
+.beban-subtitle {
+    margin-top: 6px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+.beban-header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.chip {
+    display: inline-flex;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #eaf7ee;
+    color: #166534;
+    border: 1px solid #cdeed7;
+    /* font-weight: 800; */
+    font-size: 12px;
+}
+
+.beban-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 16px 0;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border-radius: 12px;
+    /* font-weight: 800; */
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: 0.15s ease;
+}
+.btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+.btn-primary:hover {
+    background: var(--primary-2);
+    border-color: var(--primary-2);
+}
+
+.btn-ghost {
+    background: #fff;
+    border-color: var(--line);
+    color: var(--text);
+}
+.btn-ghost:hover {
+    background: #faf7f1;
+}
+
+.btn-danger {
+    background: #fff;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+.btn-danger:hover {
+    background: #fff5f5;
+}
+
+.btn-sm {
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 12.5px;
+}
+
+.alert {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: #fff;
+}
+.alert-success {
+    border-color: #cdeed7;
+    background: #f2fbf5;
+    color: #14532d;
+}
+.alert-danger {
+    border-color: #fecaca;
+    background: #fff5f5;
+    color: #7f1d1d;
+}
+.alert-title {
+    /* font-weight: 900; */
+    margin-bottom: 6px;
+}
+.alert ul {
+    margin: 6px 0 0 16px;
+}
+
+.beban-filter {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.field label {
+    display: block;
+    /* font-weight: 800; */
+    color: var(--text);
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+.req {
+    color: var(--danger);
+}
+
+.field input,
+.field select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    outline: none;
+}
+.field input:focus,
+.field select:focus {
+    border-color: rgba(22, 163, 74, 0.5);
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+}
+
+.hint {
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.table-wrap {
+    width: 100%;
+    overflow: auto;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+}
+.beban-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+.beban-table thead th {
+    background: #faf7f1;
+    border-bottom: 1px solid var(--line);
+    padding: 12px;
+    font-size: 12.5px;
+    font-weight: 900;
+    color: #374151;
+}
+.beban-table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #f1ece3;
+    color: var(--text);
+}
+.beban-table tbody tr:hover td {
+    background: #fdfbf7;
+}
+
+.muted {
+    color: var(--muted);
+}
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Courier New", monospace;
+    font-size: 12.5px;
+}
+.money {
+    text-align: right;
+    /* font-weight: 900; */
+}
+.center {
+    text-align: center;
+}
+.empty {
+    text-align: center;
+    padding: 22px !important;
+    color: var(--muted);
+}
+
+.beban-form {
+    margin-top: 14px;
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+}
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+@media (max-width: 860px) {
+    .beban-header {
+        flex-direction: column;
+    }
+    .beban-filter {
+        grid-template-columns: 1fr;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}

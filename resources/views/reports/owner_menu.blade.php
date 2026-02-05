@@ -113,6 +113,39 @@
         </div>
       </a>
       
+      {{-- Beban Operasional --}}
+      <a class="om-tile" href="{{ route('beban-operasional.index') }}">
+        <div class="om-tile__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <path d="M6 2h9l3 3v17H6z"/>
+            <path d="M9 9h6"/>
+            <path d="M9 13h6"/>
+            <path d="M9 17h6"/>
+          </svg>
+        </div>
+        <div class="om-tile__body">
+          <div class="om-tile__title">Beban Operasional</div>
+          <div class="om-tile__desc">
+            Input dan kelola beban usaha untuk mengurangi laba kotor.
+          </div>
+        </div>
+      </a>
+
+      {{-- Tutup Buku --}}
+      <a class="om-tile" href="{{ route('owner.tutupbuku', $base) }}">
+        <div class="om-tile__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <path d="M6 2h10l2 2v18H6z"/>
+            <path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/>
+            <path d="M8 20h8"/>
+          </svg>
+        </div>
+        <div class="om-tile__body">
+          <div class="om-tile__title">Tutup Buku</div>
+          <div class="om-tile__desc">Closing periodik: posting HPP & penyesuaian persediaan per bulan.</div>
+        </div>
+      </a>
+
     </div>
 
   </div>

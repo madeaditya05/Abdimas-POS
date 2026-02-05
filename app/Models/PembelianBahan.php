@@ -14,6 +14,7 @@ class PembelianBahan extends Model
         'kode_pembelian','tanggal','user_id',
         'supplier_nama','supplier_kontak',
         'total','catatan',
+        'bukti_file', // ✅ tambahan: path/filename bukti upload
     ];
 
     protected $casts = [

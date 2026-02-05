@@ -6,24 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('customer', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->nullable();
-            // kolom generated untuk dedup nama (lower+trim); bisa diindex unik kalau mau
-            $table->string('normalized_name', 191)->storedAs('LOWER(TRIM(name))')->nullable();
+            $table->id(); // bigint unsigned AI
+
+            $table->string('name', 255)->nullable();
+
+            // GENERATED ALWAYS AS (lcase(trim(name))) STORED
+            $table->string('normalized_name', 191)
+                ->storedAs('lcase(trim(name))');
+
+            // created_at & updated_at timestamp NULL
             $table->timestamps();
-            $table->index('normalized_name');
+
+            $table->index('normalized_name', 'customer_normalized_name_index');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('customer');

@@ -69,7 +69,7 @@ class JournalPoster
         );
     }
 
-    /** Post jurnal untuk PEMBELIAN BAHAN (tanpa hutang kalau default = false) */
+    /** Post jurnal untuk PEMBELIAN BAHAN (PERIODIK) */
     public function postForPembelianBahan(PembelianBahan $buy): void
     {
         $amount = (float) ($buy->total ?? 0);
@@ -85,9 +85,9 @@ class JournalPoster
             : config('account_map.kas'); // asumsi bayar cash kalau bukan ke utang
 
         $lines = [
-            // Debit: persediaan bahan
+            // ✅ PERIODIK: Debit Pembelian Bahan (5100), bukan Persediaan (1201)
             [
-                'account_code' => config('account_map.persediaan_bahan'),
+                'account_code' => config('account_map.pembelian_bahan'),
                 'debit'  => $amount,
                 'credit' => 0,
                 'memo'   => 'Pembelian ' . $buy->kode_pembelian,
@@ -106,7 +106,7 @@ class JournalPoster
             sourceId:   $buy->id,
             date:       $buy->tanggal?->toDateString() ?? now()->toDateString(),
             ref:        $buy->kode_pembelian,
-            memo:       'Auto-post dari Pembelian Bahan',
+            memo:       'Auto-post dari Pembelian Bahan (Periodik)',
             lines:      $lines,
         );
     }
@@ -114,6 +114,23 @@ class JournalPoster
     /** Post jurnal HPP dari PENYESUAIAN STOK (stok keluar / pemakaian bahan) */
     public function postForPenyesuaianStok(StokMutasi $mutasi): void
     {
+        /**
+         * ⚠️ MODE PERIODIK:
+         * Kamu sudah hitung HPP periodik dari OUT di laporan (full month),
+         * jadi posting jurnal HPP per OUT akan bikin "double engine" / bentrok.
+         *
+         * Jadi untuk sekarang:
+         * - Kita NONAKTIFKAN auto-post HPP dari stok OUT
+         * - Kalau sebelumnya sempat keposting, kita hapus jurnalnya biar bersih
+         *
+         * Nanti pas fitur "Tutup Buku" jadi, HPP + penyesuaian persediaan
+         * diposting sekali per periode closing.
+         */
+        $this->deleteFor(StokMutasi::class, (int) $mutasi->id);
+        return;
+
+        // ====== (kode lama dibiarkan, tapi tidak akan pernah kebaca karena return di atas) ======
+
         $tipe = strtoupper((string) $mutasi->tipe);
 
         // hanya handle stok keluar
@@ -130,8 +147,6 @@ class JournalPoster
 
         $bahanId = (int) $mutasi->bahan_baku_id;
 
-        // Hitung HPP rata-rata:
-        // total nilai pembelian / total qty IN (qty_beli * isi_per_kemasan * konversi_ke_pakai)
         $stats = DB::table('pembelian_bahan_detail as d')
             ->where('d.bahan_baku_id', $bahanId)
             ->selectRaw('
@@ -141,7 +156,6 @@ class JournalPoster
             ->first();
 
         if (! $stats || (float) ($stats->total_qty ?? 0) <= 0) {
-            // belum pernah ada pembelian bahan ini -> jangan posting jurnal HPP
             $this->deleteFor(StokMutasi::class, $mutasi->id);
             return;
         }
@@ -158,14 +172,12 @@ class JournalPoster
         $memoLine  = "Pemakaian bahan {$namaBahan}";
 
         $lines = [
-            // Debit: HPP
             [
                 'account_code' => config('account_map.hpp_bahan'),
                 'debit'        => $amount,
                 'credit'       => 0,
                 'memo'         => $memoLine,
             ],
-            // Kredit: Persediaan Bahan
             [
                 'account_code' => config('account_map.persediaan_bahan'),
                 'debit'        => 0,

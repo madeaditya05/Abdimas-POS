@@ -17,6 +17,9 @@ use App\Http\Controllers\LaporanJurnalController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ChartOfAccountController;
+use App\Http\Controllers\BebanOperasionalController;
+use App\Http\Controllers\Reports\OwnerClosingController;
+
 
 
 
@@ -76,6 +79,10 @@ Route::middleware('auth')->group(function () {
         ->name('owner.reports.menu');
         Route::get('/reports/owner/laba-rugi',     [OwnerReportController::class, 'index'])->name('owner.labarugi');
         Route::get('/reports/owner/laba-rugi/pdf', [OwnerReportController::class, 'pdf'])->name('owner.labarugi.pdf');
+
+        // Tutup Buku (Owner)
+        Route::get('/reports/owner/closing', [OwnerClosingController::class, 'index'])->name('owner.tutupbuku');
+        Route::post('/reports/owner/closing', [OwnerClosingController::class, 'close'])->name('owner.tutupbuku.close');
     });
 
 // Layar customer publik
@@ -128,6 +135,19 @@ Route::prefix('app')->middleware('auth')->group(function () {
     Route::resource('customer', CustomerController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->names('customer');
+
+    // ===== Beban Operasional =====
+    Route::get('/beban-operasional', [BebanOperasionalController::class, 'index'])
+    ->name('beban-operasional.index');
+
+    Route::get('/beban-operasional/create', [BebanOperasionalController::class, 'create'])
+        ->name('beban-operasional.create');
+
+    Route::post('/beban-operasional', [BebanOperasionalController::class, 'store'])
+        ->name('beban-operasional.store');
+
+    Route::delete('/beban-operasional/{id}', [BebanOperasionalController::class, 'destroy'])
+        ->name('beban-operasional.destroy');
 
     // ===== Laporan Jurnal (read-only) =====
     Route::get('laporan/jurnal', [LaporanJurnalController::class, 'index'])

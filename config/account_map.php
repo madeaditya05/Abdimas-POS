@@ -11,7 +11,8 @@ return [
 
     // PENDAPATAN & HPP & PERSEDIAAN
     'pendapatan_penjualan' => '4001',
-    'hpp_bahan'            => '5001',   
+    'hpp_bahan'            => '5001',  
+    'pembelian_bahan' => '5100', 
     'persediaan_bahan'     => '1201',
 
     // BEBAN

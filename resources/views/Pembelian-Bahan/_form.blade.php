@@ -31,6 +31,8 @@
           ];
       }
   }
+
+  $existingFile = $row->bukti_file ?? null;
 @endphp
 
 @if ($errors->any())
@@ -48,7 +50,8 @@
       action="{{ $mode === 'create'
           ? route('pembelian-bahan.store')
           : route('pembelian-bahan.update', $row) }}"
-      class="form">
+      class="form"
+      enctype="multipart/form-data">
   @csrf
   @if ($mode === 'edit')
     @method('PUT')
@@ -117,7 +120,7 @@
         <div class="form-help"></div>
       </div>
 
-      {{-- Total (readonly, ditarik dari model/DB) --}}
+      {{-- Total (readonly) --}}
       <div class="form-field">
         <label>Total</label>
         <div class="field-with-icon">
@@ -133,18 +136,67 @@
         <div class="form-help">Total akan dihitung dari detail pembelian.</div>
       </div>
 
-      {{-- Catatan --}}
-      <div class="form-field span-2">
+      {{-- Catatan (1 line) - sekarang sejajar dengan Total --}}
+      <div class="form-field">
         <label>Catatan</label>
         <div class="field-with-icon">
-          <textarea class="form-textarea"
-                    name="catatan">{{ old('catatan', $row->catatan ?? '') }}</textarea>
+          <input class="form-input"
+                 type="text"
+                 name="catatan"
+                 value="{{ old('catatan', $row->catatan ?? '') }}"
+                 placeholder="Contoh: pembelian gula untuk stok minggu ini">
           <span class="field-icon">
             <x-heroicon-o-pencil-square class="hi hi-5" />
           </span>
         </div>
         <div class="form-help"></div>
       </div>
+    </div>
+  </div>
+
+  {{-- LAMPIRAN (UPLOAD NOTA) --}}
+  <div class="form-section" style="padding-bottom:0;">
+    <div class="form-title">Lampiran</div>
+    <div class="form-grid">
+
+      <div class="form-field span-2">
+        <label>Bukti Pembelian (Nota)</label>
+
+        @if(!empty($existingFile))
+          <div style="margin:6px 0 10px 0;">
+            <a class="btn btn--outline-coffee btn--sm"
+               href="{{ asset('storage/'.$existingFile) }}"
+               target="_blank" rel="noopener">
+              Lihat nota yang tersimpan
+            </a>
+            <span class="muted" style="margin-left:8px;">{{ $existingFile }}</span>
+          </div>
+        @endif
+
+        <div class="file-field" id="ff-bukti">
+          <input
+              id="bukti_file"
+              class="file-input"
+              type="file"
+              name="bukti_file"
+              accept=".jpg,.jpeg,.png,.pdf"
+          >
+          <label for="bukti_file" class="file-btn">Choose File</label>
+
+          <span class="file-name {{ empty($existingFile) ? 'is-empty' : '' }}">
+            {{ empty($existingFile) ? 'Belum ada file dipilih' : basename($existingFile) }}
+          </span>
+
+          <span class="file-icon">
+            <x-heroicon-o-paper-clip class="hi hi-5" />
+          </span>
+        </div>
+
+        <div class="form-help">
+          Upload JPG/PNG/PDF. Kalau sudah ada file, akan tetap dipakai sampai kamu upload yang baru.
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -337,6 +389,26 @@
         if (body.querySelectorAll('.detail-row').length > 1) {
           row.remove();
         }
+      }
+    });
+  }
+
+  // UI file upload: update nama file
+  const input = document.getElementById('bukti_file');
+  const wrap  = document.getElementById('ff-bukti');
+
+  if (input && wrap) {
+    const nameEl = wrap.querySelector('.file-name');
+    input.addEventListener('change', () => {
+      const f = input.files && input.files[0] ? input.files[0].name : '';
+      if (!nameEl) return;
+
+      if (!f) {
+        nameEl.textContent = 'Belum ada file dipilih';
+        nameEl.classList.add('is-empty');
+      } else {
+        nameEl.textContent = f;
+        nameEl.classList.remove('is-empty');
       }
     });
   }
