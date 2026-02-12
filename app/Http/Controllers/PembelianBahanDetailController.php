@@ -1,48 +1,67 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Models\PembelianBahanDetail;
+use App\Models\BahanBaku;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PembelianBahanDetailController extends Controller
 {
     /**
-     * Tampilkan daftar Pembelian Bahan Detail (view-only).
+     * LAPORAN PEMBELIAN BAHAN (AGREGAT)
      */
     public function index(Request $request)
-{
-    $search = trim((string) $request->get('q', ''));
-    $sort   = $request->get('sort', 'created_at');
-    $dir    = $request->get('dir', 'desc');
+    {
+        $start = $request->get('start_date') ?? now()->toDateString();
+        $end   = $request->get('end_date') ?? now()->toDateString();
+        $bahanId = $request->get('bahan_id');
 
-    $allowedSort = ['created_at', 'expired_date', 'qty_beli', 'harga_satuan', 'subtotal'];
-    if (! in_array($sort, $allowedSort, true)) {
-        $sort = 'created_at';
+        $mulai = $start . ' 00:00:00';
+        $akhir = $end   . ' 23:59:59';
+        $bahanList = BahanBaku::orderBy('nama_bahan')->get();
+
+
+        // ================= BASE QUERY =================
+        $q = DB::table('pembelian_bahan_detail as d')
+            ->join('pembelian_bahan as pb', 'pb.id', '=', 'd.pembelian_bahan_id')
+            ->whereBetween('pb.tanggal', [$mulai, $akhir]);
+
+        if ($bahanId) {
+            $q->where('d.bahan_baku_id', $bahanId);
+        }
+
+        // ================= TABLE DATA =================
+        $rows = (clone $q)
+            ->selectRaw('
+                DATE(pb.tanggal) as tanggal,
+                d.bahan_baku_id,
+                d.nama_bahan,
+                SUM(d.qty_beli) qty,
+                AVG(d.harga_satuan) avg_harga,
+                SUM(d.subtotal) total
+            ')
+            ->groupBy('tanggal','d.bahan_baku_id','d.nama_bahan')
+            ->orderBy('tanggal')
+            ->get();
+
+        // ================= STATISTIK =================
+        $stats = (clone $q)->selectRaw('
+            SUM(d.subtotal) grand_total,
+            MIN(d.harga_satuan) min_harga,
+            MAX(d.harga_satuan) max_harga,
+            AVG(d.harga_satuan) avg_harga
+        ')->first();
+
+        $pembelianDetail = [
+            'rows' => $rows,
+            'stats' => [
+                'grand_total' => (float)($stats->grand_total ?? 0),
+                'min' => (float)($stats->min_harga ?? 0),
+                'max' => (float)($stats->max_harga ?? 0),
+                'avg' => (float)($stats->avg_harga ?? 0),
+            ]
+        ];
+
+        return view('pembelian_bahan_detail.index', ['pembelianDetail' => $pembelianDetail, 'bahanList' => $bahanList,]);
     }
-
-    $dir = $dir === 'asc' ? 'asc' : 'desc';
-
-    $query = PembelianBahanDetail::query()->with('header'); // relasi ke PembelianBahan
-
-    if ($search !== '') {
-        $query->where(function ($q) use ($search) {
-            $q->whereHas('header', function ($qh) use ($search) {
-                $qh->where('kode_pembelian', 'like', '%'.$search.'%');
-            })->orWhere('nama_bahan', 'like', '%'.$search.'%');
-        });
-    }
-
-    $query->orderBy($sort, $dir);
-
-    $items = $query->paginate(10)->withQueryString();
-
-    return view('pembelian_bahan_detail.index', [
-        'items'  => $items,
-        'search' => $search,
-        'sort'   => $sort,
-        'dir'    => $dir,
-    ]);
-}
-
 }

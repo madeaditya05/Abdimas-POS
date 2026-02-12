@@ -168,6 +168,8 @@ Route::prefix('app')->middleware('auth')->group(function () {
 
     Route::get('/akuntansi/jurnal-lines', [LaporanJurnalController::class, 'lines'])
         ->name('akuntansi.jurnal.lines');
+
+
 });
 
 // routes/web.php

@@ -1,53 +1,81 @@
+@extends('layouts.main')
+@section('title', 'Laporan Pembelian Bahan')
+
 @push('styles')
-  {{-- sementara pakai stylesheet yang sama dengan modul bahan baku --}}
   <link rel="stylesheet" href="{{ asset('assets/bahanbaku.css') }}">
 
-  {{-- FIX: kecilkan icon SVG pagination biar nggak jadi raksasa --}}
   <style>
-    /* khusus pagination bawaan Laravel */
+    .summary-box {
+      margin-top:20px;
+      padding:16px;
+      border-radius:8px;
+      background:#f8f8f8;
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:12px;
+    }
+
+    .summary-item {
+      background:white;
+      padding:12px;
+      border-radius:6px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .summary-label {
+      font-size:13px;
+      color:#777;
+      margin-bottom:4px;
+    }
+
+    .summary-value {
+      font-size:16px;
+      font-weight:600;
+    }
+
     nav[role="navigation"] svg {
-      width: 16px !important;
-      height: 16px !important;
-      display: inline-block;
+      width:16px !important;
+      height:16px !important;
     }
   </style>
 @endpush
 
-@extends('layouts.main')
-@section('title', 'Pembelian Bahan Detail')
-
 @section('content')
 <div class="card">
 
-  {{-- Header --}}
+  {{-- HEADER --}}
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-    <h2 style="margin:0;">Pembelian Bahan Detail</h2>
-    {{-- tombol di header DIHAPUS, pakai yang di baris filter aja --}}
+    <h2 style="margin:0;">Laporan Pembelian Bahan</h2>
   </div>
 
-  {{-- Filter & Search --}}
+  {{-- FILTER --}}
   <form method="GET"
         action="{{ route('pembelian-bahan-detail.index') }}"
         class="filter-bar"
-        style="
-          margin:12px 0;
-          display:flex;
-          align-items:center;
-          gap:10px;
-          flex-wrap:wrap;
-          justify-content:flex-start;
-        ">
+        style="margin:12px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
 
-    {{-- Search + hidden sort/dir --}}
-    <input type="text"
-           name="q"
-           value="{{ $search }}"
-           placeholder="Cari kode pembelian / nama bahan…" />
+    <input type="date"
+           name="start_date"
+           value="{{ request('start_date') }}"
+           required>
 
-    <input type="hidden" name="sort" value="{{ $sort }}">
-    <input type="hidden" name="dir"  value="{{ $dir  }}">
+    <input type="date"
+           name="end_date"
+           value="{{ request('end_date') }}"
+           required>
 
-    {{-- Tombol aksi --}}
+    <select name="bahan_id" class="form-select">
+      <option value="">Semua Bahan</option>
+
+      @foreach ($bahanList as $bahan)
+        <option value="{{ $bahan->id }}"
+          {{ request('bahan_id') == $bahan->id ? 'selected' : '' }}>
+          {{ $bahan->kode_bahan }} - {{ $bahan->nama_bahan }}
+        </option>
+      @endforeach
+    </select>
+
+
     <button class="btn btn--outline-coffee">
       Terapkan
     </button>
@@ -56,70 +84,45 @@
        class="btn btn--outline-coffee">
       Reset
     </a>
-
-    <a href="{{ route('pembelian-bahan.index') }}"
-       class="btn btn--outline-coffee">
-      Pembelian Bahan
-    </a>
   </form>
 
-  {{-- Tabel --}}
+  {{-- TABLE --}}
   <div class="table-wrap">
     <table class="table">
       <thead>
         <tr>
-          <th>Pembelian</th>
-          <th>Nama bahan</th>
-          <th>Satuan beli</th>
-          <th class="num">Qty beli</th>
-          <th class="num">Harga satuan</th>
-          <th class="num">Subtotal</th>
-          <th>Expired date</th>
+          <th>Tanggal</th>
+          <th>ID Bahan</th>
+          <th>Nama Bahan</th>
+          <th class="num">Qty</th>
+          <th class="num">Avg Harga</th>
+          <th class="num">Total</th>
         </tr>
       </thead>
 
       <tbody>
-        @forelse ($items as $row)
-          @php
-            $header = $row->header; // relasi ke PembelianBahan
-          @endphp
-
+        @forelse ($pembelianDetail['rows'] as $row)
           <tr>
-            {{-- Kode pembelian (header) --}}
-            <td>
-              {{ $header?->kode_pembelian ?? '–' }}
-            </td>
+            <td>{{ $row->tanggal }}</td>
+            <td>{{ $row->bahan_baku_id }}</td>
+            <td>{{ $row->nama_bahan }}</td>
 
-            {{-- Nama bahan --}}
-            <td>{{ $row->nama_bahan ?? '–' }}</td>
-
-            {{-- Satuan beli --}}
-            <td>{{ $row->satuan_beli ?? '–' }}</td>
-
-            {{-- Qty beli --}}
             <td class="num">
-              {{ $row->qty_beli !== null ? number_format((float) $row->qty_beli, 0, ',', '.') : '–' }}
+              {{ number_format((float)$row->qty, 2, ',', '.') }}
             </td>
 
-            {{-- Harga satuan --}}
             <td class="num">
-              {{ $row->harga_satuan !== null ? 'Rp '.number_format((float) $row->harga_satuan, 0, ',', '.') : '–' }}
+              Rp {{ number_format((float)$row->avg_harga, 0, ',', '.') }}
             </td>
 
-            {{-- Subtotal --}}
             <td class="num">
-              {{ $row->subtotal !== null ? 'Rp '.number_format((float) $row->subtotal, 0, ',', '.') : '–' }}
-            </td>
-
-            {{-- Expired date --}}
-            <td>
-              {{ $row->expired_date ?? '–' }}
+              Rp {{ number_format((float)$row->total, 0, ',', '.') }}
             </td>
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="muted" style="text-align:center;">
-              Belum ada data detail pembelian.
+            <td colspan="6" style="text-align:center;">
+              Belum ada data pembelian pada periode ini.
             </td>
           </tr>
         @endforelse
@@ -127,8 +130,38 @@
     </table>
   </div>
 
-  <div style="margin-top:12px;">
-    {{ $items->links('pagination::cofit') }}
+  {{-- SUMMARY --}}
+  <div class="summary-box">
+
+    <div class="summary-item">
+      <div class="summary-label">Grand Total Pembelian</div>
+      <div class="summary-value">
+        Rp {{ number_format($pembelianDetail['stats']['grand_total'], 0, ',', '.') }}
+      </div>
+    </div>
+
+    <div class="summary-item">
+      <div class="summary-label">Harga Terendah</div>
+      <div class="summary-value">
+        Rp {{ number_format($pembelianDetail['stats']['min'], 0, ',', '.') }}
+      </div>
+    </div>
+
+    <div class="summary-item">
+      <div class="summary-label">Harga Tertinggi</div>
+      <div class="summary-value">
+        Rp {{ number_format($pembelianDetail['stats']['max'], 0, ',', '.') }}
+      </div>
+    </div>
+
+    <div class="summary-item">
+      <div class="summary-label">Harga Rata-rata</div>
+      <div class="summary-value">
+        Rp {{ number_format($pembelianDetail['stats']['avg'], 0, ',', '.') }}
+      </div>
+    </div>
+
   </div>
+
 </div>
 @endsection
