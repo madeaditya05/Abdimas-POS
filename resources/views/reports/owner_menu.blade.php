@@ -146,6 +146,31 @@
         </div>
       </a>
 
+      {{-- Laporan Pembelian --}}
+      <a class="om-tile"
+        href="{{ route('pembelian-bahan-detail.index', [
+              'start_date' => $startDate,
+              'end_date'   => $endDate,
+        ]) }}">
+        <div class="om-tile__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <path d="M4 4h16v16H4z"/>
+            <path d="M7 8h10"/>
+            <path d="M7 12h10"/>
+            <path d="M7 16h6"/>
+            <path d="M16 16h1"/>
+          </svg>
+        </div>
+
+        <div class="om-tile__body">
+          <div class="om-tile__title">Laporan Pembelian</div>
+          <div class="om-tile__desc">
+            Rekap pembelian bahan per periode + harga terendah, tertinggi & rata-rata.
+          </div>
+        </div>
+      </a>
+
+
     </div>
 
   </div>
