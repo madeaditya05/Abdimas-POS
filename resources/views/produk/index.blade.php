@@ -1,5 +1,6 @@
 @push('styles')
   <link rel="stylesheet" href="{{ asset('assets/bahanbaku.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/produk.css') }}">
 @endpush
 
 @extends('layouts.main')
@@ -42,7 +43,7 @@
             @default Semua kategori
           @endswitch
         </span>
-        <span class="dd-caret"></span>
+        {{-- <span class="dd-caret"></span> --}}
       </button>
       <div class="dd-menu">
         <div class="dd-item {{ $selKat==='' ? 'active':'' }}" data-value="">
@@ -79,6 +80,7 @@
           <th>Nama</th>
           <th class="num">Harga</th>
           <th>Kategori</th>
+          <th>Gambar</th>
           <th style="width:130px;">Aksi</th>
         </tr>
       </thead>
@@ -118,6 +120,18 @@
                 <span class="muted">–</span>
               @endif
             </td>
+
+            <td>
+              @if ($produk->gambar)
+                <img src="{{ asset($produk->gambar) }}"
+                style="width:50px;height:50px;object-fit:cover;border-radius:8px;">
+              @else
+                <span class="muted">–</span>
+              @endif
+            </td>
+
+            
+
 
             <td>
               <div class="actions">

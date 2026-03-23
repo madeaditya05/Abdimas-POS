@@ -52,6 +52,7 @@
           <th>Kode</th>
           <th>Tanggal</th>
           <th>Supplier</th>
+          <th>Kontak</th>
           <th class="num">Total</th>
           <th style="width:130px;">Aksi</th>
         </tr>
@@ -67,6 +68,8 @@
             </td>
 
             <td>{{ $row->supplier_nama ?: '–' }}</td>
+
+            <td>{{ $row->supplier_kontak ?: '–' }}</td>
 
             <td class="num">
               @php $total = (float) ($row->total ?? 0); @endphp

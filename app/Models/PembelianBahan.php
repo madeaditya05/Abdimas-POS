@@ -11,11 +11,16 @@ class PembelianBahan extends Model
     protected $table = 'pembelian_bahan';
 
     protected $fillable = [
-        'kode_pembelian','tanggal','user_id',
-        'supplier_nama','supplier_kontak',
-        'total','catatan',
-        'bukti_file', // ✅ tambahan: path/filename bukti upload
-    ];
+    'kode_pembelian',
+    'tanggal',
+    'user_id',
+    'supplier_nama',
+    'supplier_kontak',
+    'total',
+    'catatan',
+    'bukti_file',
+];
+
 
     protected $casts = [
         'tanggal' => 'datetime',
