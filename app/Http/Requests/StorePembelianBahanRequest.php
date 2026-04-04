@@ -21,8 +21,15 @@ class StorePembelianBahanRequest extends FormRequest
      */
     public function rules(): array
     {
+
+
         return [
-            //
+        'tanggal'          => ['nullable', 'date'],
+        'supplier_nama'    => ['nullable', 'string', 'max:255'],
+        'supplier_kontak'  => ['nullable', 'string', 'max:255'],
+        'catatan'          => ['nullable', 'string'],
+        'bukti_file'       => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf'],
+        'details'          => ['required', 'array'],
         ];
     }
 }

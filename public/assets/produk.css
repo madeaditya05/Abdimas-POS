@@ -1,0 +1,158 @@
+/* ===============================
+   SEGMENTED DROPDOWN KATEGORI
+   =============================== */
+
+:root {
+    --coffee: #4b3621;
+    --coffee-soft: #6b4a2f;
+    --coffee-light: #f3ece6;
+}
+
+/* Wrapper */
+.dd {
+    position: relative;
+    min-width: 220px;
+}
+
+/* Button utama */
+.dd-toggle {
+    width: 100%;
+    padding: 8px 14px;
+    background: #fff;
+    border: 1px solid var(--coffee);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    color: var(--coffee);
+    transition: 0.15s ease;
+}
+
+/* Hover */
+.dd-toggle:hover {
+    background: var(--coffee-light);
+}
+
+/* Saat open */
+.dd.open .dd-toggle {
+    background: var(--coffee);
+    color: #fff;
+}
+
+/* Menu */
+.dd-menu {
+    position: absolute;
+    top: calc(100% - 1px);
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--coffee);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    padding: 6px;
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: 0.15s ease;
+    z-index: 50;
+}
+
+.dd.open .dd-menu {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Item */
+.dd-item {
+    padding: 9px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    border: 1px solid transparent;
+    transition: 0.12s ease;
+}
+
+/* Hover item */
+.dd-item:hover {
+    background: var(--coffee-light);
+    border-color: var(--coffee-soft);
+}
+
+/* Active */
+.dd-item.active {
+    background: var(--coffee-soft);
+    color: #fff;
+    border-color: var(--coffee-soft);
+    font-weight: 500;
+}
+
+/* ===============================
+   SEARCH INPUT
+   =============================== */
+
+.filter-bar input[type="text"] {
+    border-radius: 10px;
+    border: 1px solid var(--coffee);
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.filter-bar input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(75, 54, 33, 0.15);
+}
+
+/* ===============================
+   BUTTON TERAPKAN & RESET MATCH
+   =============================== */
+
+.filter-bar .btn--outline-coffee {
+    border-color: var(--coffee);
+    color: var(--coffee);
+}
+
+.filter-bar .btn--outline-coffee:hover {
+    background: var(--coffee);
+    color: #fff;
+}
+
+.dd-toggle {
+    border: 1px solid #111827 !important;
+}
+
+/* ===============================
+   TABLE PRODUK - CENTER ALIGN
+   =============================== */
+
+/* Header rata tengah */
+.table thead th {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Isi table rata tengah */
+.table tbody td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Khusus kolom Nama biar tetap enak dibaca (optional, kalau mau tetap left) */
+/*
+.table tbody td:nth-child(2) {
+    text-align: left;
+}
+*/
+
+/* Gambar produk */
+.table img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto;
+}

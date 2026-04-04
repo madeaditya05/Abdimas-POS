@@ -20,7 +20,7 @@
 
     {{-- (opsional) tombol export nanti aja --}}
     {{-- <a href="#" class="btn btn--outline-coffee btn--with-icon">
-      <x-heroicon-o-arrow-down-tray class="icon-inline" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-inline"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
       <span>Export</span>
     </a> --}}
   </div>

@@ -653,6 +653,27 @@
     box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
 }
 
+.btn-detail-remove {
+    min-width: 92px;
+    padding: 0.5rem 0.8rem !important;
+    border-radius: 0.7rem !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-detail-remove .icon-aksi {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+}
+
 /* tombol icon di kolom Aksi */
 .actions .btn.btn--icon {
     width: 34px;

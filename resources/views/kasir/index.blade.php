@@ -1,6 +1,43 @@
 @extends('layouts.main')
 @section('title', 'Kasir')
 
+@push('styles')
+<style>
+  .produk-card.is-disabled {
+    opacity: .68;
+    border-style: dashed;
+    background: #f8fafc;
+  }
+
+  .produk-card.is-disabled:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .produk-card .produk-meta {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .produk-card .produk-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .produk-card .produk-status.is-off {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+</style>
+@endpush
+
 @section('content')
 <form action="{{ route('kasir.store') }}" method="POST" id="formPembayaran" autocomplete="off">
   @csrf
@@ -19,24 +56,30 @@
         <input type="text" id="cariProduk" class="form-input" placeholder="Cari produk…">
         <select id="filterKategori" class="form-input" style="max-width:220px;">
           <option value="">Semua kategori</option>
-          @foreach($kategoris as $kat)
-            <option value="{{ Str::lower($kat) }}">{{ $kat }}</option>
+          @foreach($kategoris as $kategori)
+            <option value="{{ Str::lower($kategori->slug) }}">{{ $kategori->nama }}</option>
           @endforeach
         </select>
       </div>
 
       <div class="produk-grid" id="gridProduk">
         @foreach($produks as $p)
-          <div class="produk-card"
+          <div class="produk-card {{ $p->aktif ? '' : 'is-disabled' }}"
                data-id="{{ $p->id }}"
                data-name="{{ Str::lower($p->nama_barang) }}"
                data-price="{{ (int)$p->harga }}"
-               data-kategori="{{ Str::lower($p->kategori ?? '') }}">
+               data-kategori="{{ Str::lower($p->kategori ?? '') }}"
+               data-aktif="{{ $p->aktif ? '1' : '0' }}">
             <div class="produk-main">
               <div class="produk-avatar">{{ strtoupper(mb_substr($p->nama_barang,0,1)) }}</div>
               <div class="produk-info">
                 <div class="produk-name">{{ $p->nama_barang }}</div>
                 <div class="produk-price">Rp {{ number_format($p->harga,0,',','.') }}</div>
+                <div class="produk-meta">
+                  <span class="produk-status {{ $p->aktif ? '' : 'is-off' }}">
+                    {{ $p->aktif ? 'Tersedia' : 'Dinonaktifkan' }}
+                  </span>
+                </div>
                 @if(!is_null($p->stok))
                   <div class="produk-stock" style="font-size:12px; color:#64748b;">Stok: {{ $p->stok }}</div>
                 @endif
@@ -46,7 +89,10 @@
               <button type="button" class="btn btn-primary btn-sm btn-tambah"
                       data-id="{{ $p->id }}"
                       data-name="{{ $p->nama_barang }}"
-                      data-price="{{ (int)$p->harga }}">Tambah</button>
+                      data-price="{{ (int)$p->harga }}"
+                      {{ $p->aktif ? '' : 'disabled' }}>
+                {{ $p->aktif ? 'Tambah' : 'Tidak tersedia' }}
+              </button>
             </div>
           </div>
         @endforeach
@@ -214,11 +260,18 @@ $(function(){
 
   // Tambah/kurang/hapus/kosongkan
   wadahProduk.on('click','.btn-tambah',e=>{
+    if ($(e.currentTarget).is(':disabled')) return;
     const id = +$(e.currentTarget).data('id');
     const name = $(e.currentTarget).data('name');
     const price = +$(e.currentTarget).data('price');
     const rb = optimisticUpdate('tambah',{produk_id:id,name,price});
-    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id}).done(renderKeranjang).fail(rb);
+    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id})
+      .done(renderKeranjang)
+      .fail(xhr=>{
+        rb();
+        const msg = xhr?.responseJSON?.message || 'Produk ini sedang tidak tersedia.';
+        alert(msg);
+      });
   });
   $('#ringkasanKeranjang').on('click','.aksi',function(){
     const id=+$(this).data('id'), act=String($(this).data('act'));

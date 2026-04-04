@@ -43,7 +43,7 @@
             required
           >
           <span class="field-icon">
-            <x-heroicon-o-hashtag class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
       </div>
@@ -57,7 +57,7 @@
               {{ $selName ? ($opsiAccountNames[$selName] ?? $selName) : 'Pilih nama akun' }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-building-library class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -83,7 +83,7 @@
               {{ $selType ? ($opsiType[$selType] ?? ucfirst($selType)) : 'Pilih tipe akun' }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-tag class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -109,7 +109,7 @@
               {{ $selNorm ? ($opsiNormalSide[$selNorm] ?? ucfirst($selNorm)) : 'Pilih saldo normal' }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-scale class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 

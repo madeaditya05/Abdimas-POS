@@ -13,7 +13,7 @@
 
     <a href="{{ route('penyesuaian-stok.create') }}"
        class="btn btn--outline-success btn--with-icon">
-      <x-heroicon-o-plus class="icon-inline" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-inline"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
       <span>Penyesuaian Baru</span>
     </a>
   </div>

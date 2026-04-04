@@ -134,6 +134,18 @@
     gap: 14px;
 }
 
+.om-section + .om-section {
+    margin-top: 18px;
+}
+
+.om-section__label {
+    margin-bottom: 12px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--om-muted);
+}
+
 .om-tile {
     grid-column: span 3 / span 3;
     background: #fff;

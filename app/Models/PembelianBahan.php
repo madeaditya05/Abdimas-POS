@@ -11,11 +11,16 @@ class PembelianBahan extends Model
     protected $table = 'pembelian_bahan';
 
     protected $fillable = [
-        'kode_pembelian','tanggal','user_id',
-        'supplier_nama','supplier_kontak',
-        'total','catatan',
-        'bukti_file', // ✅ tambahan: path/filename bukti upload
-    ];
+    'kode_pembelian',
+    'tanggal',
+    'user_id',
+    'supplier_nama',
+    'supplier_kontak',
+    'total',
+    'catatan',
+    'bukti_file',
+];
+
 
     protected $casts = [
         'tanggal' => 'datetime',
@@ -61,18 +66,13 @@ class PembelianBahan extends Model
             $m->kode_pembelian ??= static::generateKodeHarian();
         });
 
-        // Urutan penting:
-        // 1) saved -> recalcTotal (quietly)
+        // Header tetap jadi titik sinkron jurnal saat metadata transaksi berubah.
         static::saved(function (self $m) {
             $m->recalcTotal();
-        });
-
-        // 2) saved -> post jurnal (setelah total diperbarui oleh recalcTotal)
-        static::saved(function (self $m) {
             app(JournalPoster::class)->postForPembelianBahan($m);
         });
 
-        // 3) deleted -> hapus jurnal
+        // deleted -> hapus jurnal
         static::deleted(function (self $m) {
             app(JournalPoster::class)->deleteFor(self::class, $m->id);
         });

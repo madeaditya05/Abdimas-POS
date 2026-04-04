@@ -1,6 +1,9 @@
 @php
   /** @var \App\Models\Produk $produk */
   $selectedKategori = old('kategori', $produk->kategori ?? '');
+  $selectedKategoriLabel = $selectedKategori !== '' && isset($kategoriOptions[$selectedKategori])
+      ? $kategoriOptions[$selectedKategori]
+      : 'Pilih kategori';
 @endphp
 
 @if ($errors->any())
@@ -39,7 +42,7 @@
             disabled
           >
           <span class="field-icon">
-            <x-heroicon-o-hashtag class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Kode diisi otomatis (format CF####).</div>
@@ -56,7 +59,7 @@
             required
           >
           <span class="field-icon">
-            <x-heroicon-o-cube class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help"></div>
@@ -76,7 +79,7 @@
             required
           >
           <span class="field-icon">
-            <x-heroicon-o-archive-box class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help"></div>
@@ -96,7 +99,7 @@
             required
           >
           <span class="field-icon">
-            <x-heroicon-o-banknotes class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Isi harga jual dalam rupiah (tanpa titik).</div>
@@ -108,15 +111,10 @@
         <div class="dd" data-select="kategori">
           <button type="button" class="dd-toggle" aria-haspopup="listbox" aria-expanded="false">
             <span class="dd-label">
-              @switch($selectedKategori)
-                @case('coffee') Coffee @break
-                @case('non_coffee') Non Coffee @break
-                @case('snack') Snack @break
-                @default Pilih kategori
-              @endswitch
+              {{ $selectedKategoriLabel }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-tag class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -184,7 +182,7 @@
             rows="4"
           >{{ old('deskripsi', $produk->deskripsi ?? '') }}</textarea>
           <span class="field-icon">
-            <x-heroicon-o-pencil-square class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help"></div>

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Produks\Schemas;
 
+use App\Models\KategoriProduk;
+use App\Models\Produk;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
@@ -32,11 +34,17 @@ class ProdukForm
                     ->numeric(),
                 Select::make('kategori')
                     ->label('Kategori')
-                    ->options([
-                        'coffee'      => 'Coffee',
-                        'non_coffee'  => 'Non Coffee',
-                        'snack'       => 'Snack',
-                    ])
+                    ->options(fn (?Produk $record) => KategoriProduk::ordered()
+                        ->when($record?->kategori, function ($query) use ($record) {
+                            $query->where(function ($q) use ($record) {
+                                $q->where('aktif', true)
+                                    ->orWhere('slug', $record->kategori);
+                            });
+                        }, function ($query) {
+                            $query->where('aktif', true);
+                        })
+                        ->pluck('nama', 'slug')
+                        ->all())
                     ->placeholder('Pilih kategori')   // biar default-nya kosong
                     ->native(false)                   // dropdown gaya Filament (TomSelect)
                     ->searchable()                    // kalau nanti opsi makin banyak

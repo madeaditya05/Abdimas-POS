@@ -48,7 +48,7 @@
             required
             placeholder="Masukkan nama customer">
           <span class="field-icon">
-            <x-heroicon-o-user class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
 

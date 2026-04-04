@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Display;
+use App\Models\KategoriProduk;
 use App\Models\Produk;
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
@@ -32,12 +33,31 @@ class KasirController extends Controller
             }
         }
 
-        $produks = Produk::select('id','nama_barang','harga','stok','kategori')
-            ->whereRaw('COALESCE(stok,0) > 0')
-            ->orderBy('nama_barang')->get();
+        $produks = Produk::query()
+            ->leftJoin('kategori_produk as kp', 'kp.slug', '=', 'produk.kategori')
+            ->select(
+                'produk.id',
+                'produk.nama_barang',
+                'produk.harga',
+                'produk.kategori',
+                'produk.aktif',
+                DB::raw('NULL as stok'),
+                DB::raw('COALESCE(kp.nama, produk.kategori) as kategori_nama')
+            )
+            ->orderBy('produk.nama_barang')
+            ->get();
 
-        $kategoris = Produk::whereNotNull('kategori')
-            ->select('kategori')->distinct()->orderBy('kategori')->pluck('kategori');
+        $kategoris = KategoriProduk::query()
+            ->join('produk', 'produk.kategori', '=', 'kategori_produk.slug')
+            ->select(
+                'kategori_produk.slug',
+                'kategori_produk.nama',
+                DB::raw('MIN(kategori_produk.urutan) as urutan')
+            )
+            ->groupBy('kategori_produk.slug', 'kategori_produk.nama')
+            ->orderBy('urutan')
+            ->orderBy('kategori_produk.nama')
+            ->get();
 
         // Kode aktif untuk memicu polling di view
         $activeCode = session('sales_code') ?? Session::get('last_sales_code');
@@ -105,7 +125,13 @@ class KasirController extends Controller
     public function tambahKeKeranjang(Request $req)
     {
         $data = $req->validate(['produk_id'=>'required|integer|exists:produk,id']);
-        $p = Produk::select('id','nama_barang','harga')->findOrFail($data['produk_id']);
+        $p = Produk::select('id','nama_barang','harga','aktif')->findOrFail($data['produk_id']);
+
+        if (! $p->aktif) {
+            return response()->json([
+                'message' => 'Produk sedang dinonaktifkan dan belum bisa dipilih kasir.',
+            ], 422);
+        }
 
         $cart = $this->ambilKeranjang();
         $items =& $cart['items'];

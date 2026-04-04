@@ -17,7 +17,7 @@ class ResepsTable
                     ->sortable()
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('produk.kategori')
+                Tables\Columns\TextColumn::make('produk.kategoriProduk.nama')
                     ->label('Kategori')
                     ->badge()
                     ->alignCenter()

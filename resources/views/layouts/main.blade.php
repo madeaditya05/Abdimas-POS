@@ -19,23 +19,37 @@
 </form>
 </head>
 <body>
+    @php
+        $isKasirPanel =
+            request()->routeIs('kasir.*')
+            || request()->routeIs('kasir.rekap*')
+            || request()->is('kasir')
+            || request()->is('kasir/*')
+            || request()->is('reports/kasir')
+            || request()->is('reports/kasir/*');
+    @endphp
+
     <div class="dashboard-wrapper">
         <!-- Sidebar -->
         {{-- BLOK INI KITA MODIFIKASI --}}
         @auth
-            @switch(auth()->user()->user_group)
-                @case('owner')
-                    {{-- Tampilkan sidebar untuk owner --}}
-                    @include('layouts.sidebar_owner')
-                    @break
-                
-                @case('kasir')
-                    {{-- Tampilkan sidebar untuk kasir --}}
-                    @include('layouts.sidebar_kasir')
-                    @break
+            @if ($isKasirPanel)
+                @include('layouts.sidebar_kasir')
+            @else
+                @switch(auth()->user()->user_group)
+                    @case('owner')
+                        {{-- Tampilkan sidebar untuk owner --}}
+                        @include('layouts.sidebar_owner')
+                        @break
+                    
+                    @case('kasir')
+                        {{-- Tampilkan sidebar untuk kasir --}}
+                        @include('layouts.sidebar_kasir')
+                        @break
 
-                @default
-                    @endswitch
+                    @default
+                @endswitch
+            @endif
         @endauth
         {{-- AKHIR BLOK MODIFIKASI --}}
 

@@ -47,13 +47,20 @@
                     </svg>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ route('product.index') }}" class="nav-item {{ request()->is('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('produk.index') }}" class="nav-item {{ request()->routeIs('produk.*') ? 'active' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="8" cy="21" r="1"/>
                         <circle cx="19" cy="21" r="1"/>
                         <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
                     </svg>
                     <span>Produk</span>
+                </a>
+                <a href="{{ route('kategori-produk.index') }}" class="nav-item {{ request()->routeIs('kategori-produk.*') ? 'active' : '' }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 7 9 18l-5-5"/>
+                        <path d="M14 7h7v7"/>
+                    </svg>
+                    <span>Kategori Produk</span>
                 </a>
                 <a href="/kasir" class="nav-item {{ request()->is('kasir') ? 'active' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

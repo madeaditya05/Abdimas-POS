@@ -2,6 +2,11 @@
 @section('title', $mode === 'create' ? 'Create Bahan Baku' : 'Edit Bahan Baku')
 
 @section('content')
+<style>
+  .form-check:has(input[name="dipakai_di_resep"]) {
+    display: none;
+  }
+</style>
 @php
   $selectedKategori    = old('kategori',       $row->kategori        ?? '');
   $selectedSatuanPakai = old('satuan_pakai',   $row->satuan_pakai    ?? '');
@@ -44,7 +49,7 @@
                 disabled
             >
             <span class="field-icon">
-                <x-heroicon-o-hashtag class="hi hi-5" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
         </div>
 
@@ -66,7 +71,7 @@
                   value="{{ old('nama_bahan', $row->nama_bahan ?? '') }}"
                   required>
               <span class="field-icon">
-                  <x-heroicon-o-cube class="hi hi-5" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
               </span>
           </div>
           <div class="form-help"></div>
@@ -89,7 +94,7 @@
               </span>
 
               <span class="dd-icon">
-                  <x-heroicon-o-tag class="hi hi-4" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
               </span>
           </button>
 
@@ -149,7 +154,7 @@
               {{ $selectedSatuanPakai && isset($opsiSatuan[$selectedSatuanPakai]) ? $opsiSatuan[$selectedSatuanPakai] : 'Pilih satuan' }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-scale class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -178,7 +183,7 @@
               {{ $selectedSatuanBeli && isset($opsiSatuan[$selectedSatuanBeli]) ? $opsiSatuan[$selectedSatuanBeli] : 'Sama dengan satuan pakai' }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-cube class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -206,7 +211,7 @@
                 value="{{ old('konversi_beli_ke_pakai', $row->konversi_beli_ke_pakai ?? 1) }}"
             >
             <span class="field-icon">
-                <x-heroicon-o-arrows-right-left class="hi hi-5" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
         </div>
 
@@ -225,7 +230,7 @@
                 name="isi_per_kemasan"
                 value="{{ old('isi_per_kemasan', $row->isi_per_kemasan ?? '') }}">
             <span class="field-icon">
-                <x-heroicon-o-archive-box class="hi hi-5" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
         </div>
 
@@ -244,7 +249,7 @@
         <button type="button" class="dd-toggle">
           <span class="dd-label">{{ $opsiPenyimpanan[$selPeny] ?? 'Pilih' }}</span>
           <span class="dd-icon">
-            <x-heroicon-o-archive-box class="hi hi-4" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </button>
         <div class="dd-menu">
@@ -284,7 +289,7 @@
           value="{{ old('masa_simpan_hari', $row->masa_simpan_hari ?? '') }}"
         >
         <span class="field-icon">
-          <x-heroicon-o-clock class="hi hi-5" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
         </span>
       </div>
       <div class="form-help"></div>
@@ -330,7 +335,7 @@
               {{ $selAlergen==='' ? 'Tidak ada' : ($opsiAlergen[$selAlergen] ?? 'Tidak ada') }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-exclamation-triangle class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -359,7 +364,7 @@
               {{ $selHalal==='' ? 'Pilih status' : ($opsiStatusHalal[$selHalal] ?? 'Pilih status') }}
             </span>
             <span class="dd-icon">
-              <x-heroicon-o-shield-check class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -391,7 +396,7 @@
                 value="{{ old('default_supplier_nama',$row->default_supplier_nama ?? '') }}"
             >
             <span class="field-icon">
-                <x-heroicon-o-truck class="hi hi-5" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
         </div>
         <div class="form-help"></div>
@@ -409,7 +414,7 @@
                 value="{{ old('supplier_kontak',$row->supplier_kontak ?? '') }}"
             >
             <span class="field-icon">
-                <x-heroicon-o-phone class="hi hi-5" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
         </div>
 
@@ -426,7 +431,7 @@
           <button type="button" class="dd-toggle">
             <span class="dd-label">{{ $selLead==='' ? 'Opsional' : $selLead }}</span>
             <span class="dd-icon">
-              <x-heroicon-o-clock class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
           <div class="dd-menu">
@@ -450,7 +455,7 @@
           <button type="button" class="dd-toggle">
             <span class="dd-label">{{ $selMin==='' ? 'Opsional' : $selMin }}</span>
             <span class="dd-icon">
-              <x-heroicon-o-hashtag class="hi hi-4" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
           </button>
 
@@ -477,7 +482,7 @@
             <div class="dd" data-select="yield_persen">
                 <button type="button" class="dd-toggle">
                     <span class="dd-icon">
-                        <x-heroicon-o-chart-pie class="hi hi-4" />
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-4"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
                     </span>
                     <span class="dd-label">{{ $opsiYield[$selYield] ?? $selYield }}</span>
                 </button>
@@ -563,7 +568,7 @@
             >{{ old('catatan', $row->catatan ?? '') }}</textarea>
 
             <span class="field-icon">
-                <x-heroicon-o-pencil-square class="hi hi-5" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
             </span>
         </div>
 

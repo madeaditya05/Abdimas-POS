@@ -131,6 +131,16 @@
       <td class="right money emph">{{ $fmt($net) }}</td>
     </tr>
   </table>
+
+  @if(!($lr['is_closed'] ?? false))
+    <div style="margin:4px 0 12px 0; padding:8px 10px; border:1px solid #f59e0b; background:#fffbeb;">
+      HPP memakai metode periodik dan baru terisi setelah tutup buku. Untuk periode ini closing belum ditemukan, jadi HPP masih 0.
+    </div>
+  @else
+    <div style="margin:4px 0 12px 0; padding:8px 10px; border:1px solid #93c5fd; background:#eff6ff;">
+      HPP pada periode ini sudah diambil dari hasil tutup buku.
+    </div>
+  @endif
 @endif
 
 {{-- REKAP PER PRODUK --}}

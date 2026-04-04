@@ -21,8 +21,18 @@ class UpdateBahanBakuRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            //
-        ];
+        return (new StoreBahanBakuRequest())->rules();
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'aktif'                  => (bool) $this->boolean('aktif'),
+            'is_perishable'          => (bool) $this->boolean('is_perishable'),
+            'kelola_expired'         => (bool) $this->boolean('kelola_expired'),
+            'konversi_beli_ke_pakai' => $this->input('konversi_beli_ke_pakai', 1),
+            'yield_persen'           => $this->input('yield_persen', 100),
+            'penyimpanan'            => $this->input('penyimpanan', 'room'),
+        ]);
     }
 }

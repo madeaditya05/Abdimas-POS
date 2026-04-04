@@ -6,7 +6,6 @@ use App\Models\PembelianBahan;
 use App\Models\BahanBaku;
 use App\Http\Requests\StorePembelianBahanRequest;
 use App\Http\Requests\UpdatePembelianBahanRequest;
-use App\Services\JournalPoster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -20,14 +19,9 @@ class PembelianBahanController extends Controller
     {
         $search = trim((string) $request->get('q', ''));
 
-        $sort = $request->get('sort', 'tanggal');
+        // tetap dipertahankan (biar UI lama ga rusak)
+        $sort = $request->get('sort', 'id');
         $dir  = $request->get('dir', 'desc');
-
-        $allowedSort = ['tanggal', 'kode_pembelian', 'supplier_nama', 'total'];
-        if (! in_array($sort, $allowedSort, true)) {
-            $sort = 'tanggal';
-        }
-        $dir = $dir === 'asc' ? 'asc' : 'desc';
 
         $query = PembelianBahan::query();
 
@@ -38,7 +32,9 @@ class PembelianBahanController extends Controller
             });
         }
 
-        $query->orderBy($sort, $dir);
+        $query
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
 
         $items = $query->paginate(10)->withQueryString();
 
@@ -69,7 +65,7 @@ class PembelianBahanController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePembelianBahanRequest $request, JournalPoster $poster)
+    public function store(StorePembelianBahanRequest $request)
     {
         $data    = $request->validated();
         $details = $request->input('details', []);
@@ -97,25 +93,21 @@ class PembelianBahanController extends Controller
                 ->withErrors(['details' => 'Minimal satu baris detail dengan bahan & qty > 0.']);
         }
 
-        // ✅ Upload bukti (kalau ada)
         $buktiPath = null;
         if ($request->hasFile('bukti_file')) {
             $file = $request->file('bukti_file');
-
-            // Note: validasi idealnya di FormRequest, tapi di sini kita jaga-jaga
             if ($file && $file->isValid()) {
                 $buktiPath = $file->store('bukti-pembelian', 'public');
             }
         }
 
-        /** @var PembelianBahan $pembelian */
         $pembelian = DB::transaction(function () use ($request, $data, $cleanDetails, $buktiPath) {
             $pembelian = PembelianBahan::create([
                 'tanggal'         => $data['tanggal'] ?? now(),
                 'supplier_nama'   => $data['supplier_nama']   ?? null,
                 'supplier_kontak' => $data['supplier_kontak'] ?? null,
                 'catatan'         => $data['catatan']         ?? null,
-                'bukti_file'      => $buktiPath, // ✅ simpan path
+                'bukti_file'      => $buktiPath,
                 'user_id'         => $request->user()?->id,
             ]);
 
@@ -126,26 +118,16 @@ class PembelianBahanController extends Controller
             return $pembelian;
         });
 
-        // ✅ setelah commit, post jurnal (biar total sudah final)
-        $pembelian = $pembelian->fresh();
-        $poster->postForPembelianBahan($pembelian);
-
         return redirect()
             ->route('pembelian-bahan.index')
             ->with('status', 'Pembelian berhasil disimpan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(PembelianBahan $pembelianBahan)
     {
         abort(404);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(PembelianBahan $pembelianBahan)
     {
         $pembelianBahan->load('details');
@@ -158,10 +140,7 @@ class PembelianBahanController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdatePembelianBahanRequest $request, PembelianBahan $pembelianBahan, JournalPoster $poster)
+    public function update(UpdatePembelianBahanRequest $request, PembelianBahan $pembelianBahan)
     {
         $data    = $request->validated();
         $details = $request->input('details', []);
@@ -189,7 +168,6 @@ class PembelianBahanController extends Controller
                 ->withErrors(['details' => 'Minimal satu baris detail dengan bahan & qty > 0.']);
         }
 
-        // ✅ kalau ada upload baru, simpan dan hapus yang lama
         $newBuktiPath = null;
         $hasNewUpload = $request->hasFile('bukti_file');
 
@@ -201,7 +179,7 @@ class PembelianBahanController extends Controller
         }
 
         DB::transaction(function () use ($request, $data, $cleanDetails, $pembelianBahan, $hasNewUpload, $newBuktiPath) {
-            // hapus file lama kalau ada upload baru & file baru berhasil tersimpan
+
             if ($hasNewUpload && $newBuktiPath) {
                 $old = $pembelianBahan->bukti_file;
                 if ($old) {
@@ -211,12 +189,15 @@ class PembelianBahanController extends Controller
 
             $pembelianBahan->update([
                 'tanggal'         => $data['tanggal'] ?? $pembelianBahan->tanggal,
-                'supplier_nama'   => $data['supplier_nama']   ?? null,
-                'supplier_kontak' => $data['supplier_kontak'] ?? null,
-                'catatan'         => $data['catatan']         ?? null,
-                'bukti_file'      => ($hasNewUpload && $newBuktiPath) ? $newBuktiPath : $pembelianBahan->bukti_file,
+                'supplier_nama'   => $data['supplier_nama'] ?? $pembelianBahan->supplier_nama,
+                'supplier_kontak' => $data['supplier_kontak'] ?? $pembelianBahan->supplier_kontak,
+                'catatan'         => $data['catatan'] ?? $pembelianBahan->catatan,
+                'bukti_file'      => ($hasNewUpload && $newBuktiPath)
+                                        ? $newBuktiPath
+                                        : $pembelianBahan->bukti_file,
                 'user_id'         => $request->user()?->id,
             ]);
+
 
             $pembelianBahan->load('details');
             foreach ($pembelianBahan->details as $detail) {
@@ -226,25 +207,16 @@ class PembelianBahanController extends Controller
             foreach ($cleanDetails as $d) {
                 $pembelianBahan->details()->create($d);
             }
-        });
 
-        // ✅ re-post jurnal setelah update
-        $poster->postForPembelianBahan($pembelianBahan->fresh());
+        });
 
         return redirect()
             ->route('pembelian-bahan.index')
             ->with('status', 'Pembelian berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(PembelianBahan $pembelianBahan, JournalPoster $poster)
+    public function destroy(PembelianBahan $pembelianBahan)
     {
-        // ✅ hapus jurnal dulu
-        $poster->deleteFor(PembelianBahan::class, (int) $pembelianBahan->id);
-
-        // ✅ hapus file bukti (kalau ada)
         $old = $pembelianBahan->bukti_file;
         if ($old) {
             Storage::disk('public')->delete($old);

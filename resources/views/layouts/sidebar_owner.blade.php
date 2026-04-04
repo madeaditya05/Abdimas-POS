@@ -14,12 +14,11 @@
   @php
     // ====== STATUS AKTIF PER GRUP (dipakai untuk buka/tutup dropdown) ======
 
-    // Master Data: produk, kategori, bahan baku, resep
+    // Master Data: produk, kategori produk, bahan baku
     $isProdukActive =
         request()->routeIs('produk.*')
-        || request()->is('kategori*')
+        || request()->routeIs('kategori-produk.*')
         || request()->routeIs('bahan-baku.*')
-        || request()->routeIs('resep.*')
         || request()->routeIs('chart-of-accounts.*'); // (biar Daftar Akun ikut aktif)
 
     // Persediaan: mutasi stok + penyesuaian stok
@@ -79,7 +78,7 @@
       <span class="nav-label">Dashboard</span>
     </a>
 
-    {{-- ===== MASTER DATA (Produk, Kategori, Bahan Baku, Resep) ===== --}}
+    {{-- ===== MASTER DATA (Produk, Kategori Produk, Bahan Baku) ===== --}}
     <div class="nav-group {{ $isProdukActive ? 'has-active is-open' : '' }}" data-key="master-data">
       <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isProdukActive ? 'true' : 'false' }}">
         <span class="nav-icon">
@@ -96,8 +95,12 @@
         {{-- Produk --}}
         <a href="{{ route('produk.index') }}"
           class="subnav-item {{ request()->routeIs('produk.*') ? 'is-active' : '' }}">
-          {{-- <x-icon-shopping-cart class="nav-icon" /> --}}
           <span>Produk</span>
+        </a>
+
+        <a href="{{ route('kategori-produk.index') }}"
+          class="subnav-item {{ request()->routeIs('kategori-produk.*') ? 'is-active' : '' }}">
+          <span>Kategori Produk</span>
         </a>
         
         <a href="{{ route('chart-of-accounts.index') }}"
@@ -111,11 +114,6 @@
           Bahan Baku
         </a>
 
-        {{-- Resep --}}
-        <a href="{{ route('resep.index') }}"
-           class="subnav-item {{ request()->routeIs('resep.*') ? 'is-active' : '' }}">
-          Resep
-        </a>
       </div>
     </div>
 
@@ -234,6 +232,13 @@
   </nav>
 
   <div class="sidebar-footer">
+    <a href="{{ route('kasir.index') }}" class="btn-logout {{ request()->routeIs('kasir.*') ? 'is-active' : '' }}" style="text-decoration:none; margin-bottom:12px;">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+        <path d="M2.05 2.05h2l2.66 12.42A2 2 0 0 0 8.71 16h9.78a2 2 0 0 0 1.95-1.57L22.09 7H5.12"/>
+      </svg>
+      <span>Panel Kasir</span>
+    </a>
     <button type="button" class="btn-logout" onclick="document.getElementById('logoutForm').submit()">
       <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round">

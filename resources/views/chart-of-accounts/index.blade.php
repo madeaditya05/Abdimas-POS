@@ -17,7 +17,7 @@
 
     <a href="{{ route('chart-of-accounts.create') }}"
        class="btn btn--outline-success btn--with-icon">
-      <x-heroicon-o-plus class="icon-inline" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-inline"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
       <span>Buat Baru</span>
     </a>
   </div>
@@ -123,7 +123,7 @@
                 <a href="{{ route('chart-of-accounts.edit', $row) }}"
                    class="btn btn--outline-warning btn--sm btn--icon"
                    title="Edit">
-                  <x-heroicon-o-pencil-square class="icon-aksi" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M4 20h4l10.5-10.5a2.121 2.121 0 1 0-3-3L5 17v3Z" /><path d="m13.5 6.5 4 4" /></svg>
                   <span class="sr-only">Edit</span>
                 </a>
 
@@ -137,7 +137,7 @@
                   <button type="submit"
                           class="btn btn--outline-danger btn--sm btn--icon"
                           title="Hapus">
-                    <x-heroicon-o-trash class="icon-aksi" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
                     <span class="sr-only">Hapus</span>
                   </button>
                 </form>

@@ -33,6 +33,7 @@
   }
 
   $existingFile = $row->bukti_file ?? null;
+  $initialTotal = collect($details)->sum(fn ($detail) => (float) ($detail['subtotal'] ?? 0));
 @endphp
 
 @if ($errors->any())
@@ -57,12 +58,10 @@
     @method('PUT')
   @endif
 
-  {{-- INFO PEMBELIAN --}}
   <div class="form-section">
     <div class="form-title">Info Pembelian</div>
 
     <div class="form-grid">
-      {{-- Kode Pembelian (readonly, auto dari model) --}}
       <div class="form-field">
         <label>Kode Pembelian</label>
         <div class="field-with-icon">
@@ -71,13 +70,12 @@
                  value="{{ $row->kode_pembelian ?? 'Auto' }}"
                  disabled>
           <span class="field-icon">
-            <x-heroicon-o-hashtag class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
-        <div class="form-help">Kode akan diisi otomatis (format PBL-YYMMDD-####).</div>
+        <div class="form-help">Kode akan diisi otomatis dengan format harian.</div>
       </div>
 
-      {{-- Tanggal --}}
       <div class="form-field">
         <label>Tanggal</label>
         <div class="field-with-icon">
@@ -86,27 +84,26 @@
                  name="tanggal"
                  value="{{ $valTanggal }}">
           <span class="field-icon">
-            <x-heroicon-o-calendar-days class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
-        <div class="form-help"></div>
+        <div class="form-help">Gunakan tanggal transaksi pembelian.</div>
       </div>
 
-      {{-- Supplier --}}
       <div class="form-field">
-        <label>Supplier</label>
+        <label>Pemasok</label>
         <div class="field-with-icon">
           <input class="form-input"
+                 id="supplier_nama"
                  name="supplier_nama"
                  value="{{ old('supplier_nama', $row->supplier_nama ?? '') }}">
           <span class="field-icon">
-            <x-heroicon-o-truck class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
-        <div class="form-help"></div>
+        <div class="form-help">Opsional. Bisa diisi nama toko, agen, atau distributor.</div>
       </div>
 
-      {{-- Kontak --}}
       <div class="form-field">
         <label>Kontak Supplier</label>
         <div class="field-with-icon">
@@ -114,29 +111,27 @@
                  name="supplier_kontak"
                  value="{{ old('supplier_kontak', $row->supplier_kontak ?? '') }}">
           <span class="field-icon">
-            <x-heroicon-o-phone class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
-        <div class="form-help"></div>
+        <div class="form-help">Opsional. Isi nomor WhatsApp atau telepon jika diperlukan.</div>
       </div>
 
-      {{-- Total (readonly) --}}
       <div class="form-field">
         <label>Total</label>
         <div class="field-with-icon">
-          @php $total = (float) (old('total', $row->total ?? 0)); @endphp
           <input class="form-input"
+                 id="grand-total-display"
                  type="text"
-                 value="{{ $total > 0 ? 'Rp '.number_format($total, 0, ',', '.') : '-' }}"
+                 value="{{ $initialTotal > 0 ? 'Rp '.number_format($initialTotal, 0, ',', '.') : '-' }}"
                  disabled>
           <span class="field-icon">
-            <x-heroicon-o-banknotes class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
-        <div class="form-help">Total akan dihitung dari detail pembelian.</div>
+        <div class="form-help">Total dihitung otomatis dari item pembelian.</div>
       </div>
 
-      {{-- Catatan (1 line) - sekarang sejajar dengan Total --}}
       <div class="form-field">
         <label>Catatan</label>
         <div class="field-with-icon">
@@ -144,30 +139,28 @@
                  type="text"
                  name="catatan"
                  value="{{ old('catatan', $row->catatan ?? '') }}"
-                 placeholder="Contoh: pembelian gula untuk stok minggu ini">
+                 placeholder="Contoh: belanja stok mingguan">
           <span class="field-icon">
-            <x-heroicon-o-pencil-square class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
-        <div class="form-help"></div>
+        <div class="form-help">Opsional. Catatan singkat untuk kebutuhan internal.</div>
       </div>
     </div>
   </div>
 
-  {{-- LAMPIRAN (UPLOAD NOTA) --}}
   <div class="form-section" style="padding-bottom:0;">
     <div class="form-title">Lampiran</div>
     <div class="form-grid">
-
       <div class="form-field span-2">
-        <label>Bukti Pembelian (Nota)</label>
+        <label>Bukti Pembelian</label>
 
         @if(!empty($existingFile))
           <div style="margin:6px 0 10px 0;">
             <a class="btn btn--outline-coffee btn--sm"
                href="{{ asset('storage/'.$existingFile) }}"
                target="_blank" rel="noopener">
-              Lihat nota yang tersimpan
+              Lihat bukti yang tersimpan
             </a>
             <span class="muted" style="margin-left:8px;">{{ $existingFile }}</span>
           </div>
@@ -188,21 +181,22 @@
           </span>
 
           <span class="file-icon">
-            <x-heroicon-o-paper-clip class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
 
         <div class="form-help">
-          Upload JPG/PNG/PDF. Kalau sudah ada file, akan tetap dipakai sampai kamu upload yang baru.
+          Upload JPG, PNG, atau PDF. File lama tetap dipakai sampai kamu ganti.
         </div>
       </div>
-
     </div>
   </div>
 
-  {{-- DETAIL PEMBELIAN --}}
   <div class="form-section">
-    <div class="form-title">Detail Pembelian</div>
+    <div class="form-title">Item Pembelian</div>
+    <div class="form-help" style="margin-top:-4px;margin-bottom:12px;">
+      Form ini disederhanakan untuk UMKM: cukup pilih item, isi jumlah beli dalam satuan beli supplier, dan harga beli per satuan beli.
+    </div>
 
     <div class="form-grid">
       <div class="form-field span-2">
@@ -210,31 +204,32 @@
           <table class="table">
             <thead>
               <tr>
-                <th style="width: 26%;">Bahan</th>
-                <th style="width: 16%;">Qty</th>
-                <th style="width: 18%;">Harga Satuan</th>
-                <th style="width: 14%;">Expired</th>
-                <th class="num" style="width: 18%;">Subtotal</th>
-                <th style="width: 8%;"></th>
+                <th style="width: 34%;">Bahan</th>
+                <th style="width: 14%;">Qty Beli</th>
+                <th style="width: 14%;">Satuan Beli</th>
+                <th style="width: 18%;">Harga / Satuan</th>
+                <th class="num" style="width: 14%;">Subtotal</th>
+                <th style="width: 6%;"></th>
               </tr>
             </thead>
             <tbody id="details-body">
               @foreach ($details as $i => $detail)
                 @php
-                  $selBahan   = $detail['bahan_baku_id'] ?? null;
-                  $qtyBeli    = $detail['qty_beli']      ?? 1;
-                  $hargaSatuan= $detail['harga_satuan']  ?? 0;
-                  $expired    = $detail['expired_date']  ?? null;
-                  $subtotal   = $detail['subtotal']      ?? 0;
+                  $selBahan    = $detail['bahan_baku_id'] ?? null;
+                  $qtyBeli     = $detail['qty_beli'] ?? 1;
+                  $hargaSatuan = $detail['harga_satuan'] ?? 0;
+                  $subtotal    = $detail['subtotal'] ?? 0;
                 @endphp
                 <tr class="detail-row">
                   <td>
                     <select name="details[{{ $i }}][bahan_baku_id]" class="form-input">
-                      <option value="">Pilih bahan…</option>
+                      <option value="">Pilih bahan...</option>
                       @foreach ($bahanOptions as $bahan)
                         <option value="{{ $bahan->id }}"
-                          {{ (string)$selBahan === (string)$bahan->id ? 'selected' : '' }}>
-                          {{ $bahan->kode_bahan }} — {{ $bahan->nama_bahan }}
+                          data-satuan-beli="{{ $bahan->satuan_beli ?? $bahan->satuan_pakai }}"
+                          data-default-supplier="{{ $bahan->default_supplier_nama }}"
+                          {{ (string) $selBahan === (string) $bahan->id ? 'selected' : '' }}>
+                          {{ $bahan->kode_bahan }} - {{ $bahan->nama_bahan }}
                         </option>
                       @endforeach
                     </select>
@@ -244,27 +239,26 @@
                     <input class="form-input"
                            type="number"
                            step="0.001"
+                           min="0"
                            name="details[{{ $i }}][qty_beli]"
                            value="{{ $qtyBeli }}">
+                  </td>
+
+                  <td>
+                    <div class="detail-unit muted">-</div>
                   </td>
 
                   <td>
                     <input class="form-input"
                            type="number"
                            step="0.01"
+                           min="0"
                            name="details[{{ $i }}][harga_satuan]"
                            value="{{ $hargaSatuan }}">
                   </td>
 
-                  <td>
-                    <input class="form-input"
-                           type="date"
-                           name="details[{{ $i }}][expired_date]"
-                           value="{{ $expired }}">
-                  </td>
-
                   <td class="num">
-                    <input class="form-input"
+                    <input class="form-input detail-subtotal"
                            type="number"
                            step="0.01"
                            name="details[{{ $i }}][subtotal]"
@@ -276,7 +270,8 @@
                     <button type="button"
                             class="btn btn--outline-danger btn--sm btn-detail-remove"
                             title="Hapus baris">
-                      <x-heroicon-o-trash class="icon-aksi" />
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+                      <span>Hapus</span>
                     </button>
                   </td>
                 </tr>
@@ -289,13 +284,12 @@
                 class="btn btn--outline-coffee"
                 id="btn-add-detail"
                 style="margin-top:8px;">
-          + Tambah baris
+          + Tambah item
         </button>
       </div>
     </div>
   </div>
 
-  {{-- AKSI FORM --}}
   <div class="form-section" style="padding-bottom:0;">
     <div class="form-actions">
       <a href="{{ route('pembelian-bahan.index') }}" class="btn btn--danger">
@@ -308,15 +302,16 @@
   </div>
 </form>
 
-{{-- TEMPLATE BARIS DETAIL UNTUK JS --}}
 <template id="detail-row-template">
   <tr class="detail-row">
     <td>
       <select name="details[__INDEX__][bahan_baku_id]" class="form-input">
-        <option value="">Pilih bahan…</option>
+        <option value="">Pilih bahan...</option>
         @foreach ($bahanOptions as $bahan)
-          <option value="{{ $bahan->id }}">
-            {{ $bahan->kode_bahan }} — {{ $bahan->nama_bahan }}
+          <option value="{{ $bahan->id }}"
+            data-satuan-beli="{{ $bahan->satuan_beli ?? $bahan->satuan_pakai }}"
+            data-default-supplier="{{ $bahan->default_supplier_nama }}">
+            {{ $bahan->kode_bahan }} - {{ $bahan->nama_bahan }}
           </option>
         @endforeach
       </select>
@@ -326,27 +321,26 @@
       <input class="form-input"
              type="number"
              step="0.001"
+             min="0"
              name="details[__INDEX__][qty_beli]"
              value="1">
+    </td>
+
+    <td>
+      <div class="detail-unit muted">-</div>
     </td>
 
     <td>
       <input class="form-input"
              type="number"
              step="0.01"
+             min="0"
              name="details[__INDEX__][harga_satuan]"
              value="0">
     </td>
 
-    <td>
-      <input class="form-input"
-             type="date"
-             name="details[__INDEX__][expired_date]"
-             value="">
-    </td>
-
     <td class="num">
-      <input class="form-input"
+      <input class="form-input detail-subtotal"
              type="number"
              step="0.01"
              name="details[__INDEX__][subtotal]"
@@ -358,7 +352,8 @@
       <button type="button"
               class="btn btn--outline-danger btn--sm btn-detail-remove"
               title="Hapus baris">
-        <x-heroicon-o-trash class="icon-aksi" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+        <span>Hapus</span>
       </button>
     </td>
   </tr>
@@ -367,35 +362,118 @@
 @push('scripts')
 <script>
 (() => {
-  // simple repeater: tambah / hapus baris detail
-  const body      = document.getElementById('details-body');
-  const tmpl      = document.getElementById('detail-row-template');
-  const addBtn    = document.getElementById('btn-add-detail');
+  const body = document.getElementById('details-body');
+  const tmpl = document.getElementById('detail-row-template');
+  const addBtn = document.getElementById('btn-add-detail');
+  const grandTotalEl = document.getElementById('grand-total-display');
+  const supplierEl = document.getElementById('supplier_nama');
   let detailIndex = body ? body.querySelectorAll('.detail-row').length : 0;
+
+  const formatRupiah = (value) => {
+    const amount = Number(value || 0);
+    if (amount <= 0) return '-';
+
+    return 'Rp ' + new Intl.NumberFormat('id-ID', {
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const refreshUnit = (row) => {
+    const select = row.querySelector('select[name*="[bahan_baku_id]"]');
+    const unitEl = row.querySelector('.detail-unit');
+    if (!select || !unitEl) return;
+
+    const option = select.options[select.selectedIndex];
+     const unit = option ? option.dataset.satuanBeli : '';
+    unitEl.textContent = unit || '-';
+
+    if (supplierEl && !supplierEl.value.trim()) {
+      const defaultSupplier = option ? option.dataset.defaultSupplier : '';
+      if (defaultSupplier) {
+        supplierEl.value = defaultSupplier;
+      }
+    }
+  };
+
+  const refreshSubtotal = (row) => {
+    const qtyInput = row.querySelector('input[name*="[qty_beli]"]');
+    const priceInput = row.querySelector('input[name*="[harga_satuan]"]');
+    const subtotalInput = row.querySelector('input[name*="[subtotal]"]');
+    if (!qtyInput || !priceInput || !subtotalInput) return;
+
+    const qty = Number(qtyInput.value || 0);
+    const price = Number(priceInput.value || 0);
+    subtotalInput.value = (qty * price).toFixed(2);
+  };
+
+  const refreshGrandTotal = () => {
+    if (!body || !grandTotalEl) return;
+
+    const total = Array.from(body.querySelectorAll('input[name*="[subtotal]"]'))
+      .reduce((sum, input) => sum + Number(input.value || 0), 0);
+
+    grandTotalEl.value = formatRupiah(total);
+  };
+
+  const refreshRow = (row) => {
+    refreshUnit(row);
+    refreshSubtotal(row);
+    refreshGrandTotal();
+  };
 
   if (addBtn && body && tmpl) {
     addBtn.addEventListener('click', () => {
       const html = tmpl.innerHTML.replace(/__INDEX__/g, String(detailIndex));
       body.insertAdjacentHTML('beforeend', html);
+
+      const row = body.lastElementChild;
+      if (row) {
+        refreshRow(row);
+      }
+
       detailIndex++;
     });
 
     body.addEventListener('click', (e) => {
       const btn = e.target.closest('.btn-detail-remove');
       if (!btn) return;
+
       const row = btn.closest('.detail-row');
-      if (row) {
-        // minimal 1 baris, jangan dihapus semua
-        if (body.querySelectorAll('.detail-row').length > 1) {
-          row.remove();
-        }
+      if (!row) return;
+
+      if (body.querySelectorAll('.detail-row').length > 1) {
+        row.remove();
+        refreshGrandTotal();
       }
     });
+
+    body.addEventListener('input', (e) => {
+      const row = e.target.closest('.detail-row');
+      if (!row) return;
+
+      if (
+        e.target.matches('input[name*="[qty_beli]"]') ||
+        e.target.matches('input[name*="[harga_satuan]"]')
+      ) {
+        refreshSubtotal(row);
+        refreshGrandTotal();
+      }
+    });
+
+    body.addEventListener('change', (e) => {
+      const row = e.target.closest('.detail-row');
+      if (!row) return;
+
+      if (e.target.matches('select[name*="[bahan_baku_id]"]')) {
+        refreshUnit(row);
+      }
+    });
+
+    body.querySelectorAll('.detail-row').forEach((row) => refreshRow(row));
   }
 
-  // UI file upload: update nama file
   const input = document.getElementById('bukti_file');
-  const wrap  = document.getElementById('ff-bukti');
+  const wrap = document.getElementById('ff-bukti');
 
   if (input && wrap) {
     const nameEl = wrap.querySelector('.file-name');
