@@ -111,26 +111,13 @@ Route::prefix('app')->middleware('auth')->group(function () {
         ->only(['index'])
         ->names('mutasi-stok');
     
-     Route::resource('resep', \App\Http\Controllers\ResepController::class)
-        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
-        ->names('resep');
-        
     Route::resource('chart-of-accounts', ChartOfAccountController::class)
         ->only(['index','create','store','edit','update','destroy'])
         ->names('chart-of-accounts');
 
-     Route::get('resep-detail', [\App\Http\Controllers\ResepDetailController::class, 'index'])
-        ->name('resep-detail.index');
-
     Route::resource('penyesuaian-stok', PenyesuaianStokController::class)
     ->only(['index', 'create', 'store'])
     ->names('penyesuaian-stok');
-
-    Route::get('penyesuaian-stok/menu', [PenyesuaianStokController::class, 'createMenu'])
-        ->name('penyesuaian-stok.menu');
-
-    Route::post('penyesuaian-stok/menu', [PenyesuaianStokController::class, 'storeMenu'])
-        ->name('penyesuaian-stok.menu.store');
 
     Route::resource('customer', CustomerController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])

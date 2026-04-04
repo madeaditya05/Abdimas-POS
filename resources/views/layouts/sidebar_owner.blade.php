@@ -14,12 +14,11 @@
   @php
     // ====== STATUS AKTIF PER GRUP (dipakai untuk buka/tutup dropdown) ======
 
-    // Master Data: produk, kategori, bahan baku, resep
+    // Master Data: produk, kategori, bahan baku
     $isProdukActive =
         request()->routeIs('produk.*')
         || request()->is('kategori*')
         || request()->routeIs('bahan-baku.*')
-        || request()->routeIs('resep.*')
         || request()->routeIs('chart-of-accounts.*'); // (biar Daftar Akun ikut aktif)
 
     // Persediaan: mutasi stok + penyesuaian stok
@@ -79,7 +78,7 @@
       <span class="nav-label">Dashboard</span>
     </a>
 
-    {{-- ===== MASTER DATA (Produk, Kategori, Bahan Baku, Resep) ===== --}}
+    {{-- ===== MASTER DATA (Produk, Kategori, Bahan Baku) ===== --}}
     <div class="nav-group {{ $isProdukActive ? 'has-active is-open' : '' }}" data-key="master-data">
       <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isProdukActive ? 'true' : 'false' }}">
         <span class="nav-icon">
@@ -111,11 +110,6 @@
           Bahan Baku
         </a>
 
-        {{-- Resep --}}
-        <a href="{{ route('resep.index') }}"
-           class="subnav-item {{ request()->routeIs('resep.*') ? 'is-active' : '' }}">
-          Resep
-        </a>
       </div>
     </div>
 

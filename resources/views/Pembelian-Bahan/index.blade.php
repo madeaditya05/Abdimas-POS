@@ -8,18 +8,16 @@
 
 @section('content')
 <div class="card">
-  {{-- Header --}}
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
     <h2 style="margin:0;">Pembelian Bahan</h2>
 
     <a href="{{ route('pembelian-bahan.create') }}"
        class="btn btn--outline-success btn--with-icon">
       <x-heroicon-o-plus class="icon-inline" />
-      <span>Buat Baru</span>
+      <span>Tambah Pembelian</span>
     </a>
   </div>
 
-  {{-- Search bar --}}
   <form method="GET"
         action="{{ route('pembelian-bahan.index') }}"
         class="filter-bar"
@@ -28,7 +26,7 @@
     <input type="text"
            name="q"
            value="{{ $search }}"
-           placeholder="Cari kode / supplier…"/>
+           placeholder="Cari kode / pemasok..."/>
 
     <input type="hidden" name="sort" value="{{ $sort }}">
     <input type="hidden" name="dir"  value="{{ $dir  }}">
@@ -40,18 +38,17 @@
     </a>
     <a href="{{ route('pembelian-bahan-detail.index') }}"
        class="btn btn--outline-coffee">
-        Pembelian Bahan Detail
+      Rekap Detail
     </a>
   </form>
 
-  {{-- Tabel --}}
   <div class="table-wrap">
     <table class="table">
       <thead>
         <tr>
           <th>Kode</th>
           <th>Tanggal</th>
-          <th>Supplier</th>
+          <th>Pemasok</th>
           <th>Kontak</th>
           <th class="num">Total</th>
           <th style="width:130px;">Aksi</th>
@@ -64,21 +61,20 @@
             <td>{{ $row->kode_pembelian }}</td>
 
             <td>
-              {{ $row->tanggal ? $row->tanggal->format('d M Y H:i') : '–' }}
+              {{ $row->tanggal ? $row->tanggal->format('d M Y H:i') : '-' }}
             </td>
 
-            <td>{{ $row->supplier_nama ?: '–' }}</td>
+            <td>{{ $row->supplier_nama ?: '-' }}</td>
 
-            <td>{{ $row->supplier_kontak ?: '–' }}</td>
+            <td>{{ $row->supplier_kontak ?: '-' }}</td>
 
             <td class="num">
               @php $total = (float) ($row->total ?? 0); @endphp
-              {{ $total > 0 ? 'Rp '.number_format($total, 0, ',', '.') : '–' }}
+              {{ $total > 0 ? 'Rp '.number_format($total, 0, ',', '.') : '-' }}
             </td>
 
             <td>
               <div class="actions">
-                {{-- EDIT --}}
                 <a href="{{ route('pembelian-bahan.edit', $row) }}"
                    class="btn btn--outline-warning btn--sm btn--icon"
                    title="Edit">
@@ -86,7 +82,6 @@
                   <span class="sr-only">Edit</span>
                 </a>
 
-                {{-- HAPUS --}}
                 <form action="{{ route('pembelian-bahan.destroy', $row) }}"
                       method="POST"
                       onsubmit="return confirm('Hapus pembelian ini?')">

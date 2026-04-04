@@ -15,7 +15,7 @@ class BahanBakuController extends Controller
     {
         return [
             'opsiKategori'     => ['kopi'=>'Kopi','susu'=>'Susu','bumbu'=>'Bumbu','kemasan'=>'Kemasan','lainnya'=>'Lainnya'],
-            'opsiSatuan'       => ['pcs'=>'pcs','gram'=>'gram','kg'=>'kg','ml'=>'ml','liter'=>'liter','pack'=>'pack','box'=>'box'],
+            'opsiSatuan'       => ['pcs'=>'pcs','butir'=>'butir','botol'=>'botol','gram'=>'gram','kg'=>'kg','ml'=>'ml','liter'=>'liter','pack'=>'pack','box'=>'box'],
             'opsiPenyimpanan'  => ['room'=>'Ruang (room)','chiller'=>'Chiller','freezer'=>'Freezer'],
             'opsiStatusHalal'  => ['halal'=>'Halal','non_halal'=>'Non-Halal','unknown'=>'Tidak diketahui'],
             'opsiAlergen'      => ['none'=>'Tidak ada','gluten'=>'Gluten','dairy'=>'Susu','nut'=>'Kacang','soy'=>'Kedelai','egg'=>'Telur'],
@@ -81,7 +81,6 @@ class BahanBakuController extends Controller
                 'penyimpanan' => 'room',
                 'konversi_beli_ke_pakai' => 1,
                 'yield_persen' => 100,
-                'dipakai_di_resep' => true,
             ]),
         ]));
     }

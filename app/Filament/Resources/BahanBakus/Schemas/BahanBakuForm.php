@@ -191,10 +191,6 @@ class BahanBakuForm
                 ->default(100)
                 ->native(false),
 
-            Toggle::make('dipakai_di_resep')
-                ->label('Dipakai di Resep')
-                ->default(true),
-
             // === Foto (upload) ===
             FileUpload::make('foto_path')
                 ->label('Foto')

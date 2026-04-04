@@ -2,6 +2,11 @@
 @section('title', $mode === 'create' ? 'Create Bahan Baku' : 'Edit Bahan Baku')
 
 @section('content')
+<style>
+  .form-check:has(input[name="dipakai_di_resep"]) {
+    display: none;
+  }
+</style>
 @php
   $selectedKategori    = old('kategori',       $row->kategori        ?? '');
   $selectedSatuanPakai = old('satuan_pakai',   $row->satuan_pakai    ?? '');

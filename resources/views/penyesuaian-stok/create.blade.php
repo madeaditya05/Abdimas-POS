@@ -17,23 +17,9 @@
     </a>
   </div>
 
-  {{-- Tab switch: Per Bahan / Per Menu --}}
-  <div style="display:flex; gap:12px; margin:16px 20px 0 20px;">
-    <a href="{{ route('penyesuaian-stok.create') }}"
-       class="btn {{ request()->routeIs('penyesuaian-stok.create') ? 'btn--primary' : 'btn--outline-coffee' }}">
-       Per Bahan
-    </a>
-
-    <a href="{{ route('penyesuaian-stok.menu') }}"
-       class="btn {{ request()->routeIs('penyesuaian-stok.menu') ? 'btn--primary' : 'btn--outline-coffee' }}">
-       Per Menu
-    </a>
-  </div>
-
   <div class="card-body">
     <form method="POST" action="{{ route('penyesuaian-stok.store') }}" class="form">
       @csrf
-      <input type="hidden" name="input_type" value="bahan">
       {{-- Bahan Baku --}}
       <div class="form-group">
         <label for="bahan_baku_id">Bahan Baku</label>
