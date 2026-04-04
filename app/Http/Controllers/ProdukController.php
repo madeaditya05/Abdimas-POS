@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KategoriProduk;
 use App\Models\Produk;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreProdukRequest;
@@ -15,7 +16,7 @@ class ProdukController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Produk::query();
+        $query = Produk::query()->with('kategoriProduk');
 
         // Search berdasarkan kode_barang atau nama_barang
         $search   = $request->input('search');
@@ -28,7 +29,7 @@ class ProdukController extends Controller
             });
         }
 
-        // Filter kategori (coffee / non_coffee / snack)
+        // Filter kategori produk
         if ($kategori) {
             $query->where('kategori', $kategori);
         }
@@ -38,7 +39,7 @@ class ProdukController extends Controller
 
         $produks = $query->paginate(15)->withQueryString();
 
-        $kategoriOptions = $this->kategoriOptions();
+        $kategoriOptions = $this->kategoriOptions($kategori);
 
         return view('produk.index', [
             'produks'          => $produks,
@@ -95,7 +96,7 @@ class ProdukController extends Controller
      */
     public function edit(Produk $produk)
     {
-        $kategoriOptions = $this->kategoriOptions();
+        $kategoriOptions = $this->kategoriOptions($produk->kategori);
 
         return view('produk.edit', [
             'produk'          => $produk,
@@ -135,6 +136,24 @@ class ProdukController extends Controller
     }
 
     /**
+     * Ubah status aktif produk langsung dari tabel index.
+     */
+    public function toggleStatus(Request $request, Produk $produk)
+    {
+        $validated = $request->validate([
+            'aktif' => ['required', 'boolean'],
+        ]);
+
+        $produk->update([
+            'aktif' => (bool) $validated['aktif'],
+        ]);
+
+        return redirect()
+            ->route('produk.index')
+            ->with('success', 'Status produk "' . $produk->nama_barang . '" berhasil diperbarui.');
+    }
+
+    /**
      * Hapus produk.
      */
     public function destroy(Produk $produk)
@@ -153,12 +172,18 @@ class ProdukController extends Controller
     /**
      * Helper: opsi kategori biar gak duplikat dimana-mana.
      */
-    protected function kategoriOptions(): array
+    protected function kategoriOptions(?string $selectedSlug = null): array
     {
-        return [
-            'coffee'     => 'Coffee',
-            'non_coffee' => 'Non Coffee',
-            'snack'      => 'Snack',
-        ];
+        return KategoriProduk::ordered()
+            ->when($selectedSlug, function ($query) use ($selectedSlug) {
+                $query->where(function ($q) use ($selectedSlug) {
+                    $q->where('aktif', true)
+                        ->orWhere('slug', $selectedSlug);
+                });
+            }, function ($query) {
+                $query->where('aktif', true);
+            })
+            ->pluck('nama', 'slug')
+            ->all();
     }
 }

@@ -153,7 +153,7 @@
         </span>
 
         {{-- icon chevron dari heroicons (sesuaikan kalau prefix-mu beda) --}}
-        <x-heroicon-o-chevron-down class="cs-trigger-icon" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="cs-trigger-icon"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
       </button>
 
       {{-- menu dropdown --}}
@@ -163,12 +163,12 @@
         </div>
 
         <div class="cs-option" data-value="kasir" data-label="Kasir">
-          <x-heroicon-o-user class="cs-option-icon" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="cs-option-icon"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           <span class="cs-option-text">Kasir</span>
         </div>
 
         <div class="cs-option" data-value="owner" data-label="Owner">
-          <x-heroicon-o-shield-check class="cs-option-icon" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="cs-option-icon"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           <span class="cs-option-text">Owner</span>
         </div>
       </div>

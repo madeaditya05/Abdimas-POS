@@ -71,6 +71,15 @@
             </nav>
 
             <div class="sidebar-footer">
+                <a href="{{ route('dashboard') }}" class="btn-logout {{ request()->is('dashboard') ? 'active' : '' }}" style="text-decoration:none; margin-bottom:12px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="16" rx="2"/>
+                        <path d="M3 10h18"/>
+                        <path d="M8 15h.01"/>
+                        <path d="M12 15h4"/>
+                    </svg>
+                    <span>Panel Owner</span>
+                </a>
                 <button type="button" class="btn-logout" onclick="document.getElementById('logoutForm').submit()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>

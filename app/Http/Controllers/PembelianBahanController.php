@@ -6,7 +6,6 @@ use App\Models\PembelianBahan;
 use App\Models\BahanBaku;
 use App\Http\Requests\StorePembelianBahanRequest;
 use App\Http\Requests\UpdatePembelianBahanRequest;
-use App\Services\JournalPoster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -66,7 +65,7 @@ class PembelianBahanController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePembelianBahanRequest $request, JournalPoster $poster)
+    public function store(StorePembelianBahanRequest $request)
     {
         $data    = $request->validated();
         $details = $request->input('details', []);
@@ -116,21 +115,8 @@ class PembelianBahanController extends Controller
                 $pembelian->details()->create($d);
             }
 
-            // ================= FIX TOTAL HEADER =================
-            $total = DB::table('pembelian_bahan_detail')
-                ->where('pembelian_bahan_id', $pembelian->id)
-                ->sum('subtotal');
-
-            $pembelian->update([
-                'total' => $total
-            ]);
-            // ===================================================
-
             return $pembelian;
         });
-
-        $pembelian = $pembelian->fresh();
-        $poster->postForPembelianBahan($pembelian);
 
         return redirect()
             ->route('pembelian-bahan.index')
@@ -154,7 +140,7 @@ class PembelianBahanController extends Controller
         ]);
     }
 
-    public function update(UpdatePembelianBahanRequest $request, PembelianBahan $pembelianBahan, JournalPoster $poster)
+    public function update(UpdatePembelianBahanRequest $request, PembelianBahan $pembelianBahan)
     {
         $data    = $request->validated();
         $details = $request->input('details', []);
@@ -222,26 +208,15 @@ class PembelianBahanController extends Controller
                 $pembelianBahan->details()->create($d);
             }
 
-            $total = DB::table('pembelian_bahan_detail')
-                ->where('pembelian_bahan_id', $pembelianBahan->id)
-                ->sum('subtotal');
-
-            $pembelianBahan->update([
-                'total' => $total
-            ]);
         });
-
-        $poster->postForPembelianBahan($pembelianBahan->fresh());
 
         return redirect()
             ->route('pembelian-bahan.index')
             ->with('status', 'Pembelian berhasil diperbarui.');
     }
 
-    public function destroy(PembelianBahan $pembelianBahan, JournalPoster $poster)
+    public function destroy(PembelianBahan $pembelianBahan)
     {
-        $poster->deleteFor(PembelianBahan::class, (int) $pembelianBahan->id);
-
         $old = $pembelianBahan->bukti_file;
         if ($old) {
             Storage::disk('public')->delete($old);

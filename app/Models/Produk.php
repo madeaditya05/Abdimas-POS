@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 
 class Produk extends Model
@@ -33,6 +35,20 @@ class Produk extends Model
     public function resepAktif(): HasOne
     {
         return $this->hasOne(\App\Models\Resep::class, 'produk_id')->where('is_active', 1);
+    }
+
+    public function kategoriProduk(): BelongsTo
+    {
+        return $this->belongsTo(KategoriProduk::class, 'kategori', 'slug');
+    }
+
+    public function getKategoriLabelAttribute(): string
+    {
+        if ($this->kategoriProduk?->nama) {
+            return $this->kategoriProduk->nama;
+        }
+
+        return (string) Str::of((string) $this->kategori)->replace('_', ' ')->title();
     }
 
     public static function generateKodeBarang()

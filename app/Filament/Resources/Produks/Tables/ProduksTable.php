@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Produks\Tables;
 
+use App\Models\KategoriProduk;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ImageColumn;
@@ -48,8 +49,9 @@ class ProduksTable
                         'snack'      => 'danger',
                         default      => 'secondary',
                     })
-                    ->formatStateUsing(fn ($state) =>
-                        Str::of((string) $state)->replace('_', ' ')->title()
+                    ->formatStateUsing(fn ($state, $record) =>
+                        $record->kategoriProduk?->nama
+                        ?? Str::of((string) $state)->replace('_', ' ')->title()
                     ),
 
                 ImageColumn::make('gambar')
@@ -73,11 +75,7 @@ class ProduksTable
                 SelectFilter::make('kategori')
             
             ->label('Kategori')
-            ->options([
-                    'coffee'     => 'Coffee',
-                    'non_coffee' => 'Non Coffee',
-                    'snack'      => 'Snack',
-                    ])
+            ->options(fn () => KategoriProduk::allOptions())
             ->preload()
             ->native(false),
 

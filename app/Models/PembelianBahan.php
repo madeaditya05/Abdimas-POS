@@ -66,18 +66,13 @@ class PembelianBahan extends Model
             $m->kode_pembelian ??= static::generateKodeHarian();
         });
 
-        // Urutan penting:
-        // 1) saved -> recalcTotal (quietly)
+        // Header tetap jadi titik sinkron jurnal saat metadata transaksi berubah.
         static::saved(function (self $m) {
             $m->recalcTotal();
-        });
-
-        // 2) saved -> post jurnal (setelah total diperbarui oleh recalcTotal)
-        static::saved(function (self $m) {
             app(JournalPoster::class)->postForPembelianBahan($m);
         });
 
-        // 3) deleted -> hapus jurnal
+        // deleted -> hapus jurnal
         static::deleted(function (self $m) {
             app(JournalPoster::class)->deleteFor(self::class, $m->id);
         });

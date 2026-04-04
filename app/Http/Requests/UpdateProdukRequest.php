@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProdukRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class UpdateProdukRequest extends FormRequest
             'nama_barang' => ['required', 'string', 'max:255'],
             'stok'        => ['required', 'integer', 'min:0'],
             'harga'       => ['required', 'numeric', 'min:0'],
-            'kategori'    => ['required', 'string', 'max:50'],
+            'kategori'    => ['required', 'string', 'max:50', Rule::exists('kategori_produk', 'slug')],
             'gambar'      => ['nullable', 'image', 'max:2048'],
             'deskripsi'   => ['nullable', 'string'],
         ];

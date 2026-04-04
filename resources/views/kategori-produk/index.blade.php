@@ -4,58 +4,51 @@
 @endpush
 
 @extends('layouts.main')
-@section('title','Produk')
+@section('title', 'Kategori Produk')
 
 @section('content')
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-    <h2 style="margin:0;">Produk</h2>
+    <h2 style="margin:0;">Kategori Produk</h2>
 
-    <a href="{{ route('produk.create') }}"
+    <a href="{{ route('kategori-produk.create') }}"
        class="btn btn--outline-success btn--with-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-inline"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
-      <span>Tambah Produk</span>
+      <span>Tambah Kategori</span>
     </a>
   </div>
 
   <form method="GET"
-        action="{{ route('produk.index') }}"
+        action="{{ route('kategori-produk.index') }}"
         class="filter-bar"
         style="margin:12px 0;gap:10px;display:flex;align-items:center;flex-wrap:wrap;">
-
     <input type="text"
-           name="search"
+           name="q"
            value="{{ $search }}"
-           placeholder="Cari kode atau nama..." />
+           placeholder="Cari nama, slug, atau deskripsi..." />
 
-    @php
-      $selKat = $selectedKategori ?? '';
-      $selKatLabel = $selKat !== '' && isset($kategoriOptions[$selKat])
-          ? $kategoriOptions[$selKat]
-          : 'Semua kategori';
-    @endphp
+    @php $selAkt = $selectedAktif ?? ''; @endphp
     <div class="dd" style="min-width:220px">
       <button type="button" class="dd-toggle">
         <span class="dd-label">
-          {{ $selKatLabel }}
+          @switch($selAkt)
+            @case('1') Aktif @break
+            @case('0') Nonaktif @break
+            @default Semua status
+          @endswitch
         </span>
       </button>
       <div class="dd-menu">
-        <div class="dd-item {{ $selKat==='' ? 'active':'' }}" data-value="">
-          Semua kategori
-        </div>
-        @foreach($kategoriOptions as $value => $label)
-          <div class="dd-item {{ $selKat === $value ? 'active' : '' }}" data-value="{{ $value }}">
-            {{ $label }}
-          </div>
-        @endforeach
+        <div class="dd-item {{ $selAkt === '' ? 'active' : '' }}" data-value="">Semua status</div>
+        <div class="dd-item {{ $selAkt === '1' ? 'active' : '' }}" data-value="1">Aktif</div>
+        <div class="dd-item {{ $selAkt === '0' ? 'active' : '' }}" data-value="0">Nonaktif</div>
       </div>
-      <input type="hidden" name="kategori" value="{{ $selKat }}">
+      <input type="hidden" name="aktif" value="{{ $selAkt }}">
     </div>
 
     <button class="btn btn--outline-coffee">Terapkan</button>
 
-    <a href="{{ route('produk.index') }}"
+    <a href="{{ route('kategori-produk.index') }}"
        class="btn btn--outline-coffee">
       Reset
     </a>
@@ -65,87 +58,41 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Kode</th>
           <th>Nama</th>
-          <th class="num">Harga</th>
-          <th>Kategori</th>
-          <th>Gambar</th>
-          <th style="width:180px;">Status</th>
+          <th>Slug</th>
+          <th class="num">Urutan</th>
+          <th>Status</th>
+          <th class="num">Dipakai Produk</th>
+          <th>Deskripsi</th>
           <th style="width:130px;">Aksi</th>
         </tr>
       </thead>
-
       <tbody>
-        @forelse($produks as $produk)
-          @php
-            $kategori = $produk->kategori;
-            $badgeClass = 'badge-secondary';
-            if ($kategori === 'coffee') {
-                $badgeClass = 'badge-success';
-            } elseif ($kategori === 'non_coffee') {
-                $badgeClass = 'badge-warning';
-            } elseif ($kategori === 'snack') {
-                $badgeClass = 'badge-danger';
-            }
-
-            $kategoriLabel = $produk->kategoriProduk?->nama
-                ?? \Illuminate\Support\Str::of((string) $kategori)->replace('_', ' ')->title();
-          @endphp
-
+        @forelse($items as $row)
           <tr>
-            <td>{{ $produk->kode_barang }}</td>
-            <td>{{ $produk->nama_barang }}</td>
-
-            <td class="num">
-              Rp {{ number_format((float) $produk->harga, 0, ',', '.') }}
-            </td>
-
+            <td>{{ $row->nama }}</td>
+            <td><code>{{ $row->slug }}</code></td>
+            <td class="num">{{ $row->urutan }}</td>
             <td>
-              @if ($kategori)
-                <span class="badge {{ $badgeClass }}">
-                  {{ $kategoriLabel }}
-                </span>
-              @else
-                <span class="muted">-</span>
-              @endif
+              <span class="bool {{ $row->aktif ? 'bool--yes' : 'bool--no' }}">
+                <span class="bool-dot"></span>
+                {{ $row->aktif ? 'Aktif' : 'Nonaktif' }}
+              </span>
             </td>
-
-            <td>
-              @if ($produk->gambar)
-                <img src="{{ asset('storage/' . $produk->gambar) }}"
-                     style="width:50px;height:50px;object-fit:cover;border-radius:8px;">
-              @else
-                <span class="muted">-</span>
-              @endif
-            </td>
-
-            <td>
-              <form action="{{ route('produk.toggle-status', $produk) }}" method="POST" class="status-toggle-form">
-                @csrf
-                @method('PATCH')
-                <input type="hidden" name="aktif" value="{{ $produk->aktif ? 0 : 1 }}">
-                <label class="form-switch" title="{{ $produk->aktif ? 'Nonaktifkan produk' : 'Aktifkan produk' }}">
-                  <input type="checkbox" {{ $produk->aktif ? 'checked' : '' }} onchange="this.form.submit()">
-                  <span class="form-switch-track">
-                    <span class="form-switch-thumb"></span>
-                  </span>
-                  <span class="form-switch-label">{{ $produk->aktif ? 'On' : 'Off' }}</span>
-                </label>
-              </form>
-            </td>
-
+            <td class="num">{{ $row->produks_count }}</td>
+            <td>{{ $row->deskripsi ?: '–' }}</td>
             <td>
               <div class="actions">
-                <a href="{{ route('produk.edit', $produk) }}"
+                <a href="{{ route('kategori-produk.edit', $row) }}"
                    class="btn btn--outline-warning btn--sm btn--icon"
                    title="Edit">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M4 20h4l10.5-10.5a2.121 2.121 0 1 0-3-3L5 17v3Z" /><path d="m13.5 6.5 4 4" /></svg>
                   <span class="sr-only">Edit</span>
                 </a>
 
-                <form action="{{ route('produk.destroy', $produk) }}"
+                <form action="{{ route('kategori-produk.destroy', $row) }}"
                       method="POST"
-                      onsubmit="return confirm('Hapus produk ini?')">
+                      onsubmit="return confirm('Hapus kategori produk ini?')">
                   @csrf
                   @method('DELETE')
 
@@ -162,7 +109,7 @@
         @empty
           <tr>
             <td colspan="7" class="muted" style="text-align:center;">
-              Belum ada data produk.
+              Belum ada data kategori produk.
             </td>
           </tr>
         @endforelse
@@ -171,7 +118,7 @@
   </div>
 
   <div style="margin-top:12px;">
-    {{ $produks->links('pagination::cofit') }}
+    {{ $items->links('pagination::cofit') }}
   </div>
 </div>
 @endsection
@@ -184,8 +131,8 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
 
   document.querySelectorAll('.dd').forEach(dd => {
-    const btn   = dd.querySelector('.dd-toggle');
-    const menu  = dd.querySelector('.dd-menu');
+    const btn = dd.querySelector('.dd-toggle');
+    const menu = dd.querySelector('.dd-menu');
     const label = dd.querySelector('.dd-label');
     const input = dd.querySelector('input[type="hidden"]');
 

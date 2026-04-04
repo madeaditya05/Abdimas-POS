@@ -15,6 +15,7 @@ use App\Http\Controllers\PembelianBahanDetailController;
 use App\Http\Controllers\PenyesuaianStokController;
 use App\Http\Controllers\LaporanJurnalController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\KategoriProdukController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\BebanOperasionalController;
@@ -103,6 +104,12 @@ Route::prefix('app')->middleware('auth')->group(function () {
     Route::resource('produk', ProdukController::class)
             ->only(['index','create','store','edit','update','destroy'])
             ->names('produk');
+    Route::patch('produk/{produk}/toggle-status', [ProdukController::class, 'toggleStatus'])
+        ->name('produk.toggle-status');
+
+    Route::resource('kategori-produk', KategoriProdukController::class)
+            ->only(['index','create','store','edit','update','destroy'])
+            ->names('kategori-produk');
 
     Route::get('pembelian-bahan-detail', [PembelianBahanDetailController::class, 'index'])
         ->name('pembelian-bahan-detail.index');
@@ -146,18 +153,30 @@ Route::prefix('app')->middleware('auth')->group(function () {
     Route::get('laporan/jurnal-lines', [LaporanJurnalController::class, 'lines'])
         ->name('laporan.jurnal.lines');
 
+    /*
+    |--------------------------------------------------------------------------
+    | Duplikat route jurnal lama
+    |--------------------------------------------------------------------------
+    |
+    | Blok ini sengaja dikomentari karena:
+    | 1. Nama route bentrok dengan route jurnal di atas.
+    | 2. Prefix "app" berada di dalam group prefix "app", sehingga URL menjadi
+    |    /app/app/akuntansi/... dan tidak sesuai kebutuhan saat ini.
+    |
+    | Kalau nanti ingin dipakai lagi, aktifkan kembali dengan nama route yang
+    | berbeda agar tidak bentrok saat route cache / optimize dijalankan.
+    |
     Route::prefix('app')->middleware(['auth'])->group(function () {
-    Route::get('/akuntansi/jurnal-umum', [LaporanJurnalController::class, 'index'])
-        ->name('laporan.jurnal.index');
+        Route::get('/akuntansi/jurnal-umum', [LaporanJurnalController::class, 'index'])
+            ->name('laporan.jurnal.index');
 
-    Route::get('/akuntansi/jurnal-umum/{id}', [LaporanJurnalController::class, 'show'])
-        ->name('laporan.jurnal.show');
+        Route::get('/akuntansi/jurnal-umum/{id}', [LaporanJurnalController::class, 'show'])
+            ->name('laporan.jurnal.show');
 
-    Route::get('/akuntansi/jurnal-lines', [LaporanJurnalController::class, 'lines'])
-        ->name('akuntansi.jurnal.lines');
-
-
-});
+        Route::get('/akuntansi/jurnal-lines', [LaporanJurnalController::class, 'lines'])
+            ->name('akuntansi.jurnal.lines');
+    });
+    */
 
 // routes/web.php
 Route::get('/promo-display', fn () => view('promo.display'))->name('promo.display');

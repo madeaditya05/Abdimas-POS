@@ -2679,7 +2679,7 @@ body.theme-coffee .nav-item {
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 500;
 } /* <-- seragam */
 .nav-item .nav-caret {
     width: 10px;
@@ -2756,7 +2756,7 @@ body.theme-coffee .nav-group.has-active > .nav-toggle {
 .subnav-item.is-active {
     background: var(--sb-active-day);
     border-color: #cfbea6;
-    font-weight: 800;
+    font-weight: 500;
 }
 body.theme-coffee .subnav-item {
     border-color: #4a3a31;
@@ -3073,7 +3073,7 @@ body.theme-day .sidebar .subnav-item.is-active,
 body.theme-day .sidebar .subnav-link.is-active {
     background: var(--sb-active-day) !important;
     border-color: #cfbea6 !important;
-    font-weight: 800;
+    font-weight: 500;
 }
 
 /* Jangan ada “kartu putih” di container submenu */

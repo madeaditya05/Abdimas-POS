@@ -95,7 +95,7 @@
           <th>ID Bahan</th>
           <th>Nama Bahan</th>
           <th class="num">Qty</th>
-          <th class="num">Avg Harga</th>
+          <th class="num">Avg Harga Tertimbang</th>
           <th class="num">Total</th>
         </tr>
       </thead>
@@ -155,7 +155,7 @@
     </div>
 
     <div class="summary-item">
-      <div class="summary-label">Harga Rata-rata</div>
+      <div class="summary-label">Harga Rata-rata Tertimbang</div>
       <div class="summary-value">
         Rp {{ number_format($pembelianDetail['stats']['avg'], 0, ',', '.') }}
       </div>

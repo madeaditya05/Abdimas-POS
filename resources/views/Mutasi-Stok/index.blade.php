@@ -98,8 +98,8 @@
           <th class="num">Jumlah</th>
           <th>Tanggal</th>
           <th>Sumber</th>
-          <th>ID Sumber</th>
-          <th>Catatan</th>
+          {{-- <th>ID Sumber</th> --}}
+          {{-- <th>Catatan</th> --}}
         </tr>
       </thead>
 
@@ -140,9 +140,16 @@
               </span>
             </td>
 
-            {{-- Qty --}}
+            {{-- Qty + satuan bahan --}}
             <td class="num">
-              {{ number_format((float) $row->qty, 2, ',', '.') }}
+              @php
+                $qtyText = rtrim(rtrim(number_format((float) $row->qty, 2, ',', '.'), '0'), ',');
+                $satuan  = trim((string) ($bahan->satuan_pakai ?? ''));
+              @endphp
+              {{ $qtyText }}
+              @if ($satuan !== '')
+                <span class="muted" style="font-size:12px;">{{ $satuan }}</span>
+              @endif
             </td>
 
             {{-- Tanggal --}}
@@ -161,22 +168,24 @@
               @endif
             </td>
 
-            {{-- ID sumber --}}
+            {{--
             <td>
               @php
                 $srcId = (int) ($row->sumber_id ?? 0);
               @endphp
               {{ $srcId > 0 ? $srcId : '-' }}
             </td>
+            --}}
 
-            {{-- Catatan --}}
+            {{--
             <td>
               {{ $row->note ?? '-' }}
             </td>
+            --}}
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="muted" style="text-align:center;">
+            <td colspan="5" class="muted" style="text-align:center;">
               Belum ada mutasi stok.
             </td>
           </tr>

@@ -37,7 +37,11 @@ class PembelianBahanDetailController extends Controller
                 d.bahan_baku_id,
                 d.nama_bahan,
                 SUM(d.qty_beli) qty,
-                AVG(d.harga_satuan) avg_harga,
+                CASE
+                    WHEN SUM(d.qty_beli) > 0
+                        THEN SUM(d.subtotal) / SUM(d.qty_beli)
+                    ELSE 0
+                END avg_harga,
                 SUM(d.subtotal) total
             ')
             ->groupBy('tanggal','d.bahan_baku_id','d.nama_bahan')
@@ -49,7 +53,11 @@ class PembelianBahanDetailController extends Controller
             SUM(d.subtotal) grand_total,
             MIN(d.harga_satuan) min_harga,
             MAX(d.harga_satuan) max_harga,
-            AVG(d.harga_satuan) avg_harga
+            CASE
+                WHEN SUM(d.qty_beli) > 0
+                    THEN SUM(d.subtotal) / SUM(d.qty_beli)
+                ELSE 0
+            END avg_harga
         ')->first();
 
         $pembelianDetail = [

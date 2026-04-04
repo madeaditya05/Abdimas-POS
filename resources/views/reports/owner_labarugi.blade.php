@@ -133,6 +133,17 @@
             <tr><td>Laba Bersih</td><td class="kr-right kr-money">Rp {{ number_format($net,0,',','.') }}</td></tr>
           </tbody>
         </table>
+
+        @if(!($lr['is_closed'] ?? false))
+          <div style="margin-top:12px;padding:12px 14px;border:1px solid #fed7aa;background:#fff7ed;border-radius:12px;color:#9a3412;">
+            HPP pada laporan ini mengikuti metode periodik dan baru terisi setelah proses tutup buku.
+            Untuk periode {{ \Carbon\Carbon::parse($meta['start'])->format('d/m/Y') }} sampai {{ \Carbon\Carbon::parse($meta['end'])->format('d/m/Y') }}, closing belum ditemukan, jadi HPP masih ditampilkan `0`.
+          </div>
+        @else
+          <div style="margin-top:12px;padding:12px 14px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:12px;color:#1d4ed8;">
+            HPP pada laporan ini diambil dari hasil tutup buku periode yang sudah di-closing.
+          </div>
+        @endif
       </div>
     @endif
 

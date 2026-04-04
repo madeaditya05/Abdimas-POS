@@ -70,7 +70,7 @@
                  value="{{ $row->kode_pembelian ?? 'Auto' }}"
                  disabled>
           <span class="field-icon">
-            <x-heroicon-o-hashtag class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Kode akan diisi otomatis dengan format harian.</div>
@@ -84,7 +84,7 @@
                  name="tanggal"
                  value="{{ $valTanggal }}">
           <span class="field-icon">
-            <x-heroicon-o-calendar-days class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Gunakan tanggal transaksi pembelian.</div>
@@ -98,20 +98,20 @@
                  name="supplier_nama"
                  value="{{ old('supplier_nama', $row->supplier_nama ?? '') }}">
           <span class="field-icon">
-            <x-heroicon-o-truck class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Opsional. Bisa diisi nama toko, agen, atau distributor.</div>
       </div>
 
       <div class="form-field">
-        <label>Kontak Pemasok</label>
+        <label>Kontak Supplier</label>
         <div class="field-with-icon">
           <input class="form-input"
                  name="supplier_kontak"
                  value="{{ old('supplier_kontak', $row->supplier_kontak ?? '') }}">
           <span class="field-icon">
-            <x-heroicon-o-phone class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Opsional. Isi nomor WhatsApp atau telepon jika diperlukan.</div>
@@ -126,7 +126,7 @@
                  value="{{ $initialTotal > 0 ? 'Rp '.number_format($initialTotal, 0, ',', '.') : '-' }}"
                  disabled>
           <span class="field-icon">
-            <x-heroicon-o-banknotes class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Total dihitung otomatis dari item pembelian.</div>
@@ -141,7 +141,7 @@
                  value="{{ old('catatan', $row->catatan ?? '') }}"
                  placeholder="Contoh: belanja stok mingguan">
           <span class="field-icon">
-            <x-heroicon-o-pencil-square class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
         <div class="form-help">Opsional. Catatan singkat untuk kebutuhan internal.</div>
@@ -181,7 +181,7 @@
           </span>
 
           <span class="file-icon">
-            <x-heroicon-o-paper-clip class="hi hi-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
 
@@ -195,7 +195,7 @@
   <div class="form-section">
     <div class="form-title">Item Pembelian</div>
     <div class="form-help" style="margin-top:-4px;margin-bottom:12px;">
-      Form ini disederhanakan untuk UMKM: cukup pilih item, isi jumlah beli, dan harga beli.
+      Form ini disederhanakan untuk UMKM: cukup pilih item, isi jumlah beli dalam satuan beli supplier, dan harga beli per satuan beli.
     </div>
 
     <div class="form-grid">
@@ -205,9 +205,9 @@
             <thead>
               <tr>
                 <th style="width: 34%;">Bahan</th>
-                <th style="width: 14%;">Qty</th>
-                <th style="width: 14%;">Satuan</th>
-                <th style="width: 18%;">Harga Beli</th>
+                <th style="width: 14%;">Qty Beli</th>
+                <th style="width: 14%;">Satuan Beli</th>
+                <th style="width: 18%;">Harga / Satuan</th>
                 <th class="num" style="width: 14%;">Subtotal</th>
                 <th style="width: 6%;"></th>
               </tr>
@@ -226,7 +226,7 @@
                       <option value="">Pilih bahan...</option>
                       @foreach ($bahanOptions as $bahan)
                         <option value="{{ $bahan->id }}"
-                          data-satuan="{{ $bahan->satuan_pakai }}"
+                          data-satuan-beli="{{ $bahan->satuan_beli ?? $bahan->satuan_pakai }}"
                           data-default-supplier="{{ $bahan->default_supplier_nama }}"
                           {{ (string) $selBahan === (string) $bahan->id ? 'selected' : '' }}>
                           {{ $bahan->kode_bahan }} - {{ $bahan->nama_bahan }}
@@ -270,7 +270,8 @@
                     <button type="button"
                             class="btn btn--outline-danger btn--sm btn-detail-remove"
                             title="Hapus baris">
-                      <x-heroicon-o-trash class="icon-aksi" />
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+                      <span>Hapus</span>
                     </button>
                   </td>
                 </tr>
@@ -308,7 +309,7 @@
         <option value="">Pilih bahan...</option>
         @foreach ($bahanOptions as $bahan)
           <option value="{{ $bahan->id }}"
-            data-satuan="{{ $bahan->satuan_pakai }}"
+            data-satuan-beli="{{ $bahan->satuan_beli ?? $bahan->satuan_pakai }}"
             data-default-supplier="{{ $bahan->default_supplier_nama }}">
             {{ $bahan->kode_bahan }} - {{ $bahan->nama_bahan }}
           </option>
@@ -351,7 +352,8 @@
       <button type="button"
               class="btn btn--outline-danger btn--sm btn-detail-remove"
               title="Hapus baris">
-        <x-heroicon-o-trash class="icon-aksi" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+        <span>Hapus</span>
       </button>
     </td>
   </tr>
@@ -382,7 +384,7 @@
     if (!select || !unitEl) return;
 
     const option = select.options[select.selectedIndex];
-    const unit = option ? option.dataset.satuan : '';
+     const unit = option ? option.dataset.satuanBeli : '';
     unitEl.textContent = unit || '-';
 
     if (supplierEl && !supplierEl.value.trim()) {
