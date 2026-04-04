@@ -36,6 +36,7 @@ class PembelianBahanDetailController extends Controller
                 DATE(pb.tanggal) as tanggal,
                 d.bahan_baku_id,
                 d.nama_bahan,
+                d.satuan_beli,
                 SUM(d.qty_beli) qty,
                 CASE
                     WHEN SUM(d.qty_beli) > 0
@@ -44,7 +45,7 @@ class PembelianBahanDetailController extends Controller
                 END avg_harga,
                 SUM(d.subtotal) total
             ')
-            ->groupBy('tanggal','d.bahan_baku_id','d.nama_bahan')
+            ->groupBy('tanggal','d.bahan_baku_id','d.nama_bahan','d.satuan_beli')
             ->orderBy('tanggal')
             ->get();
 
