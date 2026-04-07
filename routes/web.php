@@ -56,6 +56,7 @@ Route::middleware('auth')->group(function () {
     // Kasir POS
     Route::get('/kasir', [KasirController::class, 'index'])->name('kasir.index');
     Route::post('/kasir', [KasirController::class, 'prosesForm'])->name('kasir.store');
+    Route::get('/kasir/invoice/{kode}', [KasirController::class, 'invoice'])->name('kasir.invoice');
     Route::get('/kasir/cart',            [KasirController::class, 'dataKeranjang'])->name('kasir.cart.data');
     Route::post('/kasir/cart/tambah',    [KasirController::class, 'tambahKeKeranjang'])->name('kasir.cart.tambah');
     Route::post('/kasir/cart/kurang',    [KasirController::class, 'kurangKeranjang'])->name('kasir.cart.kurang');

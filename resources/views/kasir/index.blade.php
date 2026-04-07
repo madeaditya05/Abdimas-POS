@@ -52,7 +52,7 @@
         </div>
       </div>
 
-      <div class="produk-toolbar" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+      <div class="produk-toolbar" style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
         <input type="text" id="cariProduk" class="form-input" placeholder="Cari produk…">
         <select id="filterKategori" class="form-input" style="max-width:220px;">
           <option value="">Semua kategori</option>
@@ -62,39 +62,57 @@
         </select>
       </div>
 
-      <div class="produk-grid" id="gridProduk">
+      {{-- Grid Produk bergambar --}}
+      <div class="produk-grid produk-grid--img" id="gridProduk">
         @foreach($produks as $p)
-          <div class="produk-card {{ $p->aktif ? '' : 'is-disabled' }}"
-               data-id="{{ $p->id }}"
-               data-name="{{ Str::lower($p->nama_barang) }}"
-               data-price="{{ (int)$p->harga }}"
-               data-kategori="{{ Str::lower($p->kategori ?? '') }}"
-               data-aktif="{{ $p->aktif ? '1' : '0' }}">
-            <div class="produk-main">
-              <div class="produk-avatar">{{ strtoupper(mb_substr($p->nama_barang,0,1)) }}</div>
-              <div class="produk-info">
-                <div class="produk-name">{{ $p->nama_barang }}</div>
-                <div class="produk-price">Rp {{ number_format($p->harga,0,',','.') }}</div>
-                <div class="produk-meta">
-                  <span class="produk-status {{ $p->aktif ? '' : 'is-off' }}">
-                    {{ $p->aktif ? 'Tersedia' : 'Dinonaktifkan' }}
-                  </span>
-                </div>
-                @if(!is_null($p->stok))
-                  <div class="produk-stock" style="font-size:12px; color:#64748b;">Stok: {{ $p->stok }}</div>
-                @endif
-              </div>
+          @php
+            $img = null;
+
+            // kalau kamu cuma pakai kolom `gambar` dari DB (produk/latte.jpg)
+            if (!empty($p->gambar)) {
+              $img = asset('storage/' . ltrim($p->gambar, '/'));
+            }
+
+            // kalau suatu saat kamu juga punya image_url, boleh taruh di atas ini
+            // if (!empty($p->image_url)) $img = $p->image_url;
+
+            $initial = strtoupper(mb_substr($p->nama_barang,0,1));
+          @endphp
+
+          <button
+            type="button"
+            class="produk-card produk-card--img"
+            data-id="{{ $p->id }}"
+            data-name="{{ Str::lower($p->nama_barang) }}"
+            data-realname="{{ $p->nama_barang }}"
+            data-price="{{ (int)$p->harga }}"
+            data-kategori="{{ Str::lower($p->kategori ?? '') }}"
+            style="text-align:left;"
+          >
+            <div class="produk-thumb">
+              @if($img)
+                <img src="{{ $img }}" alt="{{ $p->nama_barang }}">
+              @else
+                <div class="produk-thumb--ph">{{ $initial }}</div>
+              @endif
+
+              @if(!is_null($p->stok))
+                <span class="badge-stok {{ $p->stok <= 0 ? 'badge-stok--habis' : '' }}">
+                  Stok: {{ $p->stok }}
+                </span>
+              @endif
+
+              <span class="badge-tap">Tap</span>
             </div>
-            <div class="produk-qty">
-              <button type="button" class="btn btn-primary btn-sm btn-tambah"
-                      data-id="{{ $p->id }}"
-                      data-name="{{ $p->nama_barang }}"
-                      data-price="{{ (int)$p->harga }}"
-                      {{ $p->aktif ? '' : 'disabled' }}>
-                {{ $p->aktif ? 'Tambah' : 'Tidak tersedia' }}
-              </button>
+
+            <div class="produk-body">
+              <div class="produk-name">{{ $p->nama_barang }}</div>
+              <div class="produk-price">Rp {{ number_format($p->harga,0,',','.') }}</div>
+              @if(!empty($p->kategori))
+                <div class="produk-kat">{{ $p->kategori }}</div>
+              @endif
             </div>
-          </div>
+          </button>
         @endforeach
       </div>
     </div>
@@ -133,8 +151,35 @@
           <option value="va_bca">VA BCA</option>
           <option value="va_bri">VA BRI</option>
           <option value="va_bni">VA BNI</option>
+          <option value="tempo">Bayar Nanti (Tempo)</option>
           <option value="cash">CASH</option>
         </select>
+      </div>
+
+      {{-- Panel TEMPO --}}
+      <div id="panelTempo" style="display:none; margin-bottom:12px;">
+        <div class="kr-card" style="padding:12px; border:1px dashed #d1d5db; border-radius:12px;">
+          <div style="font-weight:700; margin-bottom:8px;">Bayar Nanti (Tempo)</div>
+
+          <div class="kasir-form-inline" style="margin-bottom:8px;">
+            <input type="text" name="invoice_to_name" class="form-input"
+                   value="{{ old('invoice_to_name') }}"
+                   placeholder="Invoice to (nama pelanggan/perusahaan)">
+          </div>
+
+          <div class="kasir-form-inline" style="margin-bottom:8px;">
+            <input type="text" name="invoice_to_company" class="form-input"
+                   value="{{ old('invoice_to_company') }}"
+                   placeholder="Nama perusahaan (opsional)">
+          </div>
+
+          <div class="kasir-form-inline" style="margin-bottom:8px;">
+            <input type="date" name="tempo_due_date" class="form-input"
+                   value="{{ old('tempo_due_date', now()->addDays(7)->toDateString()) }}">
+          </div>
+
+          <small id="tempoHint" class="text-muted" style="display:block; margin-top:8px;"></small>
+        </div>
       </div>
 
       {{-- Panel CASH --}}
@@ -181,6 +226,92 @@
   </div>
 </form>
 
+{{-- CSS kecil biar jadi grid gambar, nggak perlu ribet --}}
+<style>
+  .produk-grid--img{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 1100px){
+    .produk-grid--img{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 700px){
+    .produk-grid--img{ grid-template-columns: 1fr; }
+  }
+  .produk-card--img{
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background:#fff;
+    padding: 0;
+    overflow:hidden;
+    cursor:pointer;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .produk-card--img:hover{
+    box-shadow: 0 10px 25px rgba(0,0,0,.06);
+    transform: translateY(-1px);
+  }
+  .produk-thumb{
+    position:relative;
+    height: 120px;
+    background: #f1f5f9;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .produk-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .produk-thumb--ph{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size: 42px;
+    color:#334155;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  }
+  .produk-body{ padding: 10px 12px 12px; }
+  .produk-name{ font-weight:700; color:#0f172a; line-height:1.2; margin-bottom:6px; }
+  .produk-price{ font-weight:700; color:#0f766e; margin-bottom:6px; }
+  .produk-kat{ font-size:12px; color:#64748b; }
+  .badge-stok{
+    position:absolute; left:10px; top:10px;
+    font-size:11px; padding:4px 8px; border-radius:999px;
+    background:#fff; color:#0f172a; border:1px solid #e5e7eb;
+  }
+  .badge-stok--habis{ background:#fee2e2; border-color:#fecaca; color:#7f1d1d; }
+  .badge-tap{
+    position:absolute; right:10px; top:10px;
+    font-size:11px; padding:4px 8px; border-radius:999px;
+    background:#0f766e; color:#fff;
+  }
+  .tap-fx{
+    position:fixed;
+    z-index:9999;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#0f766e;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    pointer-events:none;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .tap-fx.show{
+    opacity:1;
+    transform: translate(-50%, calc(-50% - 10px));
+  }
+</style>
+
 <script>
 $(function(){
   const wadahKeranjang = $('#ringkasanKeranjang');
@@ -191,6 +322,9 @@ $(function(){
   const statusInfo = $('#statusInfo');
   const inputNama = $('[name=customer_name]');
   const metodeBayar = $('#metodeBayar');
+  const panelTempo = $('#panelTempo');
+  const invoiceToName = $('[name=invoice_to_name]');
+  const tempoHint = $('#tempoHint');
   const panelCash = $('#panelCash');
   const cashTotal = $('#cashTotal');
   const cashChange = $('#cashChange');
@@ -217,7 +351,7 @@ $(function(){
     wadahKeranjang.html('');
     if(!CART.items || CART.items.length===0){
       wadahKeranjang.html('<p class="text-muted">Belum ada item dipilih.</p>');
-      elTotal.text('Rp 0'); updateCashPanel(); return;
+      elTotal.text('Rp 0'); showHidePanels(); return;
     }
     CART.items.forEach(i=>{
       wadahKeranjang.append(`
@@ -237,7 +371,7 @@ $(function(){
         </div>`);
     });
     elTotal.text(formatRupiah(CART.subtotal));
-    updateCashPanel();
+    showHidePanels();
   }
 
   function optimisticUpdate(act, payload){
@@ -258,21 +392,28 @@ $(function(){
     return ()=>{ CART = before; renderKeranjang(); };
   }
 
-  // Tambah/kurang/hapus/kosongkan
-  wadahProduk.on('click','.btn-tambah',e=>{
-    if ($(e.currentTarget).is(':disabled')) return;
-    const id = +$(e.currentTarget).data('id');
-    const name = $(e.currentTarget).data('name');
-    const price = +$(e.currentTarget).data('price');
+  // ====== Klik CARD Produk = Tambah
+  // (bukan tombol lagi)
+  wadahProduk.on('click', '.produk-card', function(e){
+    const $card = $(this);
+    const id = +$card.data('id');
+    const name = $card.data('realname');
+    const price = +$card.data('price');
+
+    // kalau stok 0, jangan bisa ditambah (kalau kamu mau)
+    const stokText = $card.find('.badge-stok').text() || '';
+    const stokNum = parseInt(stokText.replace(/[^\d]/g,''),10);
+    if (!isNaN(stokNum) && stokNum <= 0){
+      showTapFx(e.clientX, e.clientY, 'Stok habis');
+      return;
+    }
+
     const rb = optimisticUpdate('tambah',{produk_id:id,name,price});
-    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id})
-      .done(renderKeranjang)
-      .fail(xhr=>{
-        rb();
-        const msg = xhr?.responseJSON?.message || 'Produk ini sedang tidak tersedia.';
-        alert(msg);
-      });
+    showTapFx(e.clientX, e.clientY, '+1');
+    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id}).done(renderKeranjang).fail(rb);
   });
+
+  // aksi di keranjang
   $('#ringkasanKeranjang').on('click','.aksi',function(){
     const id=+$(this).data('id'), act=String($(this).data('act'));
     const ex=(CART.items||[]).find(i=>i.produk_id===id)||{};
@@ -283,6 +424,7 @@ $(function(){
     if(act==='hapus'){ url='{{ route('kasir.cart.hapus') }}'; method='DELETE'; }
     $.ajax({url,type:method,data}).done(renderKeranjang).fail(rb);
   });
+
   $('#btnKosongkan').on('click',()=>{
     const rb=optimisticUpdate('kosongkan',{});
     $.post('{{ route('kasir.cart.kosongkan') }}',{}).done(renderKeranjang).fail(rb);
@@ -313,11 +455,49 @@ $(function(){
       if (bayar < CART.subtotal) { cashHint.text('Uang kurang ' + formatRupiah(CART.subtotal - bayar)); btnProses.prop('disabled', true); }
       else { cashHint.text('Siap proses. Kembalian: ' + formatRupiah(selisih)); btnProses.prop('disabled', false); }
     } else {
+      cashHint.text('');
+    }
+  }
+
+  function updateTempoPanel(){
+    if (metodeBayar.val() !== 'tempo') { tempoHint.text(''); return; }
+
+    const nm = String(invoiceToName.val()||'').trim();
+    if (!nm) {
+      tempoHint.text('Isi "Invoice to" agar tagihan jelas ditujukan ke siapa.');
+      btnProses.prop('disabled', true);
+    } else {
+      tempoHint.text('Setelah proses, halaman invoice akan terbuka untuk dicetak/dikirim.');
       btnProses.prop('disabled', false);
     }
   }
-  function showHideCash(){ panelCash.toggle(metodeBayar.val()==='cash'); updateCashPanel(); }
-  metodeBayar.on('change',showHideCash); showHideCash();
+
+  function showHidePanels(){
+    const m = metodeBayar.val();
+    panelCash.toggle(m === 'cash');
+    panelTempo.toggle(m === 'tempo');
+
+    if (m === 'tempo') {
+      const inv = String(invoiceToName.val()||'').trim();
+      const cust = String(inputNama.val()||'').trim();
+      if (!inv && cust) invoiceToName.val(cust);
+    }
+
+    updateCashPanel();
+    updateTempoPanel();
+
+    if (m !== 'cash' && m !== 'tempo') btnProses.prop('disabled', false);
+  }
+
+  metodeBayar.on('change', showHidePanels);
+  inputNama.on('input', function(){
+    if (metodeBayar.val() === 'tempo' && !String(invoiceToName.val()||'').trim()) {
+      invoiceToName.val(String($(this).val()||'').trim());
+    }
+    updateTempoPanel();
+  });
+  invoiceToName.on('input', updateTempoPanel);
+  showHidePanels();
 
   inputCash.on('input', function(){
     const v=parseRupiahToInt($(this).val()); cashTenderedRaw.val(String(v)); $(this).val(formatRupiah(v)); updateCashPanel();
@@ -329,7 +509,7 @@ $(function(){
   $('#btnPas').on('click', ()=>{ const t=CART.subtotal||0; cashTenderedRaw.val(String(t)); inputCash.val(formatRupiah(t)); updateCashPanel(); });
   $('#btnClearCash').on('click', ()=>{ cashTenderedRaw.val('0'); inputCash.val(''); updateCashPanel(); });
 
-  // ===== Polling status (TIDAK tergantung pilihan dropdown)
+  // ===== Polling status
   let pollTimer=null, pollCount=0;
 
   function startPolling(kode){
@@ -344,7 +524,10 @@ $(function(){
       statusBadge.text(text).css({background:bg,color:fg});
       $.post('{{ route('kasir.cart.kosongkan') }}',{},data=>{
         renderKeranjang(data); inputNama.val(''); statusInfo.text('');
-      }).always(()=>{ statusWrap.hide(); try{ localStorage.removeItem('last_sales_code'); }catch(e){} });
+      }).always(()=>{
+        statusWrap.hide();
+        try{ localStorage.removeItem('last_sales_code'); }catch(e){}
+      });
     }
 
     function cek(){
@@ -372,7 +555,25 @@ $(function(){
   });
 
   // Anti double submit
-  $('#formPembayaran').on('submit', function(){ $('#btnProses').prop('disabled',true).text('Memproses…'); });
+  $('#formPembayaran').on('submit', function(){
+    $('#btnProses').prop('disabled',true).text('Memproses…');
+  });
+
+  // efek kecil +1
+  let fxEl = null;
+  function showTapFx(x,y,text){
+    if(!fxEl){
+      fxEl = document.createElement('div');
+      fxEl.className = 'tap-fx';
+      document.body.appendChild(fxEl);
+    }
+    fxEl.textContent = text;
+    fxEl.style.left = x + 'px';
+    fxEl.style.top = y + 'px';
+    fxEl.classList.remove('show');
+    requestAnimationFrame(()=> fxEl.classList.add('show'));
+    setTimeout(()=> fxEl && fxEl.classList.remove('show'), 400);
+  }
 });
 </script>
 @endsection
