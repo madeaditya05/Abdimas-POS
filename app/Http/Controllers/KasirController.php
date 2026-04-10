@@ -582,6 +582,7 @@ class KasirController extends Controller
     public function statusPenjualan(string $kode)
     {
         $status = $this->hitungStatus($kode);
+        $pj = $this->getPenjualanByKode($kode);
 
         if ($status === 'pending') {
             try {
@@ -653,6 +654,7 @@ class KasirController extends Controller
         return response()->json([
             'kode_penjualan' => $kode,
             'status'         => $status,
+            'metode'         => $pj ? $pj->metode : 'cash',
             'grand_total'    => $total,
         ])->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0')
           ->header('Pragma','no-cache');
@@ -773,18 +775,19 @@ class KasirController extends Controller
     }
 
     public function cetakStruk(string $kode)
-    {
-        $status = $this->hitungStatus($kode);
-        if ($status !== 'paid') abort(403, 'Pembayaran belum lunas.');
+{
+    $status = $this->hitungStatus($kode);
+    if ($status !== 'paid') abort(403, 'Pembayaran belum lunas.');
 
-        $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
-            ->where('kode_penjualan', $kode)
-            ->firstOrFail();
+    $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
+        ->where('kode_penjualan', $kode)
+        ->firstOrFail();
 
-        $payment = Payment::where('penjualan_id', $penjualan->id)->latest()->first();
+    $payment = Payment::where('penjualan_id', $penjualan->id)->latest()->first();
 
-        return view('kasir.struk', compact('penjualan', 'payment'));
-    }
+    // Diarahkan ke file struk.blade.php
+    return view('kasir.struk', compact('penjualan', 'payment'));
+}
 
     public function selesaiCetak(string $kode)
     {
@@ -806,22 +809,23 @@ class KasirController extends Controller
     }
 
     public function invoice(Request $req, string $kode)
-    {
-        $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
-            ->where('kode_penjualan', $kode)
-            ->firstOrFail();
+{
+    $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
+        ->where('kode_penjualan', $kode)
+        ->firstOrFail();
 
-        // Invoice boleh untuk TEMPO (belum lunas) atau transaksi yang sudah paid
-        $status = $this->hitungStatus($kode);
-        if ($penjualan->metode !== 'tempo' && $status !== 'paid') {
-            abort(403, 'Pembayaran belum lunas.');
-        }
-
-        $payment = Payment::where('penjualan_id', $penjualan->id)->latest()->first();
-        $printMode = (bool) $req->boolean('print', false);
-
-        return view('kasir.invoice', compact('penjualan', 'payment', 'printMode'));
+    // Invoice boleh untuk TEMPO (belum lunas) atau transaksi yang sudah paid
+    $status = $this->hitungStatus($kode);
+    if ($penjualan->metode !== 'tempo' && $status !== 'paid') {
+        abort(403, 'Halaman ini hanya untuk transaksi Tempo atau yang sudah lunas.');
     }
+
+    $payment = Payment::where('penjualan_id', $penjualan->id)->latest()->first();
+    $printMode = (bool) $req->boolean('print', false);
+
+    // Diarahkan ke file invoice.blade.php
+    return view('kasir.invoice', compact('penjualan', 'payment', 'printMode'));
+}
 
     private function failResponse(Request $req, string $message)
     {

@@ -188,3 +188,6 @@ Route::get('/barista/espresso/data', [EspressoController::class, 'getData'])->na
 Route::get('/barista/espresso/preview', [EspressoController::class, 'preview'])->name('espresso.preview');
 Route::get('/display/espresso', [EspressoController::class, 'screen'])->name('espresso.screen');
 });
+
+Route::get('/kasir/struk/{kode}', [KasirController::class, 'cetakStruk'])->name('kasir.struk');
+Route::post('/kasir/selesai-cetak/{kode}', [KasirController::class, 'selesaiCetak'])->name('kasir.selesaiCetak');

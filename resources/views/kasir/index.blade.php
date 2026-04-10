@@ -215,13 +215,22 @@
       <button type="submit" class="btn btn-primary btn-block" id="btnProses">Proses Pembayaran</button>
 
       {{-- Badge status --}}
-      <div id="statusWrap" style="display:none; margin-top:10px;">
-        <span id="statusBadge"
-              style="padding:6px 10px; border-radius:999px; font-weight:600; font-size:13px; background:#fff3cd; color:#7a5a00;">
-          Menunggu pembayaran…
-        </span>
-        <span id="statusInfo" style="margin-left:8px; font-size:13px; color:#334155;"></span>
-      </div>
+      {{-- Badge status --}}
+<div id="statusWrap" style="display:none; margin-top:10px;">
+    <span id="statusBadge" style="...">
+        Menunggu pembayaran…
+    </span>
+    {{-- TAMBAHKAN TOMBOL INI --}}
+    <div id="btnCetakWrap" style="display:none; margin-top:12px;">
+        <a href="#" id="linkCetakStruk" class="btn btn-sm btn-primary">
+            🖨️ Cetak Struk
+        </a>
+        <button type="button" id="btnSelesaiTransaksi" class="btn btn-sm">
+            Selesaikan
+        </button>
+    </div>
+    <span id="statusInfo" style="margin-left:8px; font-size:13px; color:#334155;"></span>
+</div>
     </div>
   </div>
 </form>
@@ -333,6 +342,10 @@ $(function(){
   const cashHint = $('#cashHint');
   const btnProses = $('#btnProses');
 
+  // Selektor Tombol Cetak & Selesaikan
+  const btnCetakWrap = $('#btnCetakWrap'); 
+  const linkCetakStruk = $('#linkCetakStruk');
+
   // Kode aktif dari server/localStorage
   const serverActiveCode = {!! json_encode($activeCode ?? null) !!};
   let salesCode = serverActiveCode || localStorage.getItem('last_sales_code');
@@ -392,15 +405,13 @@ $(function(){
     return ()=>{ CART = before; renderKeranjang(); };
   }
 
-  // ====== Klik CARD Produk = Tambah
-  // (bukan tombol lagi)
+  // Klik CARD Produk
   wadahProduk.on('click', '.produk-card', function(e){
     const $card = $(this);
     const id = +$card.data('id');
     const name = $card.data('realname');
     const price = +$card.data('price');
 
-    // kalau stok 0, jangan bisa ditambah (kalau kamu mau)
     const stokText = $card.find('.badge-stok').text() || '';
     const stokNum = parseInt(stokText.replace(/[^\d]/g,''),10);
     if (!isNaN(stokNum) && stokNum <= 0){
@@ -413,7 +424,7 @@ $(function(){
     $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id}).done(renderKeranjang).fail(rb);
   });
 
-  // aksi di keranjang
+  // Aksi Keranjang
   $('#ringkasanKeranjang').on('click','.aksi',function(){
     const id=+$(this).data('id'), act=String($(this).data('act'));
     const ex=(CART.items||[]).find(i=>i.produk_id===id)||{};
@@ -430,7 +441,7 @@ $(function(){
     $.post('{{ route('kasir.cart.kosongkan') }}',{}).done(renderKeranjang).fail(rb);
   });
 
-  // Filter
+  // Filter Produk
   function applyFilter(){
     const q=($('#cariProduk').val()||'').trim().toLowerCase();
     const k=($('#filterKategori').val()||'').trim().toLowerCase();
@@ -442,10 +453,10 @@ $(function(){
   $('#cariProduk').on('input',applyFilter);
   $('#filterKategori').on('change',applyFilter);
 
-  // Load awal keranjang
+  // Load Awal
   $.get('{{ route('kasir.cart.data') }}',d=>{ CART={...CART,...d}; renderKeranjang(); });
 
-  // CASH panel
+  // CASH & Tempo Panel Logic
   function updateCashPanel(){
     cashTotal.text(formatRupiah(CART.subtotal));
     const bayar = parseInt(cashTenderedRaw.val()||'0',10);
@@ -454,20 +465,17 @@ $(function(){
     if (metodeBayar.val()==='cash') {
       if (bayar < CART.subtotal) { cashHint.text('Uang kurang ' + formatRupiah(CART.subtotal - bayar)); btnProses.prop('disabled', true); }
       else { cashHint.text('Siap proses. Kembalian: ' + formatRupiah(selisih)); btnProses.prop('disabled', false); }
-    } else {
-      cashHint.text('');
-    }
+    } else { cashHint.text(''); }
   }
 
   function updateTempoPanel(){
     if (metodeBayar.val() !== 'tempo') { tempoHint.text(''); return; }
-
     const nm = String(invoiceToName.val()||'').trim();
     if (!nm) {
-      tempoHint.text('Isi "Invoice to" agar tagihan jelas ditujukan ke siapa.');
+      tempoHint.text('Isi "Invoice to" agar tagihan jelas.');
       btnProses.prop('disabled', true);
     } else {
-      tempoHint.text('Setelah proses, halaman invoice akan terbuka untuk dicetak/dikirim.');
+      tempoHint.text('Halaman invoice akan terbuka otomatis.');
       btnProses.prop('disabled', false);
     }
   }
@@ -476,29 +484,20 @@ $(function(){
     const m = metodeBayar.val();
     panelCash.toggle(m === 'cash');
     panelTempo.toggle(m === 'tempo');
-
     if (m === 'tempo') {
       const inv = String(invoiceToName.val()||'').trim();
       const cust = String(inputNama.val()||'').trim();
       if (!inv && cust) invoiceToName.val(cust);
     }
-
-    updateCashPanel();
-    updateTempoPanel();
-
+    updateCashPanel(); updateTempoPanel();
     if (m !== 'cash' && m !== 'tempo') btnProses.prop('disabled', false);
   }
 
   metodeBayar.on('change', showHidePanels);
   inputNama.on('input', function(){
-    if (metodeBayar.val() === 'tempo' && !String(invoiceToName.val()||'').trim()) {
-      invoiceToName.val(String($(this).val()||'').trim());
-    }
+    if (metodeBayar.val() === 'tempo' && !String(invoiceToName.val()||'').trim()) invoiceToName.val($(this).val());
     updateTempoPanel();
   });
-  invoiceToName.on('input', updateTempoPanel);
-  showHidePanels();
-
   inputCash.on('input', function(){
     const v=parseRupiahToInt($(this).val()); cashTenderedRaw.val(String(v)); $(this).val(formatRupiah(v)); updateCashPanel();
   });
@@ -509,25 +508,33 @@ $(function(){
   $('#btnPas').on('click', ()=>{ const t=CART.subtotal||0; cashTenderedRaw.val(String(t)); inputCash.val(formatRupiah(t)); updateCashPanel(); });
   $('#btnClearCash').on('click', ()=>{ cashTenderedRaw.val('0'); inputCash.val(''); updateCashPanel(); });
 
-  // ===== Polling status
-  let pollTimer=null, pollCount=0;
+  // ===== POLLING PEMBAYARAN
+  let pollTimer=null;
 
   function startPolling(kode){
     if (!kode) return;
 
     statusWrap.show();
     statusBadge.text('Menunggu pembayaran…').css({background:'#fff3cd', color:'#7a5a00'});
-    const pendingName = {!! json_encode($pendingName ?? null) !!};
-    if (pendingName) statusInfo.text('Atas nama: ' + pendingName);
+    btnCetakWrap.hide(); 
 
-    function selesaiUI(text,bg,fg){
-      statusBadge.text(text).css({background:bg,color:fg});
-      $.post('{{ route('kasir.cart.kosongkan') }}',{},data=>{
-        renderKeranjang(data); inputNama.val(''); statusInfo.text('');
-      }).always(()=>{
-        statusWrap.hide();
-        try{ localStorage.removeItem('last_sales_code'); }catch(e){}
-      });
+    function selesaiUI(text, bg, fg, isPaid = false, metode = 'cash'){
+      statusBadge.text(text).css({background:bg, color:fg});
+      
+      if (isPaid) {
+        let url = (metode === 'tempo') 
+            ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=1"
+            : "{{ url('/kasir/struk') }}/" + encodeURIComponent(kode);
+        
+        linkCetakStruk.attr('href', url).text(metode === 'tempo' ? '🖨️ Cetak Invoice' : '🖨️ Cetak Struk');
+        btnCetakWrap.show(); 
+      } else {
+        // Jika gagal, sembunyikan wrap dan hapus cache
+        setTimeout(() => {
+            statusWrap.fadeOut();
+            localStorage.removeItem('last_sales_code');
+        }, 3000);
+      }
     }
 
     function cek(){
@@ -536,30 +543,64 @@ $(function(){
         type:'GET', data:{ _:Date.now() }, cache:false
       }).done(function(d){
         const st=(d&&d.status)?String(d.status).toLowerCase():'pending';
-        if (st==='paid'){ selesaiUI('Lunas ✅','#dcfce7','#14532d'); clearTimeout(pollTimer); return; }
-        if (st==='expired' || st==='cancelled'){ selesaiUI(st==='expired'?'Kedaluwarsa ❌':'Dibatalkan ❌','#fee2e2','#7f1d1d'); clearTimeout(pollTimer); return; }
-        pollCount++; pollTimer=setTimeout(cek,1500);
-      }).fail(function(){ pollTimer=setTimeout(cek,2000); });
+        const mt=(d&&d.metode)?String(d.metode).toLowerCase():'cash';
+        
+        if (st==='paid'){ 
+            selesaiUI('Lunas ✅','#dcfce7','#14532d', true, mt); 
+            clearTimeout(pollTimer); 
+            return; 
+        }
+        if (st==='expired' || st==='cancelled'){ 
+            selesaiUI('Gagal/Batal ❌','#fee2e2','#7f1d1d', false); 
+            clearTimeout(pollTimer); 
+            return; 
+        }
+        pollTimer=setTimeout(cek, 1500);
+      }).fail(function(){ pollTimer=setTimeout(cek, 2000); });
     }
 
-    clearTimeout(pollTimer); pollCount=0; cek();
+    clearTimeout(pollTimer); 
+    cek();
   }
+
+  // === MODIFIKASI DISINI: Tombol Selesaikan ===
+  $(document).on('click', '#btnSelesaiTransaksi', function() {
+    const kode = localStorage.getItem('last_sales_code');
+    if(!kode) return location.reload();
+
+    const btn = $(this);
+    btn.prop('disabled', true).text('Mereset...');
+
+    $.post("{{ url('/kasir/selesai-cetak') }}/" + encodeURIComponent(kode), { dicetak: 1 })
+    .done(function() {
+        // 1. Hapus cache kode penjualan
+        localStorage.removeItem('last_sales_code');
+        
+        // 2. Sembunyikan box status secara visual
+        statusWrap.fadeOut(400, function(){
+            // Reset isi badge ke default setelah animasi hilang
+            statusBadge.text('Menunggu pembayaran…').css({background:'#fff3cd', color:'#7a5a00'});
+            btnCetakWrap.hide();
+        });
+
+        // 3. Kosongkan keranjang dan refresh total
+        $.post('{{ route('kasir.cart.kosongkan') }}',{}, function(data){
+            renderKeranjang(data);
+            inputNama.val(''); // Bersihkan nama pelanggan
+            
+            // 4. Opsional: reload jika ingin benar-benar bersih total
+            location.reload(); 
+        });
+    });
+  });
 
   if (salesCode) startPolling(salesCode);
 
-  document.addEventListener('visibilitychange', function(){
-    if (document.visibilityState==='visible') {
-      const code = localStorage.getItem('last_sales_code');
-      if (code) startPolling(code);
-    }
-  });
-
-  // Anti double submit
   $('#formPembayaran').on('submit', function(){
     $('#btnProses').prop('disabled',true).text('Memproses…');
   });
 
-  // efek kecil +1
+  // Efek Animasi
   let fxEl = null;
   function showTapFx(x,y,text){
     if(!fxEl){
@@ -568,8 +609,7 @@ $(function(){
       document.body.appendChild(fxEl);
     }
     fxEl.textContent = text;
-    fxEl.style.left = x + 'px';
-    fxEl.style.top = y + 'px';
+    fxEl.style.left = x + 'px'; fxEl.style.top = y + 'px';
     fxEl.classList.remove('show');
     requestAnimationFrame(()=> fxEl.classList.add('show'));
     setTimeout(()=> fxEl && fxEl.classList.remove('show'), 400);
