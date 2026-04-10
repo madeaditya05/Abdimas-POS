@@ -21,6 +21,9 @@ class Penjualan extends Model
         'bayar',
         'kembalian',
         'metode',
+        'invoice_to_name',
+        'invoice_to_company',
+        'tempo_due_date',
     ];
 
     protected $casts = [
@@ -28,6 +31,7 @@ class Penjualan extends Model
         'total'     => 'decimal:2',
         'bayar'     => 'decimal:2',
         'kembalian' => 'decimal:2',
+        'tempo_due_date' => 'date',
     ];
 
     /* =======================
@@ -36,6 +40,11 @@ class Penjualan extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function details(): HasMany

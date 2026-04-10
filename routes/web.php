@@ -56,6 +56,7 @@ Route::middleware('auth')->group(function () {
     // Kasir POS
     Route::get('/kasir', [KasirController::class, 'index'])->name('kasir.index');
     Route::post('/kasir', [KasirController::class, 'prosesForm'])->name('kasir.store');
+    Route::get('/kasir/invoice/{kode}', [KasirController::class, 'invoice'])->name('kasir.invoice');
     Route::get('/kasir/cart',            [KasirController::class, 'dataKeranjang'])->name('kasir.cart.data');
     Route::post('/kasir/cart/tambah',    [KasirController::class, 'tambahKeKeranjang'])->name('kasir.cart.tambah');
     Route::post('/kasir/cart/kurang',    [KasirController::class, 'kurangKeranjang'])->name('kasir.cart.kurang');
@@ -187,3 +188,6 @@ Route::get('/barista/espresso/data', [EspressoController::class, 'getData'])->na
 Route::get('/barista/espresso/preview', [EspressoController::class, 'preview'])->name('espresso.preview');
 Route::get('/display/espresso', [EspressoController::class, 'screen'])->name('espresso.screen');
 });
+
+Route::get('/kasir/struk/{kode}', [KasirController::class, 'cetakStruk'])->name('kasir.struk');
+Route::post('/kasir/selesai-cetak/{kode}', [KasirController::class, 'selesaiCetak'])->name('kasir.selesaiCetak');

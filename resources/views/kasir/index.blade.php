@@ -52,7 +52,7 @@
         </div>
       </div>
 
-      <div class="produk-toolbar" style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+      <div class="produk-toolbar" style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
         <input type="text" id="cariProduk" class="form-input" placeholder="Cari produk…">
         <select id="filterKategori" class="form-input" style="max-width:220px;">
           <option value="">Semua kategori</option>
@@ -62,39 +62,57 @@
         </select>
       </div>
 
-      <div class="produk-grid" id="gridProduk">
+      {{-- Grid Produk bergambar --}}
+      <div class="produk-grid produk-grid--img" id="gridProduk">
         @foreach($produks as $p)
-          <div class="produk-card {{ $p->aktif ? '' : 'is-disabled' }}"
-               data-id="{{ $p->id }}"
-               data-name="{{ Str::lower($p->nama_barang) }}"
-               data-price="{{ (int)$p->harga }}"
-               data-kategori="{{ Str::lower($p->kategori ?? '') }}"
-               data-aktif="{{ $p->aktif ? '1' : '0' }}">
-            <div class="produk-main">
-              <div class="produk-avatar">{{ strtoupper(mb_substr($p->nama_barang,0,1)) }}</div>
-              <div class="produk-info">
-                <div class="produk-name">{{ $p->nama_barang }}</div>
-                <div class="produk-price">Rp {{ number_format($p->harga,0,',','.') }}</div>
-                <div class="produk-meta">
-                  <span class="produk-status {{ $p->aktif ? '' : 'is-off' }}">
-                    {{ $p->aktif ? 'Tersedia' : 'Dinonaktifkan' }}
-                  </span>
-                </div>
-                @if(!is_null($p->stok))
-                  <div class="produk-stock" style="font-size:12px; color:#64748b;">Stok: {{ $p->stok }}</div>
-                @endif
-              </div>
+          @php
+            $img = null;
+
+            // kalau kamu cuma pakai kolom `gambar` dari DB (produk/latte.jpg)
+            if (!empty($p->gambar)) {
+              $img = asset('storage/' . ltrim($p->gambar, '/'));
+            }
+
+            // kalau suatu saat kamu juga punya image_url, boleh taruh di atas ini
+            // if (!empty($p->image_url)) $img = $p->image_url;
+
+            $initial = strtoupper(mb_substr($p->nama_barang,0,1));
+          @endphp
+
+          <button
+            type="button"
+            class="produk-card produk-card--img"
+            data-id="{{ $p->id }}"
+            data-name="{{ Str::lower($p->nama_barang) }}"
+            data-realname="{{ $p->nama_barang }}"
+            data-price="{{ (int)$p->harga }}"
+            data-kategori="{{ Str::lower($p->kategori ?? '') }}"
+            style="text-align:left;"
+          >
+            <div class="produk-thumb">
+              @if($img)
+                <img src="{{ $img }}" alt="{{ $p->nama_barang }}">
+              @else
+                <div class="produk-thumb--ph">{{ $initial }}</div>
+              @endif
+
+              @if(!is_null($p->stok))
+                <span class="badge-stok {{ $p->stok <= 0 ? 'badge-stok--habis' : '' }}">
+                  Stok: {{ $p->stok }}
+                </span>
+              @endif
+
+              <span class="badge-tap">Tap</span>
             </div>
-            <div class="produk-qty">
-              <button type="button" class="btn btn-primary btn-sm btn-tambah"
-                      data-id="{{ $p->id }}"
-                      data-name="{{ $p->nama_barang }}"
-                      data-price="{{ (int)$p->harga }}"
-                      {{ $p->aktif ? '' : 'disabled' }}>
-                {{ $p->aktif ? 'Tambah' : 'Tidak tersedia' }}
-              </button>
+
+            <div class="produk-body">
+              <div class="produk-name">{{ $p->nama_barang }}</div>
+              <div class="produk-price">Rp {{ number_format($p->harga,0,',','.') }}</div>
+              @if(!empty($p->kategori))
+                <div class="produk-kat">{{ $p->kategori }}</div>
+              @endif
             </div>
-          </div>
+          </button>
         @endforeach
       </div>
     </div>
@@ -133,8 +151,35 @@
           <option value="va_bca">VA BCA</option>
           <option value="va_bri">VA BRI</option>
           <option value="va_bni">VA BNI</option>
+          <option value="tempo">Bayar Nanti (Tempo)</option>
           <option value="cash">CASH</option>
         </select>
+      </div>
+
+      {{-- Panel TEMPO --}}
+      <div id="panelTempo" style="display:none; margin-bottom:12px;">
+        <div class="kr-card" style="padding:12px; border:1px dashed #d1d5db; border-radius:12px;">
+          <div style="font-weight:700; margin-bottom:8px;">Bayar Nanti (Tempo)</div>
+
+          <div class="kasir-form-inline" style="margin-bottom:8px;">
+            <input type="text" name="invoice_to_name" class="form-input"
+                   value="{{ old('invoice_to_name') }}"
+                   placeholder="Invoice to (nama pelanggan/perusahaan)">
+          </div>
+
+          <div class="kasir-form-inline" style="margin-bottom:8px;">
+            <input type="text" name="invoice_to_company" class="form-input"
+                   value="{{ old('invoice_to_company') }}"
+                   placeholder="Nama perusahaan (opsional)">
+          </div>
+
+          <div class="kasir-form-inline" style="margin-bottom:8px;">
+            <input type="date" name="tempo_due_date" class="form-input"
+                   value="{{ old('tempo_due_date', now()->addDays(7)->toDateString()) }}">
+          </div>
+
+          <small id="tempoHint" class="text-muted" style="display:block; margin-top:8px;"></small>
+        </div>
       </div>
 
       {{-- Panel CASH --}}
@@ -170,16 +215,111 @@
       <button type="submit" class="btn btn-primary btn-block" id="btnProses">Proses Pembayaran</button>
 
       {{-- Badge status --}}
-      <div id="statusWrap" style="display:none; margin-top:10px;">
-        <span id="statusBadge"
-              style="padding:6px 10px; border-radius:999px; font-weight:600; font-size:13px; background:#fff3cd; color:#7a5a00;">
-          Menunggu pembayaran…
-        </span>
-        <span id="statusInfo" style="margin-left:8px; font-size:13px; color:#334155;"></span>
-      </div>
+      {{-- Badge status --}}
+<div id="statusWrap" style="display:none; margin-top:10px;">
+    <span id="statusBadge" style="...">
+        Menunggu pembayaran…
+    </span>
+    {{-- TAMBAHKAN TOMBOL INI --}}
+    <div id="btnCetakWrap" style="display:none; margin-top:12px;">
+        <a href="#" id="linkCetakStruk" class="btn btn-sm btn-primary">
+            🖨️ Cetak Struk
+        </a>
+        <button type="button" id="btnSelesaiTransaksi" class="btn btn-sm">
+            Selesaikan
+        </button>
+    </div>
+    <span id="statusInfo" style="margin-left:8px; font-size:13px; color:#334155;"></span>
+</div>
     </div>
   </div>
 </form>
+
+{{-- CSS kecil biar jadi grid gambar, nggak perlu ribet --}}
+<style>
+  .produk-grid--img{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 1100px){
+    .produk-grid--img{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 700px){
+    .produk-grid--img{ grid-template-columns: 1fr; }
+  }
+  .produk-card--img{
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background:#fff;
+    padding: 0;
+    overflow:hidden;
+    cursor:pointer;
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+  .produk-card--img:hover{
+    box-shadow: 0 10px 25px rgba(0,0,0,.06);
+    transform: translateY(-1px);
+  }
+  .produk-thumb{
+    position:relative;
+    height: 120px;
+    background: #f1f5f9;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .produk-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .produk-thumb--ph{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size: 42px;
+    color:#334155;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  }
+  .produk-body{ padding: 10px 12px 12px; }
+  .produk-name{ font-weight:700; color:#0f172a; line-height:1.2; margin-bottom:6px; }
+  .produk-price{ font-weight:700; color:#0f766e; margin-bottom:6px; }
+  .produk-kat{ font-size:12px; color:#64748b; }
+  .badge-stok{
+    position:absolute; left:10px; top:10px;
+    font-size:11px; padding:4px 8px; border-radius:999px;
+    background:#fff; color:#0f172a; border:1px solid #e5e7eb;
+  }
+  .badge-stok--habis{ background:#fee2e2; border-color:#fecaca; color:#7f1d1d; }
+  .badge-tap{
+    position:absolute; right:10px; top:10px;
+    font-size:11px; padding:4px 8px; border-radius:999px;
+    background:#0f766e; color:#fff;
+  }
+  .tap-fx{
+    position:fixed;
+    z-index:9999;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#0f766e;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    pointer-events:none;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  .tap-fx.show{
+    opacity:1;
+    transform: translate(-50%, calc(-50% - 10px));
+  }
+</style>
 
 <script>
 $(function(){
@@ -191,6 +331,9 @@ $(function(){
   const statusInfo = $('#statusInfo');
   const inputNama = $('[name=customer_name]');
   const metodeBayar = $('#metodeBayar');
+  const panelTempo = $('#panelTempo');
+  const invoiceToName = $('[name=invoice_to_name]');
+  const tempoHint = $('#tempoHint');
   const panelCash = $('#panelCash');
   const cashTotal = $('#cashTotal');
   const cashChange = $('#cashChange');
@@ -198,6 +341,10 @@ $(function(){
   const cashTenderedRaw = $('#cashTenderedRaw');
   const cashHint = $('#cashHint');
   const btnProses = $('#btnProses');
+
+  // Selektor Tombol Cetak & Selesaikan
+  const btnCetakWrap = $('#btnCetakWrap'); 
+  const linkCetakStruk = $('#linkCetakStruk');
 
   // Kode aktif dari server/localStorage
   const serverActiveCode = {!! json_encode($activeCode ?? null) !!};
@@ -217,7 +364,7 @@ $(function(){
     wadahKeranjang.html('');
     if(!CART.items || CART.items.length===0){
       wadahKeranjang.html('<p class="text-muted">Belum ada item dipilih.</p>');
-      elTotal.text('Rp 0'); updateCashPanel(); return;
+      elTotal.text('Rp 0'); showHidePanels(); return;
     }
     CART.items.forEach(i=>{
       wadahKeranjang.append(`
@@ -237,7 +384,7 @@ $(function(){
         </div>`);
     });
     elTotal.text(formatRupiah(CART.subtotal));
-    updateCashPanel();
+    showHidePanels();
   }
 
   function optimisticUpdate(act, payload){
@@ -258,21 +405,26 @@ $(function(){
     return ()=>{ CART = before; renderKeranjang(); };
   }
 
-  // Tambah/kurang/hapus/kosongkan
-  wadahProduk.on('click','.btn-tambah',e=>{
-    if ($(e.currentTarget).is(':disabled')) return;
-    const id = +$(e.currentTarget).data('id');
-    const name = $(e.currentTarget).data('name');
-    const price = +$(e.currentTarget).data('price');
+  // Klik CARD Produk
+  wadahProduk.on('click', '.produk-card', function(e){
+    const $card = $(this);
+    const id = +$card.data('id');
+    const name = $card.data('realname');
+    const price = +$card.data('price');
+
+    const stokText = $card.find('.badge-stok').text() || '';
+    const stokNum = parseInt(stokText.replace(/[^\d]/g,''),10);
+    if (!isNaN(stokNum) && stokNum <= 0){
+      showTapFx(e.clientX, e.clientY, 'Stok habis');
+      return;
+    }
+
     const rb = optimisticUpdate('tambah',{produk_id:id,name,price});
-    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id})
-      .done(renderKeranjang)
-      .fail(xhr=>{
-        rb();
-        const msg = xhr?.responseJSON?.message || 'Produk ini sedang tidak tersedia.';
-        alert(msg);
-      });
+    showTapFx(e.clientX, e.clientY, '+1');
+    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id}).done(renderKeranjang).fail(rb);
   });
+
+  // Aksi Keranjang
   $('#ringkasanKeranjang').on('click','.aksi',function(){
     const id=+$(this).data('id'), act=String($(this).data('act'));
     const ex=(CART.items||[]).find(i=>i.produk_id===id)||{};
@@ -283,12 +435,13 @@ $(function(){
     if(act==='hapus'){ url='{{ route('kasir.cart.hapus') }}'; method='DELETE'; }
     $.ajax({url,type:method,data}).done(renderKeranjang).fail(rb);
   });
+
   $('#btnKosongkan').on('click',()=>{
     const rb=optimisticUpdate('kosongkan',{});
     $.post('{{ route('kasir.cart.kosongkan') }}',{}).done(renderKeranjang).fail(rb);
   });
 
-  // Filter
+  // Filter Produk
   function applyFilter(){
     const q=($('#cariProduk').val()||'').trim().toLowerCase();
     const k=($('#filterKategori').val()||'').trim().toLowerCase();
@@ -300,10 +453,10 @@ $(function(){
   $('#cariProduk').on('input',applyFilter);
   $('#filterKategori').on('change',applyFilter);
 
-  // Load awal keranjang
+  // Load Awal
   $.get('{{ route('kasir.cart.data') }}',d=>{ CART={...CART,...d}; renderKeranjang(); });
 
-  // CASH panel
+  // CASH & Tempo Panel Logic
   function updateCashPanel(){
     cashTotal.text(formatRupiah(CART.subtotal));
     const bayar = parseInt(cashTenderedRaw.val()||'0',10);
@@ -312,13 +465,39 @@ $(function(){
     if (metodeBayar.val()==='cash') {
       if (bayar < CART.subtotal) { cashHint.text('Uang kurang ' + formatRupiah(CART.subtotal - bayar)); btnProses.prop('disabled', true); }
       else { cashHint.text('Siap proses. Kembalian: ' + formatRupiah(selisih)); btnProses.prop('disabled', false); }
+    } else { cashHint.text(''); }
+  }
+
+  function updateTempoPanel(){
+    if (metodeBayar.val() !== 'tempo') { tempoHint.text(''); return; }
+    const nm = String(invoiceToName.val()||'').trim();
+    if (!nm) {
+      tempoHint.text('Isi "Invoice to" agar tagihan jelas.');
+      btnProses.prop('disabled', true);
     } else {
+      tempoHint.text('Halaman invoice akan terbuka otomatis.');
       btnProses.prop('disabled', false);
     }
   }
-  function showHideCash(){ panelCash.toggle(metodeBayar.val()==='cash'); updateCashPanel(); }
-  metodeBayar.on('change',showHideCash); showHideCash();
 
+  function showHidePanels(){
+    const m = metodeBayar.val();
+    panelCash.toggle(m === 'cash');
+    panelTempo.toggle(m === 'tempo');
+    if (m === 'tempo') {
+      const inv = String(invoiceToName.val()||'').trim();
+      const cust = String(inputNama.val()||'').trim();
+      if (!inv && cust) invoiceToName.val(cust);
+    }
+    updateCashPanel(); updateTempoPanel();
+    if (m !== 'cash' && m !== 'tempo') btnProses.prop('disabled', false);
+  }
+
+  metodeBayar.on('change', showHidePanels);
+  inputNama.on('input', function(){
+    if (metodeBayar.val() === 'tempo' && !String(invoiceToName.val()||'').trim()) invoiceToName.val($(this).val());
+    updateTempoPanel();
+  });
   inputCash.on('input', function(){
     const v=parseRupiahToInt($(this).val()); cashTenderedRaw.val(String(v)); $(this).val(formatRupiah(v)); updateCashPanel();
   });
@@ -329,22 +508,33 @@ $(function(){
   $('#btnPas').on('click', ()=>{ const t=CART.subtotal||0; cashTenderedRaw.val(String(t)); inputCash.val(formatRupiah(t)); updateCashPanel(); });
   $('#btnClearCash').on('click', ()=>{ cashTenderedRaw.val('0'); inputCash.val(''); updateCashPanel(); });
 
-  // ===== Polling status (TIDAK tergantung pilihan dropdown)
-  let pollTimer=null, pollCount=0;
+  // ===== POLLING PEMBAYARAN
+  let pollTimer=null;
 
   function startPolling(kode){
     if (!kode) return;
 
     statusWrap.show();
     statusBadge.text('Menunggu pembayaran…').css({background:'#fff3cd', color:'#7a5a00'});
-    const pendingName = {!! json_encode($pendingName ?? null) !!};
-    if (pendingName) statusInfo.text('Atas nama: ' + pendingName);
+    btnCetakWrap.hide(); 
 
-    function selesaiUI(text,bg,fg){
-      statusBadge.text(text).css({background:bg,color:fg});
-      $.post('{{ route('kasir.cart.kosongkan') }}',{},data=>{
-        renderKeranjang(data); inputNama.val(''); statusInfo.text('');
-      }).always(()=>{ statusWrap.hide(); try{ localStorage.removeItem('last_sales_code'); }catch(e){} });
+    function selesaiUI(text, bg, fg, isPaid = false, metode = 'cash'){
+      statusBadge.text(text).css({background:bg, color:fg});
+      
+      if (isPaid) {
+        let url = (metode === 'tempo') 
+            ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=1"
+            : "{{ url('/kasir/struk') }}/" + encodeURIComponent(kode);
+        
+        linkCetakStruk.attr('href', url).text(metode === 'tempo' ? '🖨️ Cetak Invoice' : '🖨️ Cetak Struk');
+        btnCetakWrap.show(); 
+      } else {
+        // Jika gagal, sembunyikan wrap dan hapus cache
+        setTimeout(() => {
+            statusWrap.fadeOut();
+            localStorage.removeItem('last_sales_code');
+        }, 3000);
+      }
     }
 
     function cek(){
@@ -353,26 +543,77 @@ $(function(){
         type:'GET', data:{ _:Date.now() }, cache:false
       }).done(function(d){
         const st=(d&&d.status)?String(d.status).toLowerCase():'pending';
-        if (st==='paid'){ selesaiUI('Lunas ✅','#dcfce7','#14532d'); clearTimeout(pollTimer); return; }
-        if (st==='expired' || st==='cancelled'){ selesaiUI(st==='expired'?'Kedaluwarsa ❌':'Dibatalkan ❌','#fee2e2','#7f1d1d'); clearTimeout(pollTimer); return; }
-        pollCount++; pollTimer=setTimeout(cek,1500);
-      }).fail(function(){ pollTimer=setTimeout(cek,2000); });
+        const mt=(d&&d.metode)?String(d.metode).toLowerCase():'cash';
+        
+        if (st==='paid'){ 
+            selesaiUI('Lunas ✅','#dcfce7','#14532d', true, mt); 
+            clearTimeout(pollTimer); 
+            return; 
+        }
+        if (st==='expired' || st==='cancelled'){ 
+            selesaiUI('Gagal/Batal ❌','#fee2e2','#7f1d1d', false); 
+            clearTimeout(pollTimer); 
+            return; 
+        }
+        pollTimer=setTimeout(cek, 1500);
+      }).fail(function(){ pollTimer=setTimeout(cek, 2000); });
     }
 
-    clearTimeout(pollTimer); pollCount=0; cek();
+    clearTimeout(pollTimer); 
+    cek();
   }
+
+  // === MODIFIKASI DISINI: Tombol Selesaikan ===
+  $(document).on('click', '#btnSelesaiTransaksi', function() {
+    const kode = localStorage.getItem('last_sales_code');
+    if(!kode) return location.reload();
+
+    const btn = $(this);
+    btn.prop('disabled', true).text('Mereset...');
+
+    $.post("{{ url('/kasir/selesai-cetak') }}/" + encodeURIComponent(kode), { dicetak: 1 })
+    .done(function() {
+        // 1. Hapus cache kode penjualan
+        localStorage.removeItem('last_sales_code');
+        
+        // 2. Sembunyikan box status secara visual
+        statusWrap.fadeOut(400, function(){
+            // Reset isi badge ke default setelah animasi hilang
+            statusBadge.text('Menunggu pembayaran…').css({background:'#fff3cd', color:'#7a5a00'});
+            btnCetakWrap.hide();
+        });
+
+        // 3. Kosongkan keranjang dan refresh total
+        $.post('{{ route('kasir.cart.kosongkan') }}',{}, function(data){
+            renderKeranjang(data);
+            inputNama.val(''); // Bersihkan nama pelanggan
+            
+            // 4. Opsional: reload jika ingin benar-benar bersih total
+            location.reload(); 
+        });
+    });
+  });
 
   if (salesCode) startPolling(salesCode);
 
-  document.addEventListener('visibilitychange', function(){
-    if (document.visibilityState==='visible') {
-      const code = localStorage.getItem('last_sales_code');
-      if (code) startPolling(code);
-    }
+  $('#formPembayaran').on('submit', function(){
+    $('#btnProses').prop('disabled',true).text('Memproses…');
   });
 
-  // Anti double submit
-  $('#formPembayaran').on('submit', function(){ $('#btnProses').prop('disabled',true).text('Memproses…'); });
+  // Efek Animasi
+  let fxEl = null;
+  function showTapFx(x,y,text){
+    if(!fxEl){
+      fxEl = document.createElement('div');
+      fxEl.className = 'tap-fx';
+      document.body.appendChild(fxEl);
+    }
+    fxEl.textContent = text;
+    fxEl.style.left = x + 'px'; fxEl.style.top = y + 'px';
+    fxEl.classList.remove('show');
+    requestAnimationFrame(()=> fxEl.classList.add('show'));
+    setTimeout(()=> fxEl && fxEl.classList.remove('show'), 400);
+  }
 });
 </script>
 @endsection
