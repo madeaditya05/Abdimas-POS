@@ -166,7 +166,7 @@
             </svg>
           </div>
           <div class="om-tile__body">
-            <div class="om-tile__title">Beban Operasional</div>
+            <div class="om-tile__title">Input Beban Operasional</div>
             <div class="om-tile__desc">Kelola dan pantau beban usaha yang memengaruhi laba.</div>
           </div>
         </a>
