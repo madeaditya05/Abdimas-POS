@@ -144,6 +144,10 @@
            class="subnav-item {{ request()->routeIs('pembelian-bahan.*') ? 'is-active' : '' }}">
           Pembelian Bahan
         </a>
+        <a href="{{ route('beban-operasional.index') }}"
+           class="subnav-item {{ request()->routeIs('beban-operasional.*') ? 'is-active' : '' }}">
+          Input Beban
+        </a>
       </div>
     </div>
 
@@ -183,7 +187,7 @@
       <path d="M5 9h2M17 9h2M5 15h2M17 15h2"/>
     </svg>
   </span>
-  <span class="nav-label">Laporan</span>
+  <span class="nav-label">Keuangan</span>
 </a>
 
 
