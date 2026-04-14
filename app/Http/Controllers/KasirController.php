@@ -45,12 +45,15 @@ class KasirController extends Controller
             }
         }
 
+        // Hanya tampilkan produk yang aktif di menu kasir
         $produks = Produk::select('id','nama_barang','harga','kategori','gambar')
+            ->where('aktif', true)
             ->orderBy('nama_barang')
             ->get();
 
         $kategoris = KategoriProduk::query()
             ->join('produk', 'produk.kategori', '=', 'kategori_produk.slug')
+            ->where('produk.aktif', true)
             ->select(
                 'kategori_produk.slug',
                 'kategori_produk.nama',

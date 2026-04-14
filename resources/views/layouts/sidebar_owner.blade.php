@@ -236,14 +236,14 @@
   </nav>
 
   <div class="sidebar-footer">
-    <a href="{{ route('kasir.index') }}" class="btn-logout {{ request()->routeIs('kasir.*') ? 'is-active' : '' }}" style="text-decoration:none; margin-bottom:12px;">
+    <a href="{{ route('panel.switch', ['panel' => 'kasir']) }}" class="btn-logout {{ request()->routeIs('kasir.*') ? 'is-active' : '' }}" style="text-decoration:none; margin-bottom:12px;">
       <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
         <path d="M2.05 2.05h2l2.66 12.42A2 2 0 0 0 8.71 16h9.78a2 2 0 0 0 1.95-1.57L22.09 7H5.12"/>
       </svg>
       <span>Panel Kasir</span>
     </a>
-    <button type="button" class="btn-logout" onclick="document.getElementById('logoutForm').submit()">
+    <a href="{{ route('logout.reconcile') }}" class="btn-logout" style="text-decoration:none;">
       <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -251,8 +251,7 @@
         <line x1="21" x2="9" y1="12" y2="12"/>
       </svg>
       <span>Keluar</span>
-    </button>
-    <form id="logoutForm" action="{{ route('logout') }}" method="POST" class="hidden">@csrf</form>
+    </a>
   </div>
 </aside>
 

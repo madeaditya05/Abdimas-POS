@@ -34,23 +34,6 @@
                     </svg>
                     <span>Kasir</span>
                 </a>
-                <a href="#" class="nav-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                    <span>Pelanggan</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-                        <path d="m3.3 7 8.7 5 8.7-5"/>
-                        <path d="M12 22V12"/>
-                    </svg>
-                    <span>Persediaan</span>
-                </a>
                 <a href="{{ route('kasir.rekap') }}" class="nav-item {{ request()->is('reports/kasir') ? 'active' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -71,7 +54,7 @@
             </nav>
 
             <div class="sidebar-footer">
-                <a href="{{ route('dashboard') }}" class="btn-logout {{ request()->is('dashboard') ? 'active' : '' }}" style="text-decoration:none; margin-bottom:12px;">
+                <a href="{{ route('panel.switch', ['panel' => 'owner']) }}" class="btn-logout {{ request()->is('dashboard') ? 'active' : '' }}" style="text-decoration:none; margin-bottom:12px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="16" rx="2"/>
                         <path d="M3 10h18"/>
@@ -80,14 +63,14 @@
                     </svg>
                     <span>Panel Owner</span>
                 </a>
-                <button type="button" class="btn-logout" onclick="document.getElementById('logoutForm').submit()">
+                <a href="{{ route('logout.reconcile') }}" class="btn-logout" style="text-decoration:none;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                         <polyline points="16 17 21 12 16 7"/>
                         <line x1="21" x2="9" y1="12" y2="12"/>
                     </svg>
                     <span>Keluar</span>
-                </button>
+                </a>
             </div>
         </aside>
         

@@ -69,7 +69,7 @@
         <form action="{{ route('register.store') }}" method="POST" id="registerForm" novalidate>
           @csrf
 
-          <div class="form-group">
+          <div class="form-group" style="display:none;">
             <label for="name">Nama</label>
             <div class="input-wrapper">
               <input
@@ -137,7 +137,7 @@
         type="hidden"
         name="user_group"
         id="user_group"
-        value="{{ old('user_group') }}"
+        value="{{ old('user_group', 'owner') }}"
       >
 
       {{-- tombol utama (seperti input) --}}
@@ -178,7 +178,7 @@
 </div>
 
 
-          <div class="form-group" id="ownerGuard" style="display:none;">
+          <div class="form-group" id="ownerGuard">
             <label for="owner_token">Kode Owner (proteksi)</label>
             <div class="input-wrapper">
               <input
@@ -187,6 +187,7 @@
                 name="owner_token"
                 class="form-input"
                 placeholder="Masukkan kode owner"
+                required
               >
             </div>
           </div>

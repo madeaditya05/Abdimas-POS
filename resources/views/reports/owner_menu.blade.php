@@ -141,7 +141,7 @@
           </div>
         </a>
 
-        {{-- Rekapitulasi Pembayaran --}}
+        {{-- Laporan Penjualan (Ringkas) --}}
         <a class="om-tile" href="{{ $toOwner('unified') }}">
           <div class="om-tile__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
@@ -150,8 +150,8 @@
             </svg>
           </div>
           <div class="om-tile__body">
-            <div class="om-tile__title">Rekapitulasi Pembayaran</div>
-            <div class="om-tile__desc">Perbandingan pembayaran tunai dan non-tunai.</div>
+            <div class="om-tile__title">Laporan Penjualan</div>
+            <div class="om-tile__desc">Ringkasan penjualan per tanggal, kasir, metode, dan produk.</div>
           </div>
         </a>
 

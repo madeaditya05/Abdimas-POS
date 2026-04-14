@@ -46,24 +46,21 @@ class LoginController extends Controller
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|max:255|unique:users,email',
             'password'     => 'required|string|min:6|confirmed',
-            'user_group'   => 'required|in:owner,kasir',
-            'owner_token'  => 'nullable|required_if:user_group,owner',
+            'owner_token'  => 'required|string',
         ], [
-            'owner_token.required_if' => 'Kode Owner wajib diisi jika memilih Owner.',
+            'owner_token.required' => 'Kode Owner wajib diisi.',
         ]);
 
-        if ($r->user_group === 'owner') {
-            $expected = config('auth.owner_signup_code'); // dari .env OWNER_SIGNUP_CODE
-            if (!$expected || $r->owner_token !== $expected) {
-                return back()->withErrors(['owner_token' => 'Kode Owner tidak valid.'])->withInput();
-            }
+        $expected = config('auth.owner_signup_code'); // dari .env OWNER_SIGNUP_CODE
+        if (!$expected || $r->owner_token !== $expected) {
+            return back()->withErrors(['owner_token' => 'Kode Owner tidak valid.'])->withInput();
         }
 
         User::create([
             'name'       => $r->name,
             'email'      => $r->email,
             'password'   => Hash::make($r->password),
-            'user_group' => $r->user_group,
+            'user_group' => 'owner',
         ]);
 
         return redirect()
@@ -74,9 +71,7 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('login');
+        // Wajib rekonsiliasi kas sebelum logout.
+        return redirect()->route('logout.reconcile');
     }
 }
