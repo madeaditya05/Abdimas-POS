@@ -17,7 +17,7 @@ class OwnerReportController extends Controller
 
         $items      = $this->ambilRekapProduk($mulai, $akhir);
         $payments   = $this->ambilRekapPembayaran($mulai, $akhir);
-        $payUnified = $this->ambilRekapTunaiNonTunai($mulai, $akhir);
+        $sales      = $this->ambilLaporanPenjualanRingkas($mulai, $akhir);
 
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
@@ -36,7 +36,7 @@ class OwnerReportController extends Controller
             'lr'         => $labarugi,
             'items'      => $items,
             'payments'   => $payments,
-            'payUnified' => $payUnified,
+            'sales'      => $sales,
             'journal'    => $jurnal,
             'ledger'     => $bukuBesar,
             'pembelian'  => $pembelian,
@@ -52,7 +52,7 @@ class OwnerReportController extends Controller
 
         $items      = $this->ambilRekapProduk($mulai, $akhir);
         $payments   = $this->ambilRekapPembayaran($mulai, $akhir);
-        $payUnified = $this->ambilRekapTunaiNonTunai($mulai, $akhir);
+        $sales      = $this->ambilLaporanPenjualanRingkas($mulai, $akhir);
 
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
@@ -71,7 +71,7 @@ class OwnerReportController extends Controller
             'lr'         => $labarugi,
             'items'      => $items,
             'payments'   => $payments,
-            'payUnified' => $payUnified,
+            'sales'      => $sales,
             'journal'    => $jurnal,
             'ledger'     => $bukuBesar,
             'pembelian'  => $pembelian,
@@ -232,6 +232,32 @@ class OwnerReportController extends Controller
             ")
             ->groupBy('kategori')
             ->orderBy('kategori')
+            ->get();
+    }
+
+    private function ambilLaporanPenjualanRingkas(string $mulai, string $akhir)
+    {
+        return DB::table('payment as pay')
+            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
+            ->join('users as u', 'u.id', '=', 'pjl.user_id')
+            ->join('penjualan_detail as d', 'd.penjualan_id', '=', 'pjl.id')
+            ->join('produk as pr', 'pr.id', '=', 'd.produk_id')
+            ->where('pay.transaction_status', 'settlement')
+            ->whereBetween('pay.paid_at', [$mulai, $akhir])
+            ->selectRaw('
+                DATE(pay.paid_at) as tanggal,
+                u.name as kasir,
+                UPPER(pay.pg_payment_type) as metode,
+                pr.nama_barang as produk,
+                COUNT(DISTINCT pjl.id) as trx,
+                SUM(d.qty) as qty,
+                SUM(d.subtotal) as omzet
+            ')
+            ->groupBy(DB::raw('DATE(pay.paid_at)'), 'u.name', 'pay.pg_payment_type', 'pr.nama_barang')
+            ->orderBy(DB::raw('DATE(pay.paid_at)'))
+            ->orderBy('u.name')
+            ->orderBy('pay.pg_payment_type')
+            ->orderBy('pr.nama_barang')
             ->get();
     }
 

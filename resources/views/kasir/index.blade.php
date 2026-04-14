@@ -215,15 +215,14 @@
       <button type="submit" class="btn btn-primary btn-block" id="btnProses">Proses Pembayaran</button>
 
       {{-- Badge status --}}
-      {{-- Badge status --}}
 <div id="statusWrap" style="display:none; margin-top:10px;">
-    <span id="statusBadge" style="...">
+    <span id="statusBadge" style="padding:6px 10px; border-radius:999px; font-weight:600; font-size:13px; background:#fff3cd; color:#7a5a00;">
         Menunggu pembayaran…
     </span>
     {{-- TAMBAHKAN TOMBOL INI --}}
-    <div id="btnCetakWrap" style="display:none; margin-top:12px;">
-        <a href="#" id="linkCetakStruk" class="btn btn-sm btn-primary">
-            🖨️ Cetak Struk
+    <div id="btnCetakWrap" style="display:none; margin-top:12px; gap:8px; align-items:center;">
+        <a href="#" id="linkCetakStruk" class="btn btn-sm btn-primary" style="text-decoration:none;">
+            Cetak
         </a>
         <button type="button" id="btnSelesaiTransaksi" class="btn btn-sm">
             Selesaikan
@@ -353,6 +352,7 @@ $(function(){
 
   // ===== State keranjang
   let CART = { items: [], subtotal: 0, subtotal_text: 'Rp 0' };
+  let cartMutationSeq = 0; // cegah response out-of-order bikin flicker
 
   function formatRupiah(n){ n=parseInt(n||0,10); return 'Rp ' + n.toLocaleString('id-ID'); }
   function parseRupiahToInt(s){ s=String(s||'').replace(/[^\d]/g,''); return parseInt(s||'0',10); }
@@ -361,13 +361,13 @@ $(function(){
 
   function renderKeranjang(data){
     if (data) CART = { ...CART, ...data };
-    wadahKeranjang.html('');
+    let html = '';
     if(!CART.items || CART.items.length===0){
       wadahKeranjang.html('<p class="text-muted">Belum ada item dipilih.</p>');
       elTotal.text('Rp 0'); showHidePanels(); return;
     }
     CART.items.forEach(i=>{
-      wadahKeranjang.append(`
+      html += `
         <div class="order-item">
           <div class="order-header">
             <div>
@@ -381,8 +381,9 @@ $(function(){
             </div>
           </div>
           <div class="order-footer"><span class="order-total">${formatRupiah(i.price * i.qty)}</span></div>
-        </div>`);
+        </div>`;
     });
+    wadahKeranjang.html(html);
     elTotal.text(formatRupiah(CART.subtotal));
     showHidePanels();
   }
@@ -420,8 +421,11 @@ $(function(){
     }
 
     const rb = optimisticUpdate('tambah',{produk_id:id,name,price});
+    const seq = ++cartMutationSeq;
     showTapFx(e.clientX, e.clientY, '+1');
-    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id}).done(renderKeranjang).fail(rb);
+    $.post('{{ route('kasir.cart.tambah') }}',{produk_id:id})
+      .done(function(d){ if (seq === cartMutationSeq) renderKeranjang(d); })
+      .fail(function(){ if (seq === cartMutationSeq) rb(); });
   });
 
   // Aksi Keranjang
@@ -429,16 +433,22 @@ $(function(){
     const id=+$(this).data('id'), act=String($(this).data('act'));
     const ex=(CART.items||[]).find(i=>i.produk_id===id)||{};
     const rb=optimisticUpdate(act,{produk_id:id,name:ex.name,price:ex.price||0});
+    const seq = ++cartMutationSeq;
     let url='',method='POST',data={produk_id:id};
     if(act==='tambah') url='{{ route('kasir.cart.tambah') }}';
     if(act==='kurang') url='{{ route('kasir.cart.kurang') }}';
     if(act==='hapus'){ url='{{ route('kasir.cart.hapus') }}'; method='DELETE'; }
-    $.ajax({url,type:method,data}).done(renderKeranjang).fail(rb);
+    $.ajax({url,type:method,data})
+      .done(function(d){ if (seq === cartMutationSeq) renderKeranjang(d); })
+      .fail(function(){ if (seq === cartMutationSeq) rb(); });
   });
 
   $('#btnKosongkan').on('click',()=>{
     const rb=optimisticUpdate('kosongkan',{});
-    $.post('{{ route('kasir.cart.kosongkan') }}',{}).done(renderKeranjang).fail(rb);
+    const seq = ++cartMutationSeq;
+    $.post('{{ route('kasir.cart.kosongkan') }}',{})
+      .done(function(d){ if (seq === cartMutationSeq) renderKeranjang(d); })
+      .fail(function(){ if (seq === cartMutationSeq) rb(); });
   });
 
   // Filter Produk
@@ -524,10 +534,13 @@ $(function(){
       if (isPaid) {
         let url = (metode === 'tempo') 
             ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=1"
-            : "{{ url('/kasir/struk') }}/" + encodeURIComponent(kode);
+            : "{{ url('/kasir/struk') }}/" + encodeURIComponent(kode) + "?print=1";
         
-        linkCetakStruk.attr('href', url).text(metode === 'tempo' ? '🖨️ Cetak Invoice' : '🖨️ Cetak Struk');
-        btnCetakWrap.show(); 
+        linkCetakStruk.attr('href', url).text(metode === 'tempo' ? 'Cetak Invoice' : 'Cetak Struk');
+        btnCetakWrap.css({display:'flex'});
+
+        // Buka halaman print di TAB YANG SAMA (bukan tab baru)
+        window.location.href = url;
       } else {
         // Jika gagal, sembunyikan wrap dan hapus cache
         setTimeout(() => {

@@ -142,6 +142,13 @@
     window.addEventListener('load', function () {
       window.print();
     });
+
+    // Setelah dialog print ditutup, otomatis "Selesaikan" agar keranjang reset,
+    // lalu kembali ke kasir (tetap di tab yang sama).
+    window.addEventListener('afterprint', function () {
+      const btn = document.getElementById('btnSelesai');
+      if (btn && !btn.disabled) btn.click();
+    });
   </script>
 @endif
 @endsection

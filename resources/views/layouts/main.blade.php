@@ -14,9 +14,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <form id="logoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
-  @csrf
-</form>
 </head>
 <body>
     @php
@@ -31,27 +28,18 @@
 
     <div class="dashboard-wrapper">
         <!-- Sidebar -->
-        {{-- BLOK INI KITA MODIFIKASI --}}
         @auth
-            @if ($isKasirPanel)
+            @php
+                $panel = session('panel') ?: (auth()->user()->user_group ?? 'owner');
+                $panel = in_array($panel, ['owner','kasir'], true) ? $panel : 'owner';
+            @endphp
+
+            @if ($isKasirPanel || $panel === 'kasir')
                 @include('layouts.sidebar_kasir')
             @else
-                @switch(auth()->user()->user_group)
-                    @case('owner')
-                        {{-- Tampilkan sidebar untuk owner --}}
-                        @include('layouts.sidebar_owner')
-                        @break
-                    
-                    @case('kasir')
-                        {{-- Tampilkan sidebar untuk kasir --}}
-                        @include('layouts.sidebar_kasir')
-                        @break
-
-                    @default
-                @endswitch
+                @include('layouts.sidebar_owner')
             @endif
         @endauth
-        {{-- AKHIR BLOK MODIFIKASI --}}
 
         <!-- Main Content -->
         <div class="main-content">

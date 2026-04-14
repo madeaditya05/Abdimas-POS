@@ -219,43 +219,47 @@
   @endif
 @endif
 
-{{-- TUNAI VS NON TUNAI --}}
+{{-- LAPORAN PENJUALAN (RINGKAS) --}}
 @if($sections['unified'])
-  <h3 class="keep-with-next">Rekapitulasi Pembayaran (Tunai vs Non-Tunai)</h3>
+  <h3 class="keep-with-next">Laporan Penjualan (Ringkas)</h3>
   @php
-    $tunai    = $payUnified->firstWhere('kategori','Tunai');
-    $nontunai = $payUnified->firstWhere('kategori','Non Tunai');
-
-    $trxTunai = (int)($tunai->trx ?? 0);
-    $trxNon   = (int)($nontunai->trx ?? 0);
-    $sumTunai = (int)($tunai->total ?? 0);
-    $sumNon   = (int)($nontunai->total ?? 0);
+    $sumTrx = (int) ($sales->sum('trx') ?? 0);
+    $sumQty = (int) ($sales->sum('qty') ?? 0);
+    $sumOmz = (float) ($sales->sum('omzet') ?? 0);
   @endphp
   <table class="tbl" style="margin-bottom:10px;">
     <thead>
       <tr>
-        <th>Kategori</th>
-        <th class="right">Transaksi</th>
-        <th class="right">Total</th>
+        <th>Tanggal</th>
+        <th>Kasir</th>
+        <th>Metode</th>
+        <th>Produk</th>
+        <th class="right">Trx</th>
+        <th class="right">Qty</th>
+        <th class="right">Omzet</th>
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td>Tunai</td>
-        <td class="right">{{ number_format($trxTunai) }}</td>
-        <td class="right money">{{ $fmt($sumTunai) }}</td>
-      </tr>
-      <tr>
-        <td>Non Tunai</td>
-        <td class="right">{{ number_format($trxNon) }}</td>
-        <td class="right money">{{ $fmt($sumNon) }}</td>
-      </tr>
+      @forelse($sales as $r)
+        <tr>
+          <td>{{ \Carbon\Carbon::parse($r->tanggal)->format('d/m/Y') }}</td>
+          <td>{{ $r->kasir }}</td>
+          <td>{{ $r->metode }}</td>
+          <td>{{ $r->produk }}</td>
+          <td class="right">{{ number_format((int)$r->trx) }}</td>
+          <td class="right">{{ number_format((int)$r->qty) }}</td>
+          <td class="right money">{{ $fmt((float)$r->omzet) }}</td>
+        </tr>
+      @empty
+        <tr><td colspan="7" class="muted">Belum ada penjualan pada periode ini.</td></tr>
+      @endforelse
     </tbody>
     <tfoot>
       <tr>
-        <th>Total</th>
-        <th class="right">{{ number_format($trxTunai + $trxNon) }}</th>
-        <th class="right money">{{ $fmt($sumTunai + $sumNon) }}</th>
+        <th colspan="4">TOTAL PERIODE</th>
+        <th class="right">{{ number_format($sumTrx) }}</th>
+        <th class="right">{{ number_format($sumQty) }}</th>
+        <th class="right money">{{ $fmt($sumOmz) }}</th>
       </tr>
     </tfoot>
   </table>

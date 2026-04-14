@@ -19,7 +19,7 @@
     'labarugi' => 'Laba Rugi',
     'items'    => 'Rekap Per Produk',
     'payments' => 'Rekap Metode Pembayaran',
-    'unified'  => 'Tunai vs Non-Tunai',
+    'unified'  => 'Laporan Penjualan',
     'journal'  => 'Jurnal Umum',
     'ledger'   => 'Buku Besar',
   ];
@@ -75,7 +75,7 @@
           <label><input class="sec-check" type="checkbox" name="sec[]" value="labarugi" {{ in_array('labarugi',$secSel)?'checked':'' }}> Laba Rugi</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="items"    {{ in_array('items',$secSel)?'checked':'' }}> Rekap Per Produk</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="payments" {{ in_array('payments',$secSel)?'checked':'' }}> Rekap Per Metode Pembayaran</label>
-          <label><input class="sec-check" type="checkbox" name="sec[]" value="unified"  {{ in_array('unified',$secSel)?'checked':'' }}> Tunai vs Non-Tunai</label>
+          <label><input class="sec-check" type="checkbox" name="sec[]" value="unified"  {{ in_array('unified',$secSel)?'checked':'' }}> Laporan Penjualan</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="journal"  {{ in_array('journal',$secSel)?'checked':'' }}> Jurnal Umum</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="ledger"   {{ in_array('ledger',$secSel)?'checked':'' }}> Buku Besar</label>
           <hr>
@@ -157,7 +157,7 @@
     @endif
 
     @if(in_array('unified',$secSel))
-      @include('reports.partials.kasir_unified',['payUnified'=>$payUnified])
+      @include('reports.partials.owner_sales',['sales'=>$sales])
     @endif
 
     @if(in_array('journal',$secSel))
