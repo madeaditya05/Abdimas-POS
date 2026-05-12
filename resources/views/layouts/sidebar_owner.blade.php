@@ -187,7 +187,7 @@
       <path d="M5 9h2M17 9h2M5 15h2M17 15h2"/>
     </svg>
   </span>
-  <span class="nav-label">Laporan</span>
+  <span class="nav-label">Keuangan</span>
 </a>
 
 
