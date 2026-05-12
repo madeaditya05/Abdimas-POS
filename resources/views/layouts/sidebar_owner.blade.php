@@ -144,6 +144,10 @@
            class="subnav-item {{ request()->routeIs('pembelian-bahan.*') ? 'is-active' : '' }}">
           Pembelian Bahan
         </a>
+        <a href="{{ route('beban-operasional.index') }}"
+           class="subnav-item {{ request()->routeIs('beban-operasional.*') ? 'is-active' : '' }}">
+          Input Beban
+        </a>
       </div>
     </div>
 
