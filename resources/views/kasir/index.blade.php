@@ -344,6 +344,8 @@ $(function(){
   // Selektor Tombol Cetak & Selesaikan
   const btnCetakWrap = $('#btnCetakWrap'); 
   const linkCetakStruk = $('#linkCetakStruk');
+  const strukPrintBaseUrl = "{{ url('/kasir/struk') }}";
+  const receiptPrinterName = @json(config('receipt_printer.printer_name', 'POS-Printer'));
 
   // Kode aktif dari server/localStorage
   const serverActiveCode = {!! json_encode($activeCode ?? null) !!};
@@ -536,11 +538,15 @@ $(function(){
             ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=1"
             : "{{ url('/kasir/struk') }}/" + encodeURIComponent(kode) + "?print=1";
         
-        linkCetakStruk.attr('href', url).text(metode === 'tempo' ? 'Cetak Invoice' : 'Cetak Struk');
+        linkCetakStruk
+          .attr('href', url)
+          .attr('data-kode', kode)
+          .attr('data-metode', metode)
+          .text(metode === 'tempo' ? 'Cetak Invoice' : 'Cetak Struk');
         btnCetakWrap.css({display:'flex'});
-
-        // Buka halaman print di TAB YANG SAMA (bukan tab baru)
-        window.location.href = url;
+        statusInfo.text(metode === 'tempo'
+          ? 'Invoice siap dicetak.'
+          : 'Struk siap dicetak ke printer ' + receiptPrinterName + '.');
       } else {
         // Jika gagal, sembunyikan wrap dan hapus cache
         setTimeout(() => {
@@ -575,6 +581,53 @@ $(function(){
     clearTimeout(pollTimer); 
     cek();
   }
+
+  $(document).on('click', '#linkCetakStruk', function(e) {
+    const metode = String($(this).attr('data-metode') || '').toLowerCase();
+
+    if (metode === 'tempo') {
+      return true;
+    }
+
+    e.preventDefault();
+
+    const kode = $(this).attr('data-kode') || localStorage.getItem('last_sales_code') || salesCode;
+    if (!kode) {
+      statusInfo.text('Kode transaksi tidak ditemukan.');
+      return;
+    }
+
+    const btnCetak = $(this);
+    const btnSelesai = $('#btnSelesaiTransaksi');
+    btnCetak.addClass('disabled').css('pointer-events', 'none').text('Mencetak...');
+    btnSelesai.prop('disabled', true);
+    statusInfo.text('Mengirim struk ke printer ' + receiptPrinterName + '...');
+
+    $.ajax({
+      url: strukPrintBaseUrl + '/' + encodeURIComponent(kode) + '/print',
+      type: 'POST',
+      data: { dicetak: 1 }
+    }).done(function(d) {
+      localStorage.removeItem('last_sales_code');
+      statusBadge.text('Struk tercetak').css({background:'#dcfce7', color:'#14532d'});
+      statusInfo.text((d && d.message) ? d.message : 'Struk berhasil dicetak.');
+
+      $.post('{{ route('kasir.cart.kosongkan') }}',{}, function(data){
+        renderKeranjang(data);
+        inputNama.val('');
+        location.reload();
+      }).fail(function(){
+        location.reload();
+      });
+    }).fail(function(xhr) {
+      const res = xhr.responseJSON || {};
+      const detail = res.detail ? ' Detail: ' + res.detail : '';
+      statusBadge.text('Gagal cetak').css({background:'#fee2e2', color:'#7f1d1d'});
+      statusInfo.text((res.message || 'Gagal mencetak struk.') + detail);
+      btnCetak.removeClass('disabled').css('pointer-events', '').text('Cetak Struk');
+      btnSelesai.prop('disabled', false);
+    });
+  });
 
   // === MODIFIKASI DISINI: Tombol Selesaikan ===
   $(document).on('click', '#btnSelesaiTransaksi', function() {

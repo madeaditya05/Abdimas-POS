@@ -155,6 +155,23 @@
           </div>
         </a>
 
+        {{-- Piutang Invoice --}}
+        <a class="om-tile" href="{{ route('invoices.index') }}">
+          <div class="om-tile__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M6 2h9l3 3v17H6z"/>
+              <path d="M15 2v5h5"/>
+              <path d="M9 11h6"/>
+              <path d="M9 15h6"/>
+              <path d="M9 19h4"/>
+            </svg>
+          </div>
+          <div class="om-tile__body">
+            <div class="om-tile__title">Piutang Invoice</div>
+            <div class="om-tile__desc">Pantau invoice tempo yang menunggu pembayaran atau sudah overdue.</div>
+          </div>
+        </a>
+
         {{-- Beban Operasional --}}
         <a class="om-tile" href="{{ route('beban-operasional.index') }}">
           <div class="om-tile__icon">

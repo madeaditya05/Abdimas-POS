@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KasirController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\CustomerPembayaranController;
 use App\Http\Controllers\CashReconciliationController;
 use App\Http\Controllers\PanelController;
@@ -60,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/kasir', [KasirController::class, 'prosesForm'])->name('kasir.store');
     Route::get('/kasir/invoice/{kode}', [KasirController::class, 'invoice'])->name('kasir.invoice');
     Route::get('/kasir/struk/{kode}', [KasirController::class, 'cetakStruk'])->name('kasir.struk');
+    Route::post('/kasir/struk/{kode}/print', [KasirController::class, 'printStruk'])->name('kasir.struk.print');
     Route::post('/kasir/selesai-cetak/{kode}', [KasirController::class, 'selesaiCetak'])->name('kasir.selesaiCetak');
 
     Route::get('/kasir/cart',            [KasirController::class, 'dataKeranjang'])->name('kasir.cart.data');
@@ -77,6 +79,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/owner', [OwnerReportController::class, 'menu'])->name('owner.reports.menu');
     Route::get('/reports/owner/laba-rugi',     [OwnerReportController::class, 'index'])->name('owner.labarugi');
     Route::get('/reports/owner/laba-rugi/pdf', [OwnerReportController::class, 'pdf'])->name('owner.labarugi.pdf');
+
+    // Invoice / Piutang Tempo
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::patch('/invoices/{invoice}/lunas', [InvoiceController::class, 'updateStatusLunas'])
+        ->name('invoices.updateStatusLunas');
 
     // Tutup Buku (Owner)
     Route::get('/reports/owner/closing', [OwnerClosingController::class, 'index'])->name('owner.tutupbuku');
@@ -146,4 +153,3 @@ Route::middleware('auth')->group(function () {
 // ===== Public customer screen =====
 Route::get('/pembayaran', [CustomerPembayaranController::class, 'layar'])->name('customer.pembayaran.live');
 Route::get('/public/display/{code}', [CustomerPembayaranController::class, 'dataDisplay']);
-

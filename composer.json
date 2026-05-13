@@ -13,7 +13,8 @@
         "filament/forms": "^4.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "midtrans/midtrans-php": "^2.6"
+        "midtrans/midtrans-php": "^2.6",
+        "mike42/escpos-php": "^4.0"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.6",

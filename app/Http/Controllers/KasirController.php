@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Display;
+use App\Models\Invoice;
 use App\Models\KategoriProduk;
 use App\Models\Produk;
 use App\Models\Penjualan;
@@ -13,6 +14,7 @@ use App\Models\Customer;
 use App\Models\StokMutasi;
 use App\Services\Payments\PaymentGateway;
 use App\Services\JournalPoster;
+use App\Services\ReceiptPrinter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -387,6 +389,18 @@ class KasirController extends Controller
                         'company'    => $invoiceToCompany,
                     ],
                 ]);
+
+                Invoice::updateOrCreate(
+                    ['penjualan_id' => $penjualan->id],
+                    [
+                        'nomor_invoice'        => $kode,
+                        'nama_toko'            => $invoiceToCompany ?: $invoiceToName,
+                        'tanggal_invoice'      => Carbon::parse($penjualan->tanggal)->toDateString(),
+                        'tanggal_jatuh_tempo'  => $data['tempo_due_date'],
+                        'total_tagihan'        => $subtotal,
+                        'status'               => Invoice::STATUS_UNPAID,
+                    ]
+                );
 
                 // stok tetap dipotong saat transaksi dibuat (idempotent)
                 $this->applyBomStokOut($penjualan);
@@ -778,19 +792,59 @@ class KasirController extends Controller
     }
 
     public function cetakStruk(string $kode)
-{
-    $status = $this->hitungStatus($kode);
-    if ($status !== 'paid') abort(403, 'Pembayaran belum lunas.');
+    {
+        $status = $this->hitungStatus($kode);
+        if ($status !== 'paid') abort(403, 'Pembayaran belum lunas.');
 
-    $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
-        ->where('kode_penjualan', $kode)
-        ->firstOrFail();
+        $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
+            ->where('kode_penjualan', $kode)
+            ->firstOrFail();
 
-    $payment = Payment::where('penjualan_id', $penjualan->id)->latest()->first();
+        $payment = Payment::where('penjualan_id', $penjualan->id)->latest()->first();
 
-    // Diarahkan ke file struk.blade.php
-    return view('kasir.struk', compact('penjualan', 'payment'));
-}
+        // Diarahkan ke file struk.blade.php
+        return view('kasir.struk', compact('penjualan', 'payment'));
+    }
+
+    public function printStruk(string $kode, ReceiptPrinter $receiptPrinter)
+    {
+        $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
+            ->where('kode_penjualan', $kode)
+            ->firstOrFail();
+
+        $status = $this->hitungStatus($kode);
+        if ($status !== 'paid') {
+            return response()->json(['message' => 'Pembayaran belum lunas.'], 422);
+        }
+
+        $payment = Payment::where('penjualan_id', $penjualan->id)->latest()->first();
+
+        try {
+            $receiptPrinter->print($penjualan, $payment);
+        } catch (\Throwable $e) {
+            Log::error('Gagal mencetak struk ke printer thermal', [
+                'kode' => $kode,
+                'printer' => config('receipt_printer.destination', 'POS-Printer'),
+                'msg' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Gagal mencetak struk ke printer ' . config('receipt_printer.printer_name', 'POS-Printer') . '.',
+                'detail' => $e->getMessage(),
+            ], 500);
+        }
+
+        $penjualan->forceFill([
+            'struk_dicetak' => true,
+            'struk_dicetak_at' => now(),
+        ])->save();
+
+        $this->cleanupSesiDanDisplay($kode);
+
+        return response()->json([
+            'message' => 'Struk berhasil dicetak ke printer ' . config('receipt_printer.printer_name', 'POS-Printer') . '.',
+        ]);
+    }
 
     public function selesaiCetak(string $kode)
     {
@@ -801,10 +855,10 @@ class KasirController extends Controller
             return response()->json(['message' => 'Pembayaran belum lunas.'], 422);
         }
 
-        $penjualan->update([
+        $penjualan->forceFill([
             'struk_dicetak'    => true,
             'struk_dicetak_at' => now(),
-        ]);
+        ])->save();
 
         $this->cleanupSesiDanDisplay($kode);
 

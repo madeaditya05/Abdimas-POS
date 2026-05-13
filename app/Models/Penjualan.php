@@ -6,6 +6,7 @@ use App\Services\JournalPoster;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 
 class Penjualan extends Model
@@ -24,6 +25,8 @@ class Penjualan extends Model
         'invoice_to_name',
         'invoice_to_company',
         'tempo_due_date',
+        'struk_dicetak',
+        'struk_dicetak_at',
     ];
 
     protected $casts = [
@@ -32,6 +35,8 @@ class Penjualan extends Model
         'bayar'     => 'decimal:2',
         'kembalian' => 'decimal:2',
         'tempo_due_date' => 'date',
+        'struk_dicetak' => 'boolean',
+        'struk_dicetak_at' => 'datetime',
     ];
 
     /* =======================
@@ -50,6 +55,11 @@ class Penjualan extends Model
     public function details(): HasMany
     {
         return $this->hasMany(PenjualanDetail::class, 'penjualan_id');
+    }
+
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class, 'penjualan_id');
     }
 
     /* =======================

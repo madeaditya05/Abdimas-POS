@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ChartOfAccount;
+use App\Models\Invoice;
 use App\Models\JournalEntry;
 use App\Models\Penjualan;
 use App\Models\PembelianBahan;
@@ -65,6 +66,49 @@ class JournalPoster
             date:       $sale->tanggal?->toDateString() ?? now()->toDateString(),
             ref:        $sale->kode_penjualan,
             memo:       'Auto-post dari Penjualan',
+            lines:      $lines,
+        );
+    }
+
+    /** Post jurnal saat piutang invoice tempo dilunasi */
+    public function postForInvoicePayment(Invoice $invoice, string $paymentType = 'cash'): void
+    {
+        if ($invoice->status !== Invoice::STATUS_PAID) {
+            $this->deleteFor(Invoice::class, $invoice->id);
+            return;
+        }
+
+        $amount = (float) ($invoice->total_tagihan ?? 0);
+        if ($amount <= 0) {
+            $this->deleteFor(Invoice::class, $invoice->id);
+            return;
+        }
+
+        $debitAccountCode = in_array(strtolower($paymentType), ['bank', 'transfer', 'qris', 'debit', 'kartu'], true)
+            ? config('account_map.bank')
+            : config('account_map.kas');
+
+        $lines = [
+            [
+                'account_code' => $debitAccountCode,
+                'debit'        => $amount,
+                'credit'       => 0,
+                'memo'         => 'Pelunasan invoice ' . $invoice->nomor_invoice,
+            ],
+            [
+                'account_code' => config('account_map.piutang_usaha'),
+                'debit'        => 0,
+                'credit'       => $amount,
+                'memo'         => 'Pelunasan invoice ' . $invoice->nomor_invoice,
+            ],
+        ];
+
+        $this->upsertEntry(
+            sourceType: Invoice::class,
+            sourceId:   $invoice->id,
+            date:       now()->toDateString(),
+            ref:        $invoice->nomor_invoice,
+            memo:       'Pelunasan piutang invoice',
             lines:      $lines,
         );
     }

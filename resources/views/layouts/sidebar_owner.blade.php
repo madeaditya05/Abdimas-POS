@@ -40,7 +40,7 @@
     $isJurnalMaster = request()->routeIs('laporan.jurnal.*'); // halaman jurnal read-only (laporan/jurnal)
 
     // Group laporan dibuka kalau lagi di salah satu halaman laporan
-    $isCashActive = $isOwnerReport || $isKasirReport || $isJurnalMaster;
+    $isCashActive = $isOwnerReport || $isKasirReport || $isJurnalMaster || request()->routeIs('invoices.*');
 
     // highlight submenu laporan owner:
     $isSecAll      = $isOwnerReport && empty($secParam);
@@ -61,7 +61,8 @@
     request()->routeIs('owner.reports.menu')
     || request()->routeIs('owner.labarugi*')
     || request()->routeIs('kasir.rekap*')
-    || request()->routeIs('laporan.jurnal.*');
+    || request()->routeIs('laporan.jurnal.*')
+    || request()->routeIs('invoices.*');
 
   @endphp
 

@@ -11,20 +11,19 @@
   $brand = config('invoice.brand_name') ?: config('app.name');
   $date = $penjualan->tanggal ? $penjualan->tanggal->format('d/m/Y H:i') : now()->format('d/m/Y H:i');
   $kasir = $penjualan->user?->name ?? '-';
-  $metode = strtoupper((string) ($penjualan->metode ?? '-'));
+  $pelanggan = $penjualan->customer?->name ?: ($penjualan->invoice_to_name ?: '-');
+  $metode = strtoupper((string) ($payment?->pg_payment_type ?? $penjualan->metode ?? '-'));
 
   $subtotal = (float) ($penjualan->total ?? 0);
   $bayar = (float) ($penjualan->bayar ?? 0);
   $kembalian = (float) ($penjualan->kembalian ?? 0);
 
-  // Kita paksa printMode false jika hanya ingin melihat preview, 
-  // atau biarkan true jika ingin otomatis muncul dialog print saat load
   $printMode = request()->boolean('print', true);
+  $printerName = config('receipt_printer.printer_name', 'POS-Printer');
 @endphp
 
 @push('styles')
   <style>
-    /* Receipt look */
     body { background: #e5e7eb; margin: 0; padding: 20px 0; display: flex; justify-content: center; }
     .page { width: 80mm; min-height: auto; padding: 8mm 6mm; background: #fff; box-shadow: 0 12px 28px rgba(0,0,0,.12); border-radius: 4px; }
     .h { text-align:center; font-weight: 900; letter-spacing:.8px; font-size: 16px; }
@@ -38,6 +37,7 @@
     .t-right { text-align:right; }
     .tot { font-weight: 900; font-size: 14px; }
     .muted { color:#6b7280; }
+    .print-status { align-self:center; color:#334155; font-size:12px; }
 
     @media print {
       @page { size: 80mm auto; margin: 0; }
@@ -50,20 +50,20 @@
 
 @section('content')
 <div class="page">
-  {{-- Navigasi Tombol --}}
-  <div class="no-print" style="display:flex; gap:8px; justify-content:center; margin-bottom:20px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;">
-    <a href="{{ route('kasir.index') }}" class="btn" style="text-decoration:none; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; color:#111827; font-size: 13px; font-weight: 600;">
-      ⬅️ Kembali
+  <div class="no-print" style="display:flex; gap:8px; justify-content:center; margin-bottom:20px; background:#fff; padding:10px; border-radius:8px; border:1px solid #d1d5db; flex-wrap:wrap;">
+    <a href="{{ route('kasir.index') }}" class="btn" style="text-decoration:none; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; color:#111827; font-size:13px; font-weight:600;">
+      Kembali
     </a>
-    
-    {{-- Mengubah link menjadi tombol print agar tidak reload/buka tab baru --}}
-    <button type="button" onclick="window.print()" class="btn" style="cursor:pointer; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#111827; font-size: 13px; font-weight: 600;">
-      🖨️ Cetak
+
+    <button type="button" id="btnCetakPrinter" class="btn" style="cursor:pointer; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#111827; font-size:13px; font-weight:600;">
+      Cetak ke {{ $printerName }}
     </button>
 
-    <button type="button" id="btnSelesai" class="btn btn-primary" style="cursor:pointer; padding:8px 12px; border-radius:8px; background:#0f766e; color:#fff; border:none; font-size: 13px; font-weight: 600;">
-      Selesaikan ✅
+    <button type="button" id="btnSelesai" class="btn btn-primary" style="cursor:pointer; padding:8px 12px; border-radius:8px; background:#0f766e; color:#fff; border:none; font-size:13px; font-weight:600;">
+      Selesaikan
     </button>
+
+    <span id="printStatus" class="print-status"></span>
   </div>
 
   <div class="h">{{ strtoupper($brand) }}</div>
@@ -74,6 +74,7 @@
   <div class="row"><div class="muted">No</div><div>{{ $penjualan->kode_penjualan }}</div></div>
   <div class="row"><div class="muted">Tgl</div><div>{{ $date }}</div></div>
   <div class="row"><div class="muted">Kasir</div><div>{{ $kasir }}</div></div>
+  <div class="row"><div class="muted">Pelanggan</div><div>{{ $pelanggan }}</div></div>
   <div class="row"><div class="muted">Metode</div><div>{{ $metode }}</div></div>
 
   <div class="hr"></div>
@@ -110,45 +111,90 @@
 @push('scripts')
   <script>
     (function(){
-      const btn = document.getElementById('btnSelesai');
-      if (btn) {
-        btn.addEventListener('click', function(){
-          btn.disabled = true;
-          btn.innerText = 'Memproses...';
+      const btnSelesai = document.getElementById('btnSelesai');
+      const btnCetak = document.getElementById('btnCetakPrinter');
+      const printStatus = document.getElementById('printStatus');
+      const indexUrl = "{{ route('kasir.index') }}";
+      const selesaiUrl = "{{ route('kasir.selesaiCetak', ['kode' => $penjualan->kode_penjualan]) }}";
+      const printUrl = "{{ route('kasir.struk.print', ['kode' => $penjualan->kode_penjualan]) }}";
+      const printerName = @json($printerName);
 
-          // Gunakan route yang benar sesuai diskusi sebelumnya (kasir.selesaiCetak atau kasir.struk.selesai)
-          // Jika route kasir.struk.selesai error, ganti ke kasir.selesaiCetak
-          fetch("{{ route('kasir.selesaiCetak', ['kode' => $penjualan->kode_penjualan]) }}", {
+      function csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      }
+
+      function setStatus(text) {
+        if (printStatus) printStatus.textContent = text;
+      }
+
+      function directPrint(redirectAfterPrint) {
+        if (btnCetak) {
+          btnCetak.disabled = true;
+          btnCetak.innerText = 'Mencetak...';
+        }
+        setStatus('Mengirim ke printer ' + printerName + '...');
+
+        return fetch(printUrl, {
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': csrfToken(),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ dicetak: 1 })
+        }).then(async function(response) {
+          const data = await response.json().catch(function(){ return {}; });
+          if (!response.ok) {
+            throw new Error(data.detail || data.message || 'Gagal mencetak struk.');
+          }
+
+          localStorage.removeItem('last_sales_code');
+          setStatus(data.message || 'Struk berhasil dicetak.');
+
+          if (redirectAfterPrint) {
+            window.location.href = indexUrl;
+          }
+        }).catch(function(error) {
+          setStatus(error.message || 'Gagal mencetak struk.');
+          if (btnCetak) {
+            btnCetak.disabled = false;
+            btnCetak.innerText = 'Cetak ke ' + printerName;
+          }
+        });
+      }
+
+      if (btnCetak) {
+        btnCetak.addEventListener('click', function(){
+          directPrint(false);
+        });
+      }
+
+      if (btnSelesai) {
+        btnSelesai.addEventListener('click', function(){
+          btnSelesai.disabled = true;
+          btnSelesai.innerText = 'Memproses...';
+
+          fetch(selesaiUrl, {
             method: 'POST',
             headers: {
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+              'X-CSRF-TOKEN': csrfToken(),
               'Accept': 'application/json',
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({ dicetak: 1 })
           }).finally(function(){
-            // Menghapus sales code dari localStorage agar dashboard tidak polling lagi
             localStorage.removeItem('last_sales_code');
-            window.location.href = "{{ route('kasir.index') }}";
+            window.location.href = indexUrl;
           });
         });
       }
+
+      @if($printMode)
+        window.addEventListener('load', function () {
+          directPrint(true);
+        });
+      @endif
     })();
   </script>
 @endpush
-
-@if($printMode)
-  <script>
-    window.addEventListener('load', function () {
-      window.print();
-    });
-
-    // Setelah dialog print ditutup, otomatis "Selesaikan" agar keranjang reset,
-    // lalu kembali ke kasir (tetap di tab yang sama).
-    window.addEventListener('afterprint', function () {
-      const btn = document.getElementById('btnSelesai');
-      if (btn && !btn.disabled) btn.click();
-    });
-  </script>
-@endif
 @endsection
