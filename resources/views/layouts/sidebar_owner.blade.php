@@ -2,10 +2,10 @@
   <div class="sidebar-header">
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon" id="menuToggle" role="button" tabindex="0" aria-label="Toggle sidebar">
-        <img src="{{ asset('images/logo.png') }}" alt="Cofit EV" class="sidebar-logo-img">
+        <img src="{{ asset('images/foto logo pasta nafisa.png') }}" alt="Pasta Nafisa" class="sidebar-logo-img">
       </div>
       <div class="sidebar-logo-text">
-        <h1>Cofit EV</h1>
+        <h1>Pasta Nafisa</h1>
         <p>Owner Dashboard</p>
       </div>
     </div>

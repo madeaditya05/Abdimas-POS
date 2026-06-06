@@ -52,6 +52,21 @@ class CustomerPembayaranController extends Controller
             return ['name'=>$nama, 'qty'=>(int)$d->qty, 'line_total'=>(int)$d->subtotal];
         });
 
+        $discountAmount = (int) ($pj->diskon_nominal ?? 0);
+        $discountPercent = (float) ($pj->diskon_persen ?? 0);
+        if ($discountAmount > 0) {
+            $label = 'Diskon customer';
+            if ($discountPercent > 0) {
+                $label .= ' ' . rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') . '%';
+            }
+
+            $items->push([
+                'name' => $label,
+                'qty' => 1,
+                'line_total' => -1 * $discountAmount,
+            ]);
+        }
+
         // Tentukan status
         $status = 'pending';
         if ((int)$pj->bayar >= (int)$pj->total && (int)$pj->total > 0) {

@@ -1,14 +1,12 @@
+@extends('layouts.main')
+@section('title','Customer')
+
 @push('styles')
   <link rel="stylesheet" href="{{ asset('assets/bahanbaku.css') }}">
 @endpush
 
-@extends('layouts.main')
-@section('title','Customer')
-
 @section('content')
 <div class="card" id="customer-table">
-
-  {{-- HEADER --}}
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
     <h2 style="margin:0;">Customer</h2>
 
@@ -19,23 +17,20 @@
     </a>
   </div>
 
-  {{-- FLASH MESSAGE --}}
   @if (session('success'))
     <div class="alert alert--success" style="margin:12px 0;">
       {{ session('success') }}
     </div>
   @endif
 
-  {{-- SEARCH BAR --}}
   <form method="GET"
         action="{{ route('customer.index') }}"
         class="filter-bar"
         style="margin:12px 0;gap:10px;display:flex;align-items:center;flex-wrap:wrap;">
-
     <input type="text"
            name="q"
            value="{{ $search }}"
-           placeholder="Cari nama customer…"
+           placeholder="Cari nama customer..."
            style="min-width:240px;">
 
     <button class="btn btn--outline-coffee">Cari</button>
@@ -47,13 +42,14 @@
     @endif
   </form>
 
-  {{-- TABEL --}}
   <div class="table-wrap">
     <table class="table">
       <thead>
         <tr>
           <th style="width:60px;">#</th>
           <th>Nama</th>
+          <th style="width:130px;">Pembelian</th>
+          <th style="width:190px;">Aturan Diskon</th>
           <th>Created</th>
           <th style="width:130px;">Aksi</th>
         </tr>
@@ -61,14 +57,32 @@
 
       <tbody>
         @forelse ($items as $idx => $row)
+          @php
+            $jumlahBeli = (int) ($row->completed_penjualans_count ?? 0);
+            $minBeli = (int) ($row->discount_min_transactions ?? 10);
+            $diskonPersen = (float) ($row->discount_percent ?? 0);
+            $diskonAktif = $diskonPersen > 0 && $jumlahBeli >= $minBeli;
+          @endphp
+
           <tr>
             <td>{{ $items->firstItem() + $idx }}</td>
-            <td>{{ $row->name ?? '—' }}</td>
-            <td>{{ optional($row->created_at)->diffForHumans() ?? '—' }}</td>
+            <td>{{ $row->name ?? '-' }}</td>
+            <td>{{ number_format($jumlahBeli, 0, ',', '.') }} kali</td>
+            <td>
+              <div style="font-weight:600;">
+                {{ number_format($diskonPersen, 2, ',', '.') }}%
+              </div>
+              <div class="muted" style="font-size:12px;">
+                Minimal {{ number_format($minBeli, 0, ',', '.') }} kali beli
+              </div>
+              <div style="font-size:12px; color:{{ $diskonAktif ? '#166534' : '#64748b' }};">
+                {{ $diskonAktif ? 'Sedang memenuhi syarat' : 'Belum memenuhi syarat' }}
+              </div>
+            </td>
+            <td>{{ optional($row->created_at)->diffForHumans() ?? '-' }}</td>
 
             <td>
               <div class="actions">
-                {{-- EDIT --}}
                 <a href="{{ route('customer.edit', $row) }}"
                    class="btn btn--outline-warning btn--sm btn--icon"
                    title="Edit">
@@ -76,7 +90,6 @@
                   <span class="sr-only">Edit</span>
                 </a>
 
-                {{-- HAPUS --}}
                 <form action="{{ route('customer.destroy', $row) }}"
                       method="POST"
                       onsubmit="return confirm('Hapus customer ini?')">
@@ -95,7 +108,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="4" class="muted" style="text-align:center;">
+            <td colspan="6" class="muted" style="text-align:center;">
               Belum ada customer.
             </td>
           </tr>
@@ -104,10 +117,8 @@
     </table>
   </div>
 
-  {{-- PAGINATION --}}
   <div style="margin-top:12px;">
     {{ $items->links('pagination::cofit') }}
   </div>
-
 </div>
 @endsection

@@ -64,14 +64,27 @@ class ReceiptPrinter
             $this->pair($printer, $qty . ' x ' . $this->money($price), $this->money($price * $qty));
         }
 
-        $subtotal = (int) ($penjualan->total ?? 0);
+        $subtotal = (int) ($penjualan->subtotal_sebelum_diskon ?? 0);
+        if ($subtotal <= 0) {
+            $subtotal = (int) ($penjualan->details->sum('subtotal') ?: ($penjualan->total ?? 0));
+        }
+        $discount = (int) ($penjualan->diskon_nominal ?? 0);
+        $discountPercent = (float) ($penjualan->diskon_persen ?? 0);
+        $total = (int) ($penjualan->total ?? max(0, $subtotal - $discount));
         $bayar = (int) ($penjualan->bayar ?? 0);
         $kembalian = (int) ($penjualan->kembalian ?? 0);
 
         $this->divider($printer);
         $this->pair($printer, 'Subtotal', $this->money($subtotal));
+        if ($discount > 0) {
+            $label = 'Diskon';
+            if ($discountPercent > 0) {
+                $label .= ' ' . rtrim(rtrim(number_format($discountPercent, 2, '.', ''), '0'), '.') . '%';
+            }
+            $this->pair($printer, $label, '-' . $this->money($discount));
+        }
         $printer->setEmphasis(true);
-        $this->pair($printer, 'Total', $this->money($subtotal));
+        $this->pair($printer, 'Total', $this->money($total));
         $printer->setEmphasis(false);
         $this->pair($printer, 'Bayar', $this->money($bayar));
         $this->pair($printer, 'Kembalian', $this->money($kembalian));
@@ -80,7 +93,7 @@ class ReceiptPrinter
         $printer->setJustification(Printer::JUSTIFY_CENTER);
         $this->line($printer, 'Terima kasih');
         $this->line($printer, 'atas kunjungan Anda');
-        $printer->feed(3);
+        $printer->feed(1);
 
         if (config('receipt_printer.cash_drawer', false)) {
             $printer->pulse();

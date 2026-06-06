@@ -19,6 +19,9 @@ class Penjualan extends Model
         'user_id',
         'customer_id',
         'total',
+        'subtotal_sebelum_diskon',
+        'diskon_persen',
+        'diskon_nominal',
         'bayar',
         'kembalian',
         'metode',
@@ -32,6 +35,9 @@ class Penjualan extends Model
     protected $casts = [
         'tanggal'   => 'datetime',
         'total'     => 'decimal:2',
+        'subtotal_sebelum_diskon' => 'decimal:2',
+        'diskon_persen' => 'decimal:2',
+        'diskon_nominal' => 'decimal:2',
         'bayar'     => 'decimal:2',
         'kembalian' => 'decimal:2',
         'tempo_due_date' => 'date',
@@ -57,9 +63,27 @@ class Penjualan extends Model
         return $this->hasMany(PenjualanDetail::class, 'penjualan_id');
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'penjualan_id');
+    }
+
     public function invoice(): HasOne
     {
         return $this->hasOne(Invoice::class, 'penjualan_id');
+    }
+
+    public function scopeCompletedPurchase($query)
+    {
+        return $query
+            ->where('total', '>', 0)
+            ->where(function ($q) {
+                $q->whereColumn('bayar', '>=', 'total')
+                    ->orWhere('metode', 'tempo')
+                    ->orWhereHas('payments', function ($paymentQuery) {
+                        $paymentQuery->whereIn('transaction_status', ['settlement', 'capture']);
+                    });
+            });
     }
 
     /* =======================
@@ -93,10 +117,17 @@ class Penjualan extends Model
      =======================*/
     public function recalcTotal(): void
     {
-        // Sesuaikan kolom subtotal sesuai tabelmu (di kamu sudah ada 'subtotal')
-        $total = (float) ($this->details()->sum('subtotal') ?? 0);
+        $subtotal = (float) ($this->details()->sum('subtotal') ?? 0);
+        $discountPercent = max(0, min(99.99, (float) ($this->diskon_persen ?? 0)));
+        $discountAmount = $discountPercent > 0
+            ? floor($subtotal * $discountPercent / 100)
+            : 0;
+        $discountAmount = min($subtotal, max(0, (float) $discountAmount));
+        $total = max(0, $subtotal - $discountAmount);
 
-        $this->total     = $total;
+        $this->subtotal_sebelum_diskon = $subtotal;
+        $this->diskon_nominal = $discountAmount;
+        $this->total = $total;
         $this->kembalian = max(0, (float) ($this->bayar ?? 0) - $total);
 
         // quietly → tidak memicu event "saved" lagi (hindari loop)
@@ -114,6 +145,9 @@ class Penjualan extends Model
             $m->kode_penjualan ??= static::nextKode();
             $m->metode         ??= 'cash';
             $m->total          ??= 0;
+            $m->subtotal_sebelum_diskon ??= 0;
+            $m->diskon_persen  ??= 0;
+            $m->diskon_nominal ??= 0;
             $m->bayar          ??= 0;
             $m->kembalian      ??= 0;
         });

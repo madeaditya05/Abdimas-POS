@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Produk;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\StokMutasi;
@@ -117,6 +118,15 @@ class DashboardController extends Controller
     // Endpoint JSON untuk tombol lonceng
     public function notifications()
     {
+        return response()->json(Cache::remember(
+            'dashboard.stock_notifications',
+            now()->addSeconds(30),
+            fn () => $this->stockNotificationsPayload()
+        ));
+    }
+
+    private function stockNotificationsPayload(): array
+    {
         // batas stok rendah global (boleh kamu ubah: 5, 10, dll)
         $minThreshold = 10;
 
@@ -183,9 +193,9 @@ class DashboardController extends Controller
         }
 
         // 4) Balikin JSON ke front-end
-        return response()->json([
+        return [
             'count' => $items->count(),
             'items' => $items->take(50)->values(), // batasi max 50 item
-        ]);
+        ];
     }
 }

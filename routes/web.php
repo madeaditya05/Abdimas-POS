@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/kasir/struk/{kode}', [KasirController::class, 'cetakStruk'])->name('kasir.struk');
     Route::post('/kasir/struk/{kode}/print', [KasirController::class, 'printStruk'])->name('kasir.struk.print');
     Route::post('/kasir/selesai-cetak/{kode}', [KasirController::class, 'selesaiCetak'])->name('kasir.selesaiCetak');
+    Route::get('/kasir/customer/discount', [KasirController::class, 'customerDiscountInfo'])->name('kasir.customer.discount');
 
     Route::get('/kasir/cart',            [KasirController::class, 'dataKeranjang'])->name('kasir.cart.data');
     Route::post('/kasir/cart/tambah',    [KasirController::class, 'tambahKeKeranjang'])->name('kasir.cart.tambah');

@@ -3,9 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\BahanBaku;
+use App\Models\KategoriProduk;
 use App\Models\Produk;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class UmkmFoodCatalogSeeder extends Seeder
 {
@@ -13,6 +16,7 @@ class UmkmFoodCatalogSeeder extends Seeder
     {
         DB::transaction(function () {
             $this->seedBahanBaku();
+            $this->seedKategoriProduk();
             $this->seedProduk();
         });
     }
@@ -356,30 +360,39 @@ class UmkmFoodCatalogSeeder extends Seeder
         }
     }
 
-    private function seedProduk(): void
+    private function seedKategoriProduk(): void
     {
         $items = [
-            ['nama_barang' => 'Spageti Bolognese', 'harga' => 22000, 'kategori' => 'non_coffee', 'deskripsi' => 'Pasta spageti dengan saus bolognese gurih.'],
-            ['nama_barang' => 'Ayam Goreng', 'harga' => 18000, 'kategori' => 'non_coffee', 'deskripsi' => 'Ayam goreng renyah dengan bumbu sederhana.'],
-            ['nama_barang' => 'Ayam Geprek', 'harga' => 20000, 'kategori' => 'non_coffee', 'deskripsi' => 'Ayam goreng crispy dengan sambal geprek.'],
-            ['nama_barang' => 'Nasi Ayam Goreng', 'harga' => 23000, 'kategori' => 'non_coffee', 'deskripsi' => 'Nasi hangat dengan ayam goreng dan sambal.'],
-            ['nama_barang' => 'Telur Dadar', 'harga' => 12000, 'kategori' => 'non_coffee', 'deskripsi' => 'Telur dadar rumahan untuk lauk tambahan.'],
-            ['nama_barang' => 'Nasi Telur Dadar', 'harga' => 17000, 'kategori' => 'non_coffee', 'deskripsi' => 'Paket nasi dengan telur dadar.'],
-            ['nama_barang' => 'Nasi Goreng', 'harga' => 20000, 'kategori' => 'non_coffee', 'deskripsi' => 'Nasi goreng favorit dengan bumbu UMKM.'],
-            ['nama_barang' => 'Mie Goreng', 'harga' => 18000, 'kategori' => 'non_coffee', 'deskripsi' => 'Mie goreng sederhana dengan topping telur.'],
-            ['nama_barang' => 'Kentang Goreng', 'harga' => 15000, 'kategori' => 'snack', 'deskripsi' => 'Camilan kentang goreng renyah.'],
-            ['nama_barang' => 'Sosis Goreng', 'harga' => 15000, 'kategori' => 'snack', 'deskripsi' => 'Sosis goreng cocok untuk camilan dan sharing.'],
-            ['nama_barang' => 'Nugget Goreng', 'harga' => 16000, 'kategori' => 'snack', 'deskripsi' => 'Nugget goreng dengan saus sambal.'],
-            ['nama_barang' => 'Pisang Cokelat', 'harga' => 14000, 'kategori' => 'snack', 'deskripsi' => 'Pisang dengan topping cokelat manis.'],
-            ['nama_barang' => 'Roti Bakar Cokelat Keju', 'harga' => 17000, 'kategori' => 'snack', 'deskripsi' => 'Roti bakar klasik dengan cokelat dan keju.'],
-            ['nama_barang' => 'Es Teh', 'harga' => 6000, 'kategori' => 'non_coffee', 'deskripsi' => 'Minuman teh dingin manis.'],
-            ['nama_barang' => 'Teh Hangat', 'harga' => 5000, 'kategori' => 'non_coffee', 'deskripsi' => 'Teh hangat untuk teman makan.'],
-            ['nama_barang' => 'Es Jeruk', 'harga' => 8000, 'kategori' => 'non_coffee', 'deskripsi' => 'Minuman jeruk segar dingin.'],
-            ['nama_barang' => 'Jeruk Hangat', 'harga' => 7000, 'kategori' => 'non_coffee', 'deskripsi' => 'Jeruk hangat segar dan sederhana.'],
-            ['nama_barang' => 'Air Mineral', 'harga' => 4000, 'kategori' => 'non_coffee', 'deskripsi' => 'Air mineral kemasan dingin atau suhu ruang.'],
-            ['nama_barang' => 'Es Kopi Susu', 'harga' => 15000, 'kategori' => 'coffee', 'deskripsi' => 'Es kopi susu UMKM yang ringan dan familiar.'],
-            ['nama_barang' => 'Kopi Hitam', 'harga' => 10000, 'kategori' => 'coffee', 'deskripsi' => 'Kopi hitam panas sederhana.'],
+            ['nama' => 'Pasta', 'slug' => 'pasta', 'urutan' => 1, 'deskripsi' => 'Menu pasta dan spaghetti.'],
+            ['nama' => 'Katsu', 'slug' => 'katsu', 'urutan' => 2, 'deskripsi' => 'Menu ayam katsu dan variasinya.'],
+            ['nama' => 'Nasi', 'slug' => 'nasi', 'urutan' => 3, 'deskripsi' => 'Menu nasi, nasi goreng, dan rice bowl.'],
+            ['nama' => 'Mie', 'slug' => 'mie', 'urutan' => 4, 'deskripsi' => 'Menu mie dan indomie.'],
+            ['nama' => 'Snack', 'slug' => 'snack', 'urutan' => 5, 'deskripsi' => 'Menu camilan.'],
+            ['nama' => 'Minuman', 'slug' => 'minuman', 'urutan' => 6, 'deskripsi' => 'Menu minuman non-kopi.'],
+            ['nama' => 'Coffee', 'slug' => 'coffee', 'urutan' => 7, 'deskripsi' => 'Menu minuman berbasis kopi.'],
+            ['nama' => 'Non Coffee', 'slug' => 'non_coffee', 'urutan' => 8, 'deskripsi' => 'Kategori umum non-kopi.'],
         ];
+
+        foreach ($items as $item) {
+            KategoriProduk::updateOrCreate(
+                ['slug' => $item['slug']],
+                [
+                    'nama' => $item['nama'],
+                    'urutan' => $item['urutan'],
+                    'aktif' => true,
+                    'deskripsi' => $item['deskripsi'],
+                ]
+            );
+        }
+    }
+
+    private function seedProduk(): void
+    {
+        $items = $this->produkFromStorage();
+
+        if ($items === []) {
+            return;
+        }
 
         foreach ($items as $item) {
             $produk = Produk::where('nama_barang', $item['nama_barang'])->first();
@@ -391,12 +404,140 @@ class UmkmFoodCatalogSeeder extends Seeder
             }
 
             $produk->aktif = true;
-            $produk->harga = $item['harga'];
+            $produk->harga = ((int) $produk->harga > 0) ? $produk->harga : $item['harga'];
             $produk->kategori = $item['kategori'];
             $produk->deskripsi = $item['deskripsi'];
-            $produk->gambar = null;
+            $produk->gambar = $item['gambar'];
             $produk->save();
         }
+    }
+
+    private function produkFromStorage(): array
+    {
+        $files = collect(Storage::disk('public')->files('produk'))
+            ->filter(fn (string $path) => $this->isProdukImage($path))
+            ->sortBy(fn (string $path) => Str::lower($this->menuNameFromPath($path)))
+            ->unique(fn (string $path) => Str::lower($this->menuNameFromPath($path)))
+            ->values();
+
+        return $files
+            ->map(function (string $path) {
+                $nama = $this->menuNameFromPath($path);
+                $kategori = $this->kategoriForProduk($nama);
+
+                return [
+                    'nama_barang' => $nama,
+                    'harga' => $this->hargaForProduk($nama, $kategori),
+                    'kategori' => $kategori,
+                    'gambar' => $path,
+                    'deskripsi' => 'Menu ' . $nama . '.',
+                ];
+            })
+            ->all();
+    }
+
+    private function isProdukImage(string $path): bool
+    {
+        $extension = Str::lower(pathinfo($path, PATHINFO_EXTENSION));
+        $name = Str::lower(pathinfo($path, PATHINFO_FILENAME));
+
+        return in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)
+            && ! Str::contains($name, 'logo');
+    }
+
+    private function menuNameFromPath(string $path): string
+    {
+        $name = Str::of(pathinfo($path, PATHINFO_FILENAME))
+            ->replace(['_', '-'], ' ')
+            ->squish()
+            ->value();
+
+        if ($name === Str::lower($name)) {
+            return Str::of($name)->title()->value();
+        }
+
+        return $name;
+    }
+
+    private function kategoriForProduk(string $nama): string
+    {
+        $name = Str::lower($nama);
+
+        if (Str::contains($name, ['coffee', 'kopi'])) {
+            return 'coffee';
+        }
+
+        if (Str::contains($name, ['spaghetti', 'spghetti', 'pasta', 'aglio', 'alfredo', 'bolognese', 'carbonara', 'macaroni', 'mac and cheese', 'mushrom', 'negigoma'])) {
+            return 'pasta';
+        }
+
+        if (Str::startsWith($name, 'nasi ') || Str::contains($name, ['nasgor', 'nagor', 'ricebowl', 'nasimi'])) {
+            return 'nasi';
+        }
+
+        if (Str::contains($name, ['indomi', 'indomie', ' mie'])) {
+            return 'mie';
+        }
+
+        if (Str::contains($name, ['katsu'])) {
+            return 'katsu';
+        }
+
+        if (Str::contains($name, ['chickenbites'])) {
+            return 'snack';
+        }
+
+        if (preg_match('/\b(es|teh|tea|susu|milk|milkshake|milo|nutrisari|yakult|smoothies|chocomilk)\b/u', $name) === 1) {
+            return 'minuman';
+        }
+
+        return 'non_coffee';
+    }
+
+    private function hargaForProduk(string $nama, string $kategori): int
+    {
+        $name = Str::lower($nama);
+
+        if ($kategori === 'coffee') {
+            return 12000;
+        }
+
+        if ($kategori === 'minuman') {
+            if (Str::contains($name, ['teh manis'])) return 5000;
+            if (Str::contains($name, ['nutrisari', 'susu', 'lemon tea'])) return 7000;
+            if (Str::contains($name, ['milo', 'milkshake', 'smoothies', 'yakult', 'chocomilk'])) return 12000;
+
+            return 8000;
+        }
+
+        if ($kategori === 'pasta') {
+            if (Str::contains($name, ['katsu'])) return 25000;
+            if (Str::contains($name, ['macaroni', 'mac and cheese'])) return 18000;
+
+            return 20000;
+        }
+
+        if ($kategori === 'nasi') {
+            if (Str::contains($name, ['katsu', 'chickenbites', 'ricebowl'])) return 22000;
+            if (Str::contains($name, ['telur'])) return 15000;
+            if (Str::contains($name, ['nasgor', 'goreng'])) return 18000;
+
+            return 17000;
+        }
+
+        if ($kategori === 'mie') {
+            return Str::contains($name, ['katsu']) ? 20000 : 15000;
+        }
+
+        if ($kategori === 'katsu') {
+            return 18000;
+        }
+
+        if ($kategori === 'snack') {
+            return 15000;
+        }
+
+        return 15000;
     }
 
     private function nextProductCode(): string

@@ -24,9 +24,52 @@
   $date = $penjualan->tanggal ? $penjualan->tanggal->format('d/m/Y') : now()->format('d/m/Y');
   $due = $penjualan->tempo_due_date ? $penjualan->tempo_due_date->format('d/m/Y') : null;
 
-  $subtotal = (float) ($penjualan->total ?? 0);
+  $subtotal = (float) ($penjualan->subtotal_sebelum_diskon ?? 0);
+  if ($subtotal <= 0) {
+    $subtotal = (float) ($penjualan->details->sum('subtotal') ?: ($penjualan->total ?? 0));
+  }
+  $discount = (float) ($penjualan->diskon_nominal ?? 0);
+  $discountPercent = (float) ($penjualan->diskon_persen ?? 0);
   $tax = 0;
-  $grand = $subtotal + $tax;
+  $grand = (float) ($penjualan->total ?? max(0, $subtotal - $discount + $tax));
+  $rawbtMode = request()->boolean('rawbt', false);
+  $kasir = $penjualan->user?->name ?? '-';
+  $metode = strtoupper((string) ($payment?->pg_payment_type ?? $penjualan->metode ?? '-'));
+  $paymentStatusRaw = strtolower((string) ($payment?->transaction_status ?? ($penjualan->metode === 'tempo' ? 'pending' : 'settlement')));
+  $paymentStatus = match ($paymentStatusRaw) {
+    'settlement', 'capture' => 'LUNAS',
+    'pending' => $penjualan->metode === 'tempo' ? 'BELUM LUNAS' : 'PENDING',
+    'expire', 'expired' => 'EXPIRED',
+    'cancel', 'cancelled' => 'BATAL',
+    default => strtoupper($paymentStatusRaw ?: '-'),
+  };
+
+  $thermalReceipt = [
+    'outlet_name' => strtoupper($brand),
+    'outlet_address' => config('invoice.brand_tagline') ?: '',
+    'transaction_code' => $penjualan->kode_penjualan,
+    'date' => $date,
+    'customer_name' => $invoiceTo ?: '-',
+    'staff_name' => $kasir,
+    'payment_method' => $metode,
+    'payment_status' => $paymentStatus,
+    'subtotal' => $subtotal,
+    'discount' => $discount,
+    'discount_percent' => $discountPercent,
+    'total' => $grand,
+    'due_date' => $due,
+    'items' => $penjualan->details->map(function ($d) {
+      $price = (float) ($d->harga ?? 0);
+      $qty = (int) ($d->qty ?? 0);
+
+      return [
+        'name' => $d->nama_cetak,
+        'qty' => $qty,
+        'price' => $price,
+        'total' => (float) ($d->subtotal ?? ($price * $qty)),
+      ];
+    })->values(),
+  ];
 @endphp
 
 @section('content')
@@ -35,10 +78,11 @@
     .inv-wrap { position: relative; }
     .inv-top { text-align:center; margin-top:6mm; }
     .inv-title {
-      font-family: "Segoe Script","Brush Script MT","Snell Roundhand","Lucida Handwriting",cursive;
-      font-size: 66px;
-      letter-spacing: .5px;
-      line-height: 1;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      line-height: 1.1;
       margin: 0;
     }
     .inv-brand { margin-top: 4px; font-weight: 800; letter-spacing: 2.6px; }
@@ -74,9 +118,11 @@
 
     .inv-footer { display:flex; justify-content:space-between; align-items:flex-end; gap: 18px; margin-top: 18mm; }
     .inv-thanks {
-      font-family: "Segoe Script","Brush Script MT","Snell Roundhand","Lucida Handwriting",cursive;
-      font-size: 56px;
-      line-height: 1;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: .4px;
+      line-height: 1.2;
       margin: 0;
     }
     .inv-logo { margin-top: 10px; }
@@ -95,6 +141,7 @@
   <div class="no-print" style="display:flex; gap:8px; justify-content:flex-end; margin-bottom:12px;">
     <a href="{{ route('kasir.index') }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kembali</a>
     <a href="{{ route('kasir.invoice', ['kode' => $penjualan->kode_penjualan, 'print' => 1]) }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Cetak</a>
+    <button type="button" id="btnCetakRawBT" class="btn" style="cursor:pointer; padding:8px 10px; border:1px solid #0f766e; border-radius:10px; background:#fff; color:#0f766e;">Cetak Struk</button>
     @php
       $waMsg = "Invoice {$penjualan->kode_penjualan} - {$brand}%0A".
                "Total: {$rupiah($grand)}%0A".
@@ -103,6 +150,7 @@
       $waLink = "https://wa.me/?text={$waMsg}";
     @endphp
     <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kirim WhatsApp</a>
+    <span id="rawbtStatus" style="align-self:center; font-size:12px; color:#334155;"></span>
   </div>
 
   <div class="inv-wrap">
@@ -182,6 +230,9 @@
       </div>
       <div class="inv-sum">
         <div class="inv-sum-row"><div>SUB TOTAL</div><div>{{ $rupiah($subtotal) }}</div></div>
+        @if($discount > 0)
+          <div class="inv-sum-row"><div>DISCOUNT {{ number_format($discountPercent, 2, ',', '.') }}%</div><div>-{{ $rupiah($discount) }}</div></div>
+        @endif
         <div class="inv-sum-row"><div>TAX</div><div>{{ $rupiah($tax) }}</div></div>
         <div class="inv-sum-row total"><div>TOTAL</div><div>{{ $rupiah($grand) }}</div></div>
       </div>
@@ -230,13 +281,43 @@
   </div>
 </div>
 
-@if($printMode)
-  @push('scripts')
+@push('scripts')
+  @include('kasir.partials.rawbt-receipt-script')
+
+  <script>
+    (function () {
+      const btnCetakRawBT = document.getElementById('btnCetakRawBT');
+      const rawbtStatus = document.getElementById('rawbtStatus');
+      const thermalReceipt = @json($thermalReceipt);
+
+      function setRawBTStatus(text) {
+        if (rawbtStatus) rawbtStatus.textContent = text;
+      }
+
+      if (btnCetakRawBT) {
+        btnCetakRawBT.addEventListener('click', function () {
+          window.cetakRawBT(thermalReceipt, {
+            onStatus: setRawBTStatus
+          });
+        });
+      }
+
+      @if($rawbtMode)
+        window.addEventListener('load', function () {
+          window.cetakRawBT(thermalReceipt, {
+            onStatus: setRawBTStatus
+          });
+        });
+      @endif
+    })();
+  </script>
+
+  @if($printMode && ! $rawbtMode)
     <script>
       window.addEventListener('load', function () {
         window.print();
       });
     </script>
-  @endpush
-@endif
+  @endif
+@endpush
 @endsection

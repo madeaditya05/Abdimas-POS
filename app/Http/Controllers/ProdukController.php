@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KategoriProduk;
 use App\Models\Produk;
+use App\Services\ProdukCatalogSyncService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreProdukRequest;
 use App\Http\Requests\UpdateProdukRequest;
@@ -11,11 +12,17 @@ use Illuminate\Http\Request;
 
 class ProdukController extends Controller
 {
+    public function __construct(
+        private ProdukCatalogSyncService $produkCatalogSync
+    ) {}
+
     /**
      * Daftar produk + search + filter.
      */
     public function index(Request $request)
     {
+        $this->produkCatalogSync->syncFromStorage();
+
         $query = Produk::query()->with('kategoriProduk');
 
         // Search berdasarkan kode_barang atau nama_barang
@@ -37,7 +44,7 @@ class ProdukController extends Controller
         // Urutkan berdasarkan kode
         $query->orderBy('kode_barang', 'asc');
 
-        $produks = $query->paginate(15)->withQueryString();
+        $produks = $query->paginate(60)->withQueryString();
 
         $kategoriOptions = $this->kategoriOptions($kategori);
 

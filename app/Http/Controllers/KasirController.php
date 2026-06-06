@@ -14,6 +14,7 @@ use App\Models\Customer;
 use App\Models\StokMutasi;
 use App\Services\Payments\PaymentGateway;
 use App\Services\JournalPoster;
+use App\Services\ProdukCatalogSyncService;
 use App\Services\ReceiptPrinter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -27,11 +28,14 @@ class KasirController extends Controller
 {
     public function __construct(
         private PaymentGateway $gateway,
-        private JournalPoster $poster // dipakai untuk delete jurnal HPP realtime (seperti penyesuaian manual)
+        private JournalPoster $poster, // dipakai untuk delete jurnal HPP realtime (seperti penyesuaian manual)
+        private ProdukCatalogSyncService $produkCatalogSync
     ) {}
 
     public function index()
     {
+        $this->produkCatalogSync->syncFromStorage();
+
         // Bereskan sisa transaksi final
         if ($last = Session::get('last_sales_code')) {
             $status = $this->hitungStatus($last);
@@ -131,6 +135,75 @@ class KasirController extends Controller
     private function getLatestPaymentByPenjualanId(int $penjualanId): ?Payment
     {
         return Payment::where('penjualan_id', $penjualanId)->latest()->first();
+    }
+
+    private function findCustomerByNormalizedName(string $customerName): ?Customer
+    {
+        $normalized = Customer::normalizeName($customerName);
+        if (! $normalized) {
+            return null;
+        }
+
+        return Customer::where('normalized_name', $normalized)->first();
+    }
+
+    private function customerDiscountSummary(?Customer $customer, int $subtotal, ?int $excludePenjualanId = null): array
+    {
+        $subtotal = max(0, $subtotal);
+
+        if (! $customer) {
+            return [
+                'exists' => false,
+                'purchase_count' => 0,
+                'min_transactions' => 10,
+                'configured_percent' => 0,
+                'discount_percent' => 0,
+                'discount_amount' => 0,
+                'total_after_discount' => $subtotal,
+                'eligible' => false,
+                'remaining_transactions' => 10,
+            ];
+        }
+
+        $purchaseQuery = $customer->completedPenjualans();
+        if ($excludePenjualanId) {
+            $purchaseQuery->where('id', '!=', $excludePenjualanId);
+        }
+
+        $purchaseCount = (int) $purchaseQuery->count();
+        $minTransactions = max(1, (int) ($customer->discount_min_transactions ?? 10));
+        $configuredPercent = max(0, min(99.99, (float) ($customer->discount_percent ?? 0)));
+        $discountPercent = $customer->eligibleDiscountPercent($purchaseCount);
+        $discountAmount = $discountPercent > 0
+            ? (int) floor($subtotal * $discountPercent / 100)
+            : 0;
+        $discountAmount = min($subtotal, max(0, $discountAmount));
+
+        return [
+            'exists' => true,
+            'purchase_count' => $purchaseCount,
+            'min_transactions' => $minTransactions,
+            'configured_percent' => $configuredPercent,
+            'discount_percent' => $discountPercent,
+            'discount_amount' => $discountAmount,
+            'total_after_discount' => max(0, $subtotal - $discountAmount),
+            'eligible' => $discountPercent > 0,
+            'remaining_transactions' => max(0, $minTransactions - $purchaseCount),
+        ];
+    }
+
+    public function customerDiscountInfo(Request $req)
+    {
+        $data = $req->validate([
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'subtotal' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $customerName = Str::of((string) ($data['customer_name'] ?? ''))->squish()->value();
+        $subtotal = (int) ($data['subtotal'] ?? 0);
+        $customer = $customerName !== '' ? $this->findCustomerByNormalizedName($customerName) : null;
+
+        return response()->json($this->customerDiscountSummary($customer, $subtotal));
     }
 
     public function dataKeranjang()
@@ -291,41 +364,40 @@ class KasirController extends Controller
             }
 
             // Handle customer
-            $customerId = null;
             $rawCustomerName = Str::of((string) $req->input('customer_name',''))
                 ->squish()
                 ->value();
 
-            if ($rawCustomerName !== '') {
-                Session::put('pending_customer_name', $rawCustomerName);
-
-                $normalized = Str::of($rawCustomerName)->trim()->lower();
-                $customer = Customer::whereRaw('normalized_name = ?', [$normalized])->first();
-
-                if (!$customer) {
-                    $customer = Customer::create(['name' => trim($rawCustomerName)]);
-                } else {
-                    if ($customer->name !== $rawCustomerName) {
-                        $customer->name = $rawCustomerName;
-                        $customer->save();
-                    }
-                }
-
-                $customerId = $customer->id;
-            } else {
+            if ($rawCustomerName === '') {
                 Session::forget('pending_customer_name');
+                return $this->failResponse($req, 'Nama pelanggan wajib diisi.');
+            }
+
+            Session::put('pending_customer_name', $rawCustomerName);
+
+            $customer = $this->findCustomerByNormalizedName($rawCustomerName);
+
+            if (!$customer) {
+                $customer = Customer::create([
+                    'name' => trim($rawCustomerName),
+                    'discount_min_transactions' => 10,
+                    'discount_percent' => 0,
+                ]);
+            } elseif ($customer->name !== $rawCustomerName) {
+                $customer->name = $rawCustomerName;
+                $customer->save();
             }
 
             // Simpan penjualan
             $dataPenjualan = [
                 'tanggal'   => now(),
                 'user_id'   => Auth::id() ?: 1,
+                'customer_id'=> $customer->id,
                 'metode'    => $metode,
                 'total'     => 0,
                 'bayar'     => 0,
                 'kembalian' => 0,
             ];
-            if (!is_null($customerId)) $dataPenjualan['customer_id'] = $customerId;
 
             $penjualan = Penjualan::create($dataPenjualan);
 
@@ -342,7 +414,14 @@ class KasirController extends Controller
                 ]);
                 $subtotal += $line;
             }
-            $penjualan->update(['total' => $subtotal]);
+            $discountSummary = $this->customerDiscountSummary($customer, $subtotal, (int) $penjualan->id);
+            $penjualan->forceFill([
+                'diskon_persen' => $discountSummary['discount_percent'],
+            ])->save();
+            $penjualan->refresh();
+
+            $totalTagihan = (int) $penjualan->total;
+            $diskonNominal = (int) $penjualan->diskon_nominal;
 
             $kode = $penjualan->kode_penjualan;
 
@@ -380,13 +459,16 @@ class KasirController extends Controller
                     'pg'                 => 'tempo',
                     'pg_transaction_id'  => null,
                     'pg_payment_type'    => 'tempo',
-                    'gross_amount'       => $subtotal,
+                    'gross_amount'       => $totalTagihan,
                     'transaction_status' => 'pending',
                     'meta'               => [
                         'order_no'   => $kode,
                         'due_date'   => $data['tempo_due_date'],
                         'invoice_to' => $invoiceToName,
                         'company'    => $invoiceToCompany,
+                        'subtotal'   => $subtotal,
+                        'discount_percent' => (float) $penjualan->diskon_persen,
+                        'discount_amount'  => $diskonNominal,
                     ],
                 ]);
 
@@ -397,7 +479,7 @@ class KasirController extends Controller
                         'nama_toko'            => $invoiceToCompany ?: $invoiceToName,
                         'tanggal_invoice'      => Carbon::parse($penjualan->tanggal)->toDateString(),
                         'tanggal_jatuh_tempo'  => $data['tempo_due_date'],
-                        'total_tagihan'        => $subtotal,
+                        'total_tagihan'        => $totalTagihan,
                         'status'               => Invoice::STATUS_UNPAID,
                     ]
                 );
@@ -428,12 +510,12 @@ class KasirController extends Controller
             if ($metode === 'cash') {
                 $req->validate(['cash_tendered' => 'required|integer|min:0']);
                 $bayar = (int) $req->input('cash_tendered', 0);
-                if ($bayar < $subtotal) {
+                if ($bayar < $totalTagihan) {
                     return $this->failResponse($req, 'Uang cash kurang dari total.');
                 }
-                $kembalian = $bayar - $subtotal;
+                $kembalian = $bayar - $totalTagihan;
 
-                DB::transaction(function () use ($penjualan, $kode, $subtotal, $bayar, $kembalian) {
+                DB::transaction(function () use ($penjualan, $kode, $subtotal, $totalTagihan, $diskonNominal, $bayar, $kembalian) {
                     $penjualan->update([
                         'bayar'     => $bayar,
                         'kembalian' => $kembalian,
@@ -445,12 +527,15 @@ class KasirController extends Controller
                         'pg'                 => 'cash',
                         'pg_transaction_id'  => null,
                         'pg_payment_type'    => 'cash',
-                        'gross_amount'       => $subtotal,
+                        'gross_amount'       => $totalTagihan,
                         'transaction_status' => 'settlement',
                         'meta'               => [
                             'order_no'      => $kode,
                             'cash_tendered' => $bayar,
                             'change'        => $kembalian,
+                            'subtotal'      => $subtotal,
+                            'discount_percent' => (float) $penjualan->diskon_persen,
+                            'discount_amount'  => $diskonNominal,
                         ],
                         'paid_at'            => now(),
                     ]);
@@ -469,14 +554,22 @@ class KasirController extends Controller
                         'sales_code' => $kode,
                         'metode'     => 'cash',
                         'paid'       => true,
+                        'total'      => $totalTagihan,
+                        'diskon'     => $diskonNominal,
                         'kembalian'  => $kembalian,
                         'message'    => 'Transaksi CASH berhasil.',
                     ]);
                 }
 
+                $successMessage = 'Transaksi CASH berhasil. Kembalian: '.$this->rupiah($kembalian).'.';
+                if ($diskonNominal > 0) {
+                    $successMessage .= ' Diskon customer: '.$this->rupiah($diskonNominal).'.';
+                }
+                $successMessage .= ' Silakan cetak struk lalu klik "Selesaikan Pembayaran".';
+
                 return redirect()->route('kasir.index')
                     ->with('sales_code', $kode)
-                    ->with('success', 'Transaksi CASH berhasil. Kembalian: '.$this->rupiah($kembalian).'. Silakan cetak struk lalu klik "Selesaikan Pembayaran".');
+                    ->with('success', $successMessage);
             }
 
             // ===== NON CASH (Midtrans) =====
@@ -492,8 +585,17 @@ class KasirController extends Controller
                     ];
                 })->toArray();
 
+            if ($diskonNominal > 0) {
+                $itemDetails = [[
+                    'id' => 'ORDER-'.$kode,
+                    'price' => $totalTagihan,
+                    'quantity' => 1,
+                    'name' => 'Total pembayaran',
+                ]];
+            }
+
             if ($metode === 'qris') {
-                $res = $this->gateway->chargeQris($kode, (int)$penjualan->total, $itemDetails);
+                $res = $this->gateway->chargeQris($kode, $totalTagihan, $itemDetails);
 
                 PaymentLog::create([
                     'event'   => 'charge_qris',
@@ -508,17 +610,20 @@ class KasirController extends Controller
                     'pg'                 => 'midtrans',
                     'pg_transaction_id'  => $res['transaction_id'] ?? null,
                     'pg_payment_type'    => 'qris',
-                    'gross_amount'       => $penjualan->total,
+                    'gross_amount'       => $totalTagihan,
                     'transaction_status' => $res['transaction_status'] ?? 'pending',
                     'meta'               => [
                         'order_no'  => $kode,
                         'qr_url'    => $qrUrl,
                         'qr_string' => $qrString,
+                        'subtotal'  => $subtotal,
+                        'discount_percent' => (float) $penjualan->diskon_persen,
+                        'discount_amount'  => $diskonNominal,
                     ],
                 ]);
             } else {
                 $bank = substr($metode, 3); // bca/bri/bni
-                $res  = $this->gateway->chargeVa($kode, (int)$penjualan->total, $bank);
+                $res  = $this->gateway->chargeVa($kode, $totalTagihan, $bank);
 
                 PaymentLog::create([
                     'event'   => 'charge_va_'.$bank,
@@ -532,11 +637,14 @@ class KasirController extends Controller
                     'pg'                 => 'midtrans',
                     'pg_transaction_id'  => $res['transaction_id'] ?? null,
                     'pg_payment_type'    => 'va_'.$bank,
-                    'gross_amount'       => $penjualan->total,
+                    'gross_amount'       => $totalTagihan,
                     'transaction_status' => $res['transaction_status'] ?? 'pending',
                     'meta'               => [
                         'order_no'  => $kode,
                         'va_number' => $vaNumber,
+                        'subtotal'  => $subtotal,
+                        'discount_percent' => (float) $penjualan->diskon_persen,
+                        'discount_amount'  => $diskonNominal,
                     ],
                 ]);
             }
@@ -550,6 +658,8 @@ class KasirController extends Controller
                     'sales_code' => $kode,
                     'metode'     => $metode,
                     'paid'       => false,
+                    'total'      => $totalTagihan,
+                    'diskon'     => $diskonNominal,
                     'message'    => 'Transaksi dibuat.',
                 ]);
             }
