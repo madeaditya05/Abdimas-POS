@@ -355,8 +355,6 @@ class KasirController extends Controller
                 return $penjualan->refresh();
             });
 
-            $this->cleanupSesi($penjualan->kode_penjualan);
-
             $message = 'Penjualan berhasil dicatat.';
 
             if ($req->ajax() || $req->wantsJson()) {

@@ -827,9 +827,6 @@ $(function(){
   let salesCode = serverActiveCode || cachedSalesCode;
   if (serverActiveCode) {
     localStorage.setItem(salesStorageKey, serverActiveCode);
-  } else if (cachedSalesCode) {
-    localStorage.removeItem(salesStorageKey);
-    salesCode = null;
   }
 
   const savedMetode = localStorage.getItem(metodeStorageKey);
@@ -855,6 +852,29 @@ $(function(){
   let discountRequestSeq = 0;
   let transactionLocked = Boolean(salesCode);
   let pollTimer = null;
+
+  if (transactionLocked) {
+    statusWrap.show();
+    statusBadge.text('Tercatat').css({background:'#dcfce7', color:'#14532d'});
+    statusInfo.text('Transaksi sedang berjalan. Selesaikan transaksi ini sebelum membuat order baru.');
+    
+    const mt = localStorage.getItem(metodeStorageKey) || 'cash';
+    const printUrl = (mt === 'tempo')
+      ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(salesCode) + "?print=1"
+      : "{{ url('/kasir/struk') }}/" + encodeURIComponent(salesCode) + "?print=0&rawbt=1";
+      
+    linkCetakRawBT
+      .attr('href', printUrl)
+      .attr('data-kode', salesCode)
+      .attr('data-metode', mt);
+      
+    if (mt === 'tempo') {
+      linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
+    } else {
+      linkCetakRawBT.text('Cetak via Bluetooth').removeAttr('target');
+    }
+    btnCetakWrap.css({display:'flex'});
+  }
 
   function formatRupiah(n){ n=parseInt(n||0,10); return 'Rp ' + n.toLocaleString('id-ID'); }
   function parseRupiahToInt(s){ s=String(s||'').replace(/[^\d]/g,''); return parseInt(s||'0',10); }
@@ -912,6 +932,17 @@ $(function(){
       .toggleClass('is-disabled', transactionLocked);
     wadahKeranjang.find('.aksi').prop('disabled', transactionLocked);
     btnKosongkan.prop('disabled', transactionLocked || !hasCart());
+    
+    // Disable inputs and buttons on transaction lock
+    inputNama.prop('disabled', transactionLocked);
+    metodeBayar.prop('disabled', transactionLocked);
+    $('[name=invoice_to_company]').prop('disabled', transactionLocked);
+    $('[name=tempo_due_date]').prop('disabled', transactionLocked);
+    inputCash.prop('disabled', transactionLocked);
+    $('.btn-quick').prop('disabled', transactionLocked);
+    $('#btnPas').prop('disabled', transactionLocked);
+    $('#btnClearCash').prop('disabled', transactionLocked);
+    
     updateProcessButtonState();
   }
 
@@ -934,6 +965,14 @@ $(function(){
 
     if (cfg.clearCustomer) {
       inputNama.val('');
+      $('[name=invoice_to_company]').val('');
+      // Set tempo due date back to default (today + 7 days)
+      const defaultDueDate = new Date();
+      defaultDueDate.setDate(defaultDueDate.getDate() + 7);
+      const yyyy = defaultDueDate.getFullYear();
+      const mm = String(defaultDueDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(defaultDueDate.getDate()).padStart(2, '0');
+      $('[name=tempo_due_date]').val(`${yyyy}-${mm}-${dd}`);
     }
 
     resetCashInput();
@@ -1433,7 +1472,7 @@ $(function(){
 
       salesCode = res.sales_code;
       if (salesCode) {
-        localStorage.removeItem(salesStorageKey);
+        localStorage.setItem(salesStorageKey, salesCode);
         statusWrap.show();
         statusBadge.text('Tercatat').css({background:'#dcfce7', color:'#14532d'});
         statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode);
@@ -1454,11 +1493,7 @@ $(function(){
           statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode + '. Struk siap dicetak via Bluetooth.');
         }
         btnCetakWrap.css({display:'flex'});
-        inputNama.val('');
-        CART = { items: [], subtotal: 0, subtotal_text: 'Rp 0' };
-        resetDiscount(false);
-        renderKeranjang();
-        setTransactionLocked(false);
+        setTransactionLocked(true);
         setCartDrawer(false);
       }
     }).fail(function(xhr){
@@ -1477,10 +1512,7 @@ $(function(){
     return false;
   });
 
-  if (salesCode) {
-    localStorage.removeItem(salesStorageKey);
-    salesCode = null;
-  }
+
 
   // Efek Animasi
   let fxEl = null;
