@@ -520,7 +520,30 @@ class KasirController extends Controller
             ->where('kode_penjualan', $kode)
             ->firstOrFail();
 
+        // Ensure token is generated if somehow missing
+        if (empty($penjualan->invoice_token)) {
+            $penjualan->invoice_token = \Illuminate\Support\Str::random(64);
+            $penjualan->saveQuietly();
+        }
+
         $status = $this->hitungStatus($kode);
+        if ($penjualan->metode !== 'tempo' && $status !== 'paid') {
+            abort(403, 'Halaman ini hanya untuk transaksi yang sudah dicatat.');
+        }
+
+        $payment = null;
+        $printMode = (bool) $req->boolean('print', false);
+
+        return view('kasir.invoice', compact('penjualan', 'payment', 'printMode'));
+    }
+
+    public function publicInvoice(Request $req, string $token)
+    {
+        $penjualan = Penjualan::with(['details.produk', 'user', 'customer'])
+            ->where('invoice_token', $token)
+            ->firstOrFail();
+
+        $status = $this->hitungStatus($penjualan->kode_penjualan);
         if ($penjualan->metode !== 'tempo' && $status !== 'paid') {
             abort(403, 'Halaman ini hanya untuk transaksi yang sudah dicatat.');
         }

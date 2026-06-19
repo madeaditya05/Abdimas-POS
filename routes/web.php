@@ -42,7 +42,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/register',[LoginController::class, 'register'])->name('register.store');
 });
 
-Route::get('/kasir/invoice/{kode}', [KasirController::class, 'invoice'])->name('kasir.invoice');
+Route::get('/i/{token}', [KasirController::class, 'publicInvoice'])->name('public.invoice');
 
 // ===== Auth only =====
 Route::middleware('auth')->group(function () {
@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
     // Kasir POS
     Route::get('/kasir', [KasirController::class, 'index'])->name('kasir.index');
     Route::post('/kasir', [KasirController::class, 'prosesForm'])->name('kasir.store');
+    Route::get('/kasir/invoice/{kode}', [KasirController::class, 'invoice'])->name('kasir.invoice');
     Route::get('/kasir/struk/{kode}', [KasirController::class, 'cetakStruk'])->name('kasir.struk');
     Route::post('/kasir/struk/{kode}/print', [KasirController::class, 'printStruk'])->name('kasir.struk.print');
     Route::post('/kasir/selesai-cetak/{kode}', [KasirController::class, 'selesaiCetak'])->name('kasir.selesaiCetak');

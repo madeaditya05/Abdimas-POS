@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Login - Cofit EV</title>
+  <title>Login - Pasta Nafisa</title>
 
   {{-- Pakai CSS khusus auth/login --}}
   <link rel="stylesheet" href="{{ asset('assets/login.css') }}">
@@ -19,7 +19,7 @@
     <div class="auth-hero-inner">
       <img
         src="{{ asset('images/login.png') }}"
-        alt="Ilustrasi login Cofit EV"
+        alt="Ilustrasi login Pasta Nafisa"
         class="auth-hero-image"
       >
     </div>
@@ -33,10 +33,10 @@
         {{-- Brand / logo --}}
         <div class="login-logo">
           <div class="logo-icon">
-            <img src="{{ asset('images/logo.png') }}" alt="Cofit EV">
+            <img src="{{ asset('images/foto logo pasta nafisa.png') }}" alt="Pasta Nafisa">
           </div>
           <div class="login-logo-text">
-            <h1>Cofit EV</h1>
+            <h1>Pasta Nafisa</h1>
             <p>Dashboard Admin</p>
           </div>
         </div>

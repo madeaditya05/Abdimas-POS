@@ -516,7 +516,7 @@
             $isOverdue = (bool) $invoice->is_overdue;
             $isPaid = $invoice->status === \App\Models\Invoice::STATUS_PAID;
             $invoiceUrl = $invoice->penjualan
-              ? route('kasir.invoice', ['kode' => $invoice->penjualan->kode_penjualan])
+              ? route('public.invoice', ['token' => $invoice->penjualan->invoice_token])
               : null;
             $tanggalJatuhTempo = $invoice->tanggal_jatuh_tempo?->format('d/m/Y') ?? '-';
             $totalTagihanText = $rupiah($invoice->total_tagihan);

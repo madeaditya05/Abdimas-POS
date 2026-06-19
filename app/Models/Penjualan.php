@@ -31,6 +31,7 @@ class Penjualan extends Model
         'tempo_due_date',
         'struk_dicetak',
         'struk_dicetak_at',
+        'invoice_token',
     ];
 
     protected $casts = [
@@ -135,6 +136,19 @@ class Penjualan extends Model
         $this->saveQuietly();
     }
 
+    public function getInvoiceTokenAttribute($value)
+    {
+        if (empty($value)) {
+            $token = \Illuminate\Support\Str::random(64);
+            \Illuminate\Support\Facades\DB::table('penjualan')
+                ->where('id', $this->id)
+                ->update(['invoice_token' => $token]);
+            $this->attributes['invoice_token'] = $token;
+            return $token;
+        }
+        return $value;
+    }
+
     /* =======================
      |  Model Hooks
      =======================*/
@@ -144,6 +158,7 @@ class Penjualan extends Model
         static::creating(function (self $m) {
             $m->tanggal        ??= now();
             $m->kode_penjualan ??= static::nextKode();
+            $m->invoice_token  ??= \Illuminate\Support\Str::random(64);
             $m->metode         ??= 'cash';
             $m->total          ??= 0;
             $m->subtotal_sebelum_diskon ??= 0;

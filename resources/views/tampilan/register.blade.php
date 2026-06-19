@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Daftar - Cofit EV Dashboard</title>
+  <title>Daftar - Pasta Nafisa Dashboard</title>
 
   <link rel="stylesheet" href="{{ asset('assets/login.css') }}" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -15,7 +15,7 @@
     <div class="auth-hero-inner">
       <img
         src="{{ asset('images/register.png') }}"
-        alt="Ilustrasi register Cofit EV"
+        alt="Ilustrasi register Pasta Nafisa"
         class="auth-hero-image"
       >
     </div>
@@ -26,10 +26,10 @@
       <div class="login-card">
         <div class="login-logo">
           <div class="logo-icon">
-            <img src="{{ asset('images/logo.png') }}" alt="Cofit EV">
+            <img src="{{ asset('images/foto logo pasta nafisa.png') }}" alt="Pasta Nafisa">
           </div>
           <div class="login-logo-text">
-            <h1>Cofit EV</h1>
+            <h1>Pasta Nafisa</h1>
             <p>Dashboard Admin</p>
           </div>
         </div>
