@@ -42,31 +42,49 @@ class LoginController extends Controller
 
     public function register(Request $r)
     {
-        $r->validate([
+        $data = $r->validate([
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|max:255|unique:users,email',
             'password'     => 'required|string|min:6|confirmed',
             'owner_token'  => 'required|string',
         ], [
-            'owner_token.required' => 'Kode Owner wajib diisi.',
+            'owner_token.required' => 'Kode proteksi wajib diisi.',
         ]);
 
-        $expected = config('auth.owner_signup_code'); // dari .env OWNER_SIGNUP_CODE
-        if (!$expected || $r->owner_token !== $expected) {
-            return back()->withErrors(['owner_token' => 'Kode Owner tidak valid.'])->withInput();
+        $userGroup = $this->resolveSignupUserGroup($data['owner_token']);
+        if (! $userGroup) {
+            return back()
+                ->withErrors(['owner_token' => 'Kode proteksi tidak valid.'])
+                ->withInput($r->except('password', 'password_confirmation', 'owner_token'));
         }
 
         User::create([
-            'name'       => $r->name,
-            'email'      => $r->email,
-            'password'   => Hash::make($r->password),
-            'user_group' => 'owner',
+            'name'       => $data['name'],
+            'email'      => $data['email'],
+            'password'   => Hash::make($data['password']),
+            'user_group' => $userGroup,
         ]);
 
         return redirect()
             ->route('login')
             ->with('success', 'Registrasi berhasil. Silakan login.')
-            ->with('prefill_email', $r->email);
+            ->with('prefill_email', $data['email']);
+    }
+
+    private function resolveSignupUserGroup(string $token): ?string
+    {
+        $codes = [
+            'owner' => config('auth.owner_signup_code'),
+            'kasir' => config('auth.kasir_signup_code'),
+        ];
+
+        foreach ($codes as $group => $expected) {
+            if (is_string($expected) && $expected !== '' && hash_equals($expected, $token)) {
+                return $group;
+            }
+        }
+
+        return null;
     }
 
     public function logout(Request $request)

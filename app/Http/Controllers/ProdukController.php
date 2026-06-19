@@ -23,7 +23,9 @@ class ProdukController extends Controller
     {
         $this->produkCatalogSync->syncFromStorage();
 
-        $query = Produk::query()->with('kategoriProduk');
+        $query = Produk::query()
+            ->with('kategoriProduk')
+            ->withCount(['reseps', 'penjualanDetails']);
 
         // Search berdasarkan kode_barang atau nama_barang
         $search   = $request->input('search');
@@ -165,6 +167,10 @@ class ProdukController extends Controller
      */
     public function destroy(Produk $produk)
     {
+        if ($produk->reseps()->exists() || $produk->penjualanDetails()->exists()) {
+            return back()->with('error', 'Produk sudah dipakai di resep atau transaksi penjualan, jadi tidak bisa dihapus.');
+        }
+
         if ($produk->gambar) {
             Storage::disk('public')->delete($produk->gambar);
         }

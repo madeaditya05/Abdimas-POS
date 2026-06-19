@@ -145,6 +145,20 @@ a.kr-btn{ color:inherit; text-decoration:none; }
         <input type="date" name="end_date" value="{{ request('end_date', now()->toDateString()) }}">
       </div>
 
+      @if(in_array('ledger', $secSel))
+      <div class="kr-field">
+        <label>Akun</label>
+        <select name="account_code" style="width: 100%; height: 42px; border: 1px solid #c7cdd4; border-radius: 12px; padding: 0 10px; background-color: #fff; color: #0f172a; font-size: 13px; outline: none;">
+          <option value="">Semua Akun</option>
+          @foreach($accounts as $acc)
+            <option value="{{ $acc->code }}" {{ request('account_code') == $acc->code ? 'selected' : '' }}>
+              {{ $acc->code }} - {{ $acc->name }}
+            </option>
+          @endforeach
+        </select>
+      </div>
+      @endif
+
       {{-- Dropdown pilih seksi laporan --}}
       <details class="kr-dd">
         <summary class="kr-btn kr-btn-ghost">
@@ -157,7 +171,7 @@ a.kr-btn{ color:inherit; text-decoration:none; }
         </summary>
         <div class="kr-dd-menu">
           <label><input class="sec-check" type="checkbox" name="sec[]" value="items"    {{ in_array('items',$secSel)?'checked':'' }}> Rekap Per Produk</label>
-          <label><input class="sec-check" type="checkbox" name="sec[]" value="payments" {{ in_array('payments',$secSel)?'checked':'' }}> Rekap Per Metode Pembayaran</label>
+          <label><input class="sec-check" type="checkbox" name="sec[]" value="payments" {{ in_array('payments',$secSel)?'checked':'' }}> Rekap Per Metode Pencatatan</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="unified"  {{ in_array('unified',$secSel)?'checked':'' }}> Rekapitulasi Tunai vs Non-Tunai</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="journal"  {{ in_array('journal',$secSel)?'checked':'' }}> Jurnal Umum</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="ledger"   {{ in_array('ledger',$secSel)?'checked':'' }}> Buku Besar</label>
@@ -183,6 +197,7 @@ a.kr-btn{ color:inherit; text-decoration:none; }
         @endphp
 
         <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('kasir.rekap.pdf', $pdfSel) }}">PDF (sesuai pilihan)</a>
+        <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('kasir.rekap.excel', $pdfSel) }}">Excel (sesuai pilihan)</a>
         <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('kasir.rekap.pdf', $pdfAll) }}">PDF (semua)</a>
       </div>
     </form>

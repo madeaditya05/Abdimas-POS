@@ -34,16 +34,6 @@
                     </svg>
                     <span>Kasir</span>
                 </a>
-                <a href="{{ route('kasir.rekap') }}" class="nav-item {{ request()->is('reports/kasir') ? 'active' : '' }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" x2="8" y1="13" y2="13"/>
-                        <line x1="16" x2="8" y1="17" y2="17"/>
-                        <polyline points="10 9 9 9 8 9"/>
-                    </svg>
-                    <span>Laporan</span>
-                </a>
                 <a href="{{ route('invoices.index') }}" class="nav-item {{ request()->routeIs('invoices.*') ? 'active' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -82,42 +72,3 @@
                 </a>
             </div>
         </aside>
-        
-        <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const body = document.body;
-  const logoToggle = document.getElementById('menuToggle');   // ikon di sidebar header
-  const btnSidebar = document.getElementById('btnSidebar');   // burger di topbar
-
-  // restore state
-  if (localStorage.getItem('sidebar') === 'collapsed') {
-    body.classList.add('sidebar-collapsed');
-  }
-
-  function toggleSidebar(){
-    body.classList.toggle('sidebar-collapsed');
-    localStorage.setItem('sidebar', body.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded');
-  }
-
-  logoToggle?.addEventListener('click', toggleSidebar);
-  btnSidebar?.addEventListener('click', toggleSidebar);
-
-  // ===== Notification dropdown
-  const btnNotif   = document.getElementById('btnNotif');
-  const menuNotif  = document.getElementById('menuNotif');
-
-  function closeAllDropdowns(){ menuNotif?.classList.remove('show'); btnNotif?.setAttribute('aria-expanded','false'); }
-
-  btnNotif?.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    const willShow = !menuNotif.classList.contains('show');
-    closeAllDropdowns();
-    if (willShow){ menuNotif.classList.add('show'); btnNotif.setAttribute('aria-expanded','true'); }
-  });
-
-  document.addEventListener('click', (e)=>{
-    if (!menuNotif.contains(e.target) && e.target !== btnNotif){ closeAllDropdowns(); }
-  });
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeAllDropdowns(); });
-});
-</script>

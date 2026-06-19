@@ -18,6 +18,18 @@
     </a>
   </div>
 
+  @if (session('success'))
+    <div class="alert alert--success" style="margin:12px 0;">
+      {{ session('success') }}
+    </div>
+  @endif
+
+  @if (session('error'))
+    <div class="alert alert--error" style="margin:12px 0;">
+      {{ session('error') }}
+    </div>
+  @endif
+
   {{-- Filter & Search --}}
   <form method="GET" action="{{ route('bahan-baku.index') }}" class="filter-bar" style="margin:12px 0;gap:10px;display:flex;align-items:center;flex-wrap:wrap;">
     <input type="text" name="q" value="{{ $search }}" placeholder="Cari kode/nama…" />
@@ -99,6 +111,9 @@
           @php
             $last  = $row->pembelianDetails->first();
             $harga = $last?->harga_satuan;
+            $isUsed = ((int) ($row->resep_details_count ?? 0) > 0)
+                || ((int) ($row->pembelian_details_count ?? 0) > 0)
+                || ((int) ($row->mutasi_count ?? 0) > 0);
           @endphp
 
           <tr>
@@ -152,20 +167,22 @@
                   <span class="sr-only">Edit</span>
                 </a>
 
-                {{-- HAPUS --}}
-                <form action="{{ route('bahan-baku.destroy', $row) }}"
-                      method="POST"
-                      onsubmit="return confirm('Hapus item ini?')">
-                  @csrf
-                  @method('DELETE')
+                @if (!$isUsed)
+                  {{-- HAPUS --}}
+                  <form action="{{ route('bahan-baku.destroy', $row) }}"
+                        method="POST"
+                        onsubmit="return confirm('Hapus item ini?')">
+                    @csrf
+                    @method('DELETE')
 
-                  <button type="submit"
-                          class="btn btn--outline-danger btn--sm btn--icon"
-                          title="Hapus">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
-                    <span class="sr-only">Hapus</span>
-                  </button>
-                </form>
+                    <button type="submit"
+                            class="btn btn--outline-danger btn--sm btn--icon"
+                            title="Hapus">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+                      <span class="sr-only">Hapus</span>
+                    </button>
+                  </form>
+                @endif
               </div>
             </td>
           </tr>

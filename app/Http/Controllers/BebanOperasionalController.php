@@ -12,6 +12,34 @@ class BebanOperasionalController extends Controller
 
     public function index(Request $request)
     {
+        $data = $this->getBebanData($request);
+        $entries = $data['entries'];
+        $start = $data['start'];
+        $end = $data['end'];
+        return view('beban-operasional.index', compact('entries', 'start', 'end'));
+    }
+
+    public function pdf(Request $request)
+    {
+        $data = $this->getBebanData($request);
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.pdf.beban_operasional_pdf', $data)
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download("Laporan-Beban-Operasional_{$data['start']}_sd_{$data['end']}.pdf");
+    }
+
+    public function excel(Request $request)
+    {
+        $data = $this->getBebanData($request);
+        $html = view('reports.excel.beban_operasional_excel', $data)->render();
+
+        return response($html)
+            ->header('Content-Type', 'application/vnd.ms-excel')
+            ->header('Content-Disposition', "attachment; filename=\"Laporan-Beban-Operasional_{$data['start']}_sd_{$data['end']}.xls\"");
+    }
+
+    private function getBebanData(Request $request)
+    {
         $start = $request->get('start_date', now()->startOfMonth()->toDateString());
         $end   = $request->get('end_date', now()->toDateString());
 
@@ -23,7 +51,24 @@ class BebanOperasionalController extends Controller
             ->orderByDesc('je.id')
             ->get();
 
-        return view('beban-operasional.index', compact('entries', 'start', 'end'));
+        $entryIds = collect($entries)->pluck('id')->all();
+        $totals = [];
+
+        if (!empty($entryIds)) {
+            $rows = DB::table('journal_line as jl')
+                ->join('chart_of_account as coa', 'coa.id', '=', 'jl.account_id')
+                ->select('jl.journal_entry_id', DB::raw('SUM(jl.debit) as total_debit_beban'))
+                ->whereIn('jl.journal_entry_id', $entryIds)
+                ->where('coa.code', 'like', '6%')
+                ->groupBy('jl.journal_entry_id')
+                ->get();
+
+            foreach ($rows as $r) {
+                $totals[$r->journal_entry_id] = (float) $r->total_debit_beban;
+            }
+        }
+
+        return compact('entries', 'totals', 'start', 'end');
     }
 
     public function create(Request $request)

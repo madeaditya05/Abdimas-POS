@@ -14,12 +14,13 @@
   @php
     // ====== STATUS AKTIF PER GRUP (dipakai untuk buka/tutup dropdown) ======
 
-    // Master Data: produk, kategori produk, bahan baku
+    // Master Data: produk, kategori produk, bahan baku, customer
     $isProdukActive =
         request()->routeIs('produk.*')
         || request()->routeIs('kategori-produk.*')
         || request()->routeIs('bahan-baku.*')
-        || request()->routeIs('chart-of-accounts.*'); // (biar Daftar Akun ikut aktif)
+        || request()->routeIs('chart-of-accounts.*')
+        || request()->routeIs('customer.*'); // (biar Daftar Akun & Customer ikut aktif)
 
     // Persediaan: mutasi stok + penyesuaian stok
     $isInvActive =
@@ -27,11 +28,11 @@
         || request()->is('persediaan/penyesuaian*')
         || request()->routeIs('penyesuaian-stok.*');
 
-    // Transaksi: penjualan + pembelian + penyesuaian stok
+    // Transaksi: penjualan + pembelian
     $isTransActive =
         request()->is('penjualan*')
         || request()->routeIs('pembelian-bahan.*')
-        || request()->routeIs('penyesuaian-stok.*');
+        || request()->routeIs('beban-operasional.*');
 
     // ==== Laporan kasir (pakai halaman owner.labarugi dengan filter sec[]) ====
     $secParam = \Illuminate\Support\Arr::wrap(request('sec', []));
@@ -51,11 +52,7 @@
     $isSecJournal  = $isOwnerReport && in_array('journal', $secParam);
     $isSecLedger   = $isOwnerReport && in_array('ledger', $secParam);
 
-    // Manajemen User: pengguna + pelanggan
-    $isUserActive =
-        request()->is('users*')
-        || request()->is('pelanggan*')
-        || request()->routeIs('customer.*');
+
 
         $isLaporanActive =
     request()->routeIs('owner.reports.menu')
@@ -113,6 +110,12 @@
         <a href="{{ route('bahan-baku.index') }}"
            class="subnav-item {{ request()->routeIs('bahan-baku.*') ? 'is-active' : '' }}">
           Bahan Baku
+        </a>
+
+        {{-- Customer --}}
+        <a href="{{ route('customer.index') }}"
+           class="subnav-item {{ request()->routeIs('customer.*') ? 'is-active' : '' }}">
+          <span>Customer</span>
         </a>
 
       </div>
@@ -193,33 +196,7 @@
 
 
 
-    {{-- ===== MANAJEMEN USER (Pengguna, Pelanggan) ===== --}}
-    <div class="nav-group {{ $isUserActive ? 'has-active is-open' : '' }}" data-key="users">
-      <button type="button" class="nav-item nav-toggle" aria-expanded="{{ $isUserActive ? 'true' : 'false' }}">
-        <span class="nav-icon">
-          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-        </span>
-        <span class="nav-label">User</span>
-        {{-- <span class="nav-caret"></span> --}}
-      </button>
 
-      <div class="subnav {{ $isUserActive ? 'show' : '' }}">
-        {{-- Pengguna --}}
-        {{-- <a href="{{ url('/users') }}"
-           class="subnav-item {{ request()->is('users*') ? 'is-active' : '' }}">
-          Pengguna
-        </a> --}}
-
-        {{-- Pelanggan --}}
-        <a href="{{ route('customer.index') }}"
-          class="subnav-item {{ request()->routeIs('customer.*') ? 'is-active' : '' }}">
-          Customer
-        </a>
-      </div>
-    </div>
 
     {{-- PENGATURAN (single link) --}}
     {{--
@@ -258,40 +235,47 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const body = document.body;
-  const KEY  = 'cofit.sidebar.state';
-  const toggles = [document.getElementById('menuToggle'), document.getElementById('btnSidebar')].filter(Boolean);
-
-  // restore
-  if (localStorage.getItem(KEY) === 'collapsed') body.classList.add('sidebar-collapsed');
-
-  // bind sekali saja
-  toggles.forEach(btn => {
-    if (btn.dataset.bound) return;
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', () => {
-      body.classList.toggle('sidebar-collapsed');
-      localStorage.setItem(KEY, body.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded');
-    });
-  });
-
-  // === dropdown sidebar (sesuai markup-mu: .nav-group / .nav-toggle / .subnav)
   const PREFIX = 'cofitev_nav_';
-  document.querySelectorAll('.sidebar .nav-group').forEach(g => {
-    const key = g.dataset.key || '';
-    const btn = g.querySelector('.nav-toggle');
-    const panel = g.querySelector('.subnav');
+  const groups = Array.from(document.querySelectorAll('.sidebar .nav-group'));
 
-    const saved = localStorage.getItem(PREFIX + key);
-    if (saved === 'open') { g.classList.add('is-open'); panel?.classList.add('show'); btn?.setAttribute('aria-expanded','true'); }
+  function setGroup(group, open, persist = true) {
+    const key = group.dataset.key || '';
+    const btn = group.querySelector('.nav-toggle');
+    const panel = group.querySelector('.subnav');
+
+    group.classList.toggle('is-open', open);
+    panel?.classList.toggle('show', open);
+    btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+    if (persist && key) {
+      localStorage.setItem(PREFIX + key, open ? 'open' : 'closed');
+    }
+  }
+
+  function openOnly(target, persist = true) {
+    groups.forEach(group => setGroup(group, group === target, persist));
+  }
+
+  const activeGroup = groups.find(group => group.classList.contains('has-active'));
+  const savedGroup = groups.find(group => localStorage.getItem(PREFIX + (group.dataset.key || '')) === 'open');
+  const initialGroup = activeGroup || savedGroup || groups.find(group => group.classList.contains('is-open'));
+
+  groups.forEach(group => setGroup(group, false, false));
+  if (initialGroup) {
+    openOnly(initialGroup, true);
+  }
+
+  groups.forEach(g => {
+    const btn = g.querySelector('.nav-toggle');
 
     btn?.addEventListener('click', (e) => {
       e.preventDefault();
       const open = !g.classList.contains('is-open');
-      g.classList.toggle('is-open', open);
-      panel?.classList.toggle('show', open);
-      btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (key) localStorage.setItem(PREFIX + key, open ? 'open' : 'closed');
+      if (open) {
+        openOnly(g);
+      } else {
+        setGroup(g, false);
+      }
     });
   });
 });

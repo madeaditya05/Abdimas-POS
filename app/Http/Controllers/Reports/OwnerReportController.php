@@ -22,6 +22,19 @@ class OwnerReportController extends Controller
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
 
+        $selectedAccount = $request->get('account_code');
+        if (!empty($selectedAccount)) {
+            $bukuBesar = array_filter($bukuBesar, function($key) use ($selectedAccount) {
+                return str_starts_with($key, $selectedAccount . ' -');
+            }, ARRAY_FILTER_USE_KEY);
+        }
+
+        $accounts = DB::table('chart_of_account')
+            ->where('is_active', 1)
+            ->orderBy('code')
+            ->select('code', 'name')
+            ->get();
+
         // ✅ LABA RUGI: HPP hanya dari closing_periods (kalau belum ditutup => 0)
         $labarugi   = $this->hitungLabaRugiDariClosing($mulai, $akhir);
 
@@ -42,6 +55,7 @@ class OwnerReportController extends Controller
             'pembelian'  => $pembelian,
             'meta'       => $meta,
             'sections'   => $bagian,
+            'accounts'   => $accounts,
         ]);
     }
 
@@ -56,6 +70,13 @@ class OwnerReportController extends Controller
 
         $jurnal     = $this->ambilJurnal($mulai, $akhir);
         $bukuBesar  = $this->susunBukuBesar($jurnal);
+
+        $selectedAccount = $request->get('account_code');
+        if (!empty($selectedAccount)) {
+            $bukuBesar = array_filter($bukuBesar, function($key) use ($selectedAccount) {
+                return str_starts_with($key, $selectedAccount . ' -');
+            }, ARRAY_FILTER_USE_KEY);
+        }
 
         // ✅ konsisten sama index
         $labarugi   = $this->hitungLabaRugiDariClosing($mulai, $akhir);
@@ -80,6 +101,51 @@ class OwnerReportController extends Controller
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download("Laporan-Owner_{$mulai}_sd_{$akhir}.pdf");
+    }
+
+    public function excel(Request $request)
+    {
+        [$mulai, $akhir] = $this->rentangTanggal($request);
+        $bagian = $this->bagianLaporan($request);
+
+        $items      = $this->ambilRekapProduk($mulai, $akhir);
+        $payments   = $this->ambilRekapPembayaran($mulai, $akhir);
+        $sales      = $this->ambilLaporanPenjualanRingkas($mulai, $akhir);
+
+        $jurnal     = $this->ambilJurnal($mulai, $akhir);
+        $bukuBesar  = $this->susunBukuBesar($jurnal);
+
+        $selectedAccount = $request->get('account_code');
+        if (!empty($selectedAccount)) {
+            $bukuBesar = array_filter($bukuBesar, function($key) use ($selectedAccount) {
+                return str_starts_with($key, $selectedAccount . ' -');
+            }, ARRAY_FILTER_USE_KEY);
+        }
+
+        $labarugi   = $this->hitungLabaRugiDariClosing($mulai, $akhir);
+
+        $pembelian  = $this->ambilRekapPembelianBahan($mulai, $akhir);
+
+        $meta = [
+            'start' => $mulai,
+            'end'   => $akhir,
+        ];
+
+        $html = view('reports.excel.owner_labarugi_excel', [
+            'lr'         => $labarugi,
+            'items'      => $items,
+            'payments'   => $payments,
+            'sales'      => $sales,
+            'journal'    => $jurnal,
+            'ledger'     => $bukuBesar,
+            'pembelian'  => $pembelian,
+            'meta'       => $meta,
+            'sections'   => $bagian,
+        ])->render();
+
+        return response($html)
+            ->header('Content-Type', 'application/vnd.ms-excel')
+            ->header('Content-Disposition', "attachment; filename=\"Laporan-Owner_{$mulai}_sd_{$akhir}.xls\"");
     }
 
     // ===================== LABA RUGI (HPP dari CLOSING_PERIODS) =====================
@@ -190,14 +256,14 @@ class OwnerReportController extends Controller
         return DB::table('penjualan as pjl')
             ->join('penjualan_detail as d', 'd.penjualan_id', '=', 'pjl.id')
             ->join('produk as pr', 'pr.id', '=', 'd.produk_id')
-            ->join('payment as pay', 'pay.penjualan_id', '=', 'pjl.id')
-            ->where('pay.transaction_status', 'settlement')
-            ->whereBetween('pjl.created_at', [$mulai, $akhir])
+            ->where('pjl.total', '>', 0)
+            ->whereColumn('pjl.bayar', '>=', 'pjl.total')
+            ->whereBetween('pjl.tanggal', [$mulai, $akhir])
             ->selectRaw('
                 pr.id as product_id,
                 pr.nama_barang as name,
                 SUM(d.qty) AS qty,
-                SUM(d.qty * d.harga) AS total
+                SUM(d.subtotal) AS total
             ')
             ->groupBy('pr.id', 'pr.nama_barang')
             ->orderByDesc('total')
@@ -206,29 +272,33 @@ class OwnerReportController extends Controller
 
     private function ambilRekapPembayaran(string $mulai, string $akhir)
     {
-        return DB::table('payment as pay')
-            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
-            ->where('pay.transaction_status', 'settlement')
-            ->whereBetween('pay.paid_at', [$mulai, $akhir])
-            ->selectRaw('pay.pg_payment_type, COUNT(*) trx, SUM(pay.gross_amount) total')
-            ->groupBy('pay.pg_payment_type')
+        return DB::table('penjualan as pjl')
+            ->where('pjl.total', '>', 0)
+            ->whereColumn('pjl.bayar', '>=', 'pjl.total')
+            ->whereBetween('pjl.tanggal', [$mulai, $akhir])
+            ->selectRaw("
+                LOWER(COALESCE(NULLIF(pjl.metode, ''), 'cash')) as pg_payment_type,
+                COUNT(*) trx,
+                SUM(pjl.total) total
+            ")
+            ->groupBy('pg_payment_type')
             ->orderByDesc('total')
             ->get();
     }
 
     private function ambilRekapTunaiNonTunai(string $mulai, string $akhir)
     {
-        return DB::table('payment as pay')
-            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
-            ->where('pay.transaction_status', 'settlement')
-            ->whereBetween('pay.paid_at', [$mulai, $akhir])
+        return DB::table('penjualan as pjl')
+            ->where('pjl.total', '>', 0)
+            ->whereColumn('pjl.bayar', '>=', 'pjl.total')
+            ->whereBetween('pjl.tanggal', [$mulai, $akhir])
             ->selectRaw("
                 CASE
-                    WHEN pay.pg_payment_type='cash' THEN 'Tunai'
+                    WHEN LOWER(COALESCE(NULLIF(pjl.metode, ''), 'cash')) IN ('cash', 'tunai') THEN 'Tunai'
                     ELSE 'Non Tunai'
                 END as kategori,
                 COUNT(*) trx,
-                SUM(pay.gross_amount) total
+                SUM(pjl.total) total
             ")
             ->groupBy('kategori')
             ->orderBy('kategori')
@@ -237,26 +307,26 @@ class OwnerReportController extends Controller
 
     private function ambilLaporanPenjualanRingkas(string $mulai, string $akhir)
     {
-        return DB::table('payment as pay')
-            ->join('penjualan as pjl', 'pjl.id', '=', 'pay.penjualan_id')
+        return DB::table('penjualan as pjl')
             ->join('users as u', 'u.id', '=', 'pjl.user_id')
             ->join('penjualan_detail as d', 'd.penjualan_id', '=', 'pjl.id')
             ->join('produk as pr', 'pr.id', '=', 'd.produk_id')
-            ->where('pay.transaction_status', 'settlement')
-            ->whereBetween('pay.paid_at', [$mulai, $akhir])
+            ->where('pjl.total', '>', 0)
+            ->whereColumn('pjl.bayar', '>=', 'pjl.total')
+            ->whereBetween('pjl.tanggal', [$mulai, $akhir])
             ->selectRaw('
-                DATE(pay.paid_at) as tanggal,
+                DATE(pjl.tanggal) as tanggal,
                 u.name as kasir,
-                UPPER(pay.pg_payment_type) as metode,
+                UPPER(COALESCE(NULLIF(pjl.metode, ""), "cash")) as metode,
                 pr.nama_barang as produk,
                 COUNT(DISTINCT pjl.id) as trx,
                 SUM(d.qty) as qty,
                 SUM(d.subtotal) as omzet
             ')
-            ->groupBy(DB::raw('DATE(pay.paid_at)'), 'u.name', 'pay.pg_payment_type', 'pr.nama_barang')
-            ->orderBy(DB::raw('DATE(pay.paid_at)'))
+            ->groupBy(DB::raw('DATE(pjl.tanggal)'), 'u.name', 'pjl.metode', 'pr.nama_barang')
+            ->orderBy(DB::raw('DATE(pjl.tanggal)'))
             ->orderBy('u.name')
-            ->orderBy('pay.pg_payment_type')
+            ->orderBy('pjl.metode')
             ->orderBy('pr.nama_barang')
             ->get();
     }

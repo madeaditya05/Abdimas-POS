@@ -43,7 +43,7 @@
   $kategoriLabels = $kategoris->pluck('nama', 'slug');
 @endphp
 
-<form action="{{ route('kasir.store') }}" method="POST" id="formPembayaran" autocomplete="off">
+<form action="{{ route('kasir.store') }}" method="POST" id="formPembayaran" class="kasir-page" autocomplete="off">
   @csrf
 
   <div class="grid-kasir kasir-pos-grid">
@@ -135,13 +135,14 @@
       </div>
     </div>
 
-    {{-- Kanan: Keranjang + Pembayaran --}}
-    <div class="card card--sticky kasir-payment-card">
-      <div class="card-header">
+    {{-- Kanan: Keranjang + pencatatan --}}
+    <div class="card card--sticky kasir-payment-card" id="kasirPaymentPanel" aria-label="Keranjang dan pencatatan penjualan">
+      <div class="card-header kasir-payment-head">
         <div class="card-title">
-          <h3>Pembayaran</h3>
-          <p>Pilih metode pembayaran</p>
+          <h3>Catat Penjualan</h3>
+          <p>Simpan transaksi tanpa display pembayaran</p>
         </div>
+        <button type="button" class="kasir-drawer-close" id="btnCloseCart" aria-label="Tutup keranjang">&times;</button>
       </div>
 
       <div class="card-subtitle" style="font-size:14px; color:#6b7280; margin-bottom:8px;">Keranjang</div>
@@ -170,28 +171,56 @@
         </div>
       </div>
 
-      {{-- Metode bayar --}}
+      {{-- Metode pencatatan --}}
       <div class="kasir-form-inline" style="margin-bottom:12px;">
         <select name="metode" id="metodeBayar" class="form-input">
-          <option value="qris">QRIS (disarankan)</option>
-          <option value="va_bca">VA BCA</option>
-          <option value="va_bri">VA BRI</option>
-          <option value="va_bni">VA BNI</option>
-          <option value="tempo">Bayar Nanti (Tempo)</option>
-          <option value="cash">CASH</option>
+          <option value="cash">Tunai / langsung</option>
+          <option value="qris">QRIS langsung</option>
+          <option value="transfer">Transfer langsung</option>
+          <option value="debit">Debit / kartu</option>
+          <option value="tempo">Piutang / invoice</option>
+          <option value="lainnya">Lainnya</option>
         </select>
+      </div>
+
+      {{-- Panel CASH --}}
+      <div id="panelCash" style="display:none; margin-bottom:12px;">
+        <div class="kr-card" style="padding:12px; border:1px dashed #d1d5db; border-radius:12px; background: #fafafa;">
+          <div style="font-weight:700; margin-bottom:10px; font-size: 13.5px; color: #1e293b;">Rincian Pembayaran Tunai</div>
+          
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px; color:#475569;">
+            <span>Total Tagihan:</span>
+            <strong id="cashTotal" style="color:#0f172a;">Rp 0</strong>
+          </div>
+
+          <div class="kasir-form-inline" style="margin-bottom:8px; position:relative;">
+            <label style="display:block; font-size:12px; color:#64748b; margin-bottom:4px;">Uang Diterima:</label>
+            <input type="text" id="inputCash" class="form-input" placeholder="Rp 0" style="font-weight:700; font-size:15px; color:#0f766e;">
+            <input type="hidden" name="bayar" id="cashTenderedRaw" value="0">
+          </div>
+
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:13px; color:#475569;">
+            <span>Kembalian:</span>
+            <strong id="cashChange" style="color:#0f766e; font-size:15px;">Rp 0</strong>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-bottom:8px;">
+            <button type="button" class="btn btn-sm btn-quick" data-amt="10000" style="font-size:12px; padding:6px 4px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:6px; cursor:pointer;">+10K</button>
+            <button type="button" class="btn btn-sm btn-quick" data-amt="20000" style="font-size:12px; padding:6px 4px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:6px; cursor:pointer;">+20K</button>
+            <button type="button" class="btn btn-sm btn-quick" data-amt="50000" style="font-size:12px; padding:6px 4px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:6px; cursor:pointer;">+50K</button>
+            <button type="button" class="btn btn-sm btn-quick" data-amt="100000" style="font-size:12px; padding:6px 4px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:6px; cursor:pointer;">+100K</button>
+            <button type="button" class="btn btn-sm" id="btnPas" style="font-size:12px; padding:6px 4px; border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:6px; cursor:pointer;">Uang Pas</button>
+            <button type="button" class="btn btn-sm" id="btnClearCash" style="font-size:12px; padding:6px 4px; border:1px solid #fee2e2; background:#fff; color:#991b1b; border-radius:6px; cursor:pointer;">Hapus</button>
+          </div>
+
+          <small id="cashHint" class="text-muted" style="display:block; font-size:12px; color:#ef4444; font-weight:500;"></small>
+        </div>
       </div>
 
       {{-- Panel TEMPO --}}
       <div id="panelTempo" style="display:none; margin-bottom:12px;">
         <div class="kr-card" style="padding:12px; border:1px dashed #d1d5db; border-radius:12px;">
-          <div style="font-weight:700; margin-bottom:8px;">Bayar Nanti (Tempo)</div>
-
-          <div class="kasir-form-inline" style="margin-bottom:8px;">
-            <input type="text" name="invoice_to_name" class="form-input"
-                   value="{{ old('invoice_to_name') }}"
-                   placeholder="Invoice to (nama pelanggan/perusahaan)">
-          </div>
+          <div style="font-weight:700; margin-bottom:8px; font-size: 13.5px; color: #1e293b;">Bayar Nanti (Tempo)</div>
 
           <div class="kasir-form-inline" style="margin-bottom:8px;">
             <input type="text" name="invoice_to_company" class="form-input"
@@ -204,46 +233,16 @@
                    value="{{ old('tempo_due_date', now()->addDays(7)->toDateString()) }}">
           </div>
 
-          <small id="tempoHint" class="text-muted" style="display:block; margin-top:8px;"></small>
+          <small id="tempoHint" class="text-muted" style="display:block; margin-top:8px; font-size:12px; color:#64748b;"></small>
         </div>
       </div>
 
-      {{-- Panel CASH --}}
-      <div id="panelCash" style="display:none; margin-bottom:12px;">
-        <div class="kr-card" style="padding:12px; border:1px dashed #d1d5db; border-radius:12px;">
-          <div style="display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center;">
-            <div>Total</div>
-            <div style="font-weight:700;" id="cashTotal">Rp 0</div>
-
-            <div>Uang diterima</div>
-            <div>
-              <input type="text" id="inputCash" class="form-input" placeholder="Rp 0" inputmode="numeric" autocomplete="off" style="text-align:right; min-width:180px;">
-              <input type="hidden" name="cash_tendered" id="cashTenderedRaw" value="0">
-            </div>
-
-            <div>Kembalian</div>
-            <div style="font-weight:700;" id="cashChange">Rp 0</div>
-          </div>
-
-          <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:6px;">
-            <button type="button" class="btn btn-sm btn-quick" data-amt="10000">10.000</button>
-            <button type="button" class="btn btn-sm btn-quick" data-amt="20000">20.000</button>
-            <button type="button" class="btn btn-sm btn-quick" data-amt="50000">50.000</button>
-            <button type="button" class="btn btn-sm btn-quick" data-amt="100000">100.000</button>
-            <button type="button" class="btn btn-sm" id="btnPas">Pas</button>
-            <button type="button" class="btn btn-sm" id="btnClearCash">Clear</button>
-          </div>
-
-          <small id="cashHint" class="text-muted" style="display:block; margin-top:8px;"></small>
-        </div>
-      </div>
-
-      <button type="submit" class="btn btn-primary btn-block" id="btnProses">Proses Pembayaran</button>
+      <button type="submit" class="btn btn-primary btn-block" id="btnProses">Catat Penjualan</button>
 
       {{-- Badge status --}}
 <div id="statusWrap" style="display:none; margin-top:10px;">
     <span id="statusBadge" style="padding:6px 10px; border-radius:999px; font-weight:600; font-size:13px; background:#fff3cd; color:#7a5a00;">
-        Menunggu pembayaran…
+        Siap mencatat
     </span>
     <div id="btnCetakWrap" style="display:none; margin-top:12px; gap:8px; align-items:center;">
         <a href="#" id="linkCetakRawBT" class="btn btn-sm" style="text-decoration:none; border:1px solid #0f766e; color:#0f766e;">
@@ -257,9 +256,22 @@
 </div>
     </div>
   </div>
+
+  <div class="kasir-cart-backdrop" id="cartBackdrop" aria-hidden="true"></div>
+  <button type="button" class="kasir-cart-fab" id="btnCartDrawer" aria-controls="kasirPaymentPanel" aria-expanded="false">
+    <span class="kasir-cart-fab__label">Keranjang</span>
+    <span class="kasir-cart-fab__meta">
+      <strong id="cartFabTotal">Rp 0</strong>
+      <span id="cartFabCount">0 item</span>
+    </span>
+  </button>
 </form>
 
 <style>
+  .kasir-page {
+    position: relative;
+  }
+
   .kasir-pos-grid {
     grid-template-columns: minmax(0, 1fr) 360px;
     gap: 18px;
@@ -270,6 +282,41 @@
   .kasir-payment-card {
     padding: 18px;
     margin-bottom: 0;
+  }
+
+  .kasir-payment-card.card--sticky {
+    top: calc(var(--topbar-h, 64px) + 16px);
+  }
+
+  .kasir-payment-card {
+    max-height: calc(100vh - var(--topbar-h, 64px) - 32px);
+    overflow: auto;
+  }
+
+  .kasir-payment-head {
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .kasir-payment-card #ringkasanKeranjang {
+    max-height: min(320px, calc(100vh - 460px)) !important;
+  }
+
+  .kasir-payment-card .order-header {
+    gap: 10px;
+  }
+
+  .kasir-payment-card .order-header > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .kasir-drawer-close,
+  .kasir-cart-fab,
+  .kasir-cart-backdrop {
+    display: none;
   }
 
   .kasir-menu-head {
@@ -509,13 +556,180 @@
 
   @media (max-width: 1024px) {
     .kasir-pos-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 34vw);
+      gap: 14px;
+    }
+
+    .kasir-menu-card,
+    .kasir-payment-card {
+      padding: 14px;
+    }
+
+    .kasir-payment-card.card--sticky {
+      top: calc(var(--topbar-h, 64px) + 12px);
+    }
+
+    .produk-scroll {
+      max-height: calc(100vh - 220px);
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .produk-toolbar {
+      grid-template-columns: minmax(0, 1fr) 150px;
+    }
+
+    .produk-grid--img {
+      grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 10px;
+    }
+
+    .produk-card--img {
+      min-height: 178px;
+    }
+
+    .produk-body {
+      min-height: 78px;
+      padding: 8px;
+    }
+
+    .produk-thumb--ph {
+      font-size: 28px;
+    }
+
+    .produk-name {
+      font-size: 12px;
+    }
+
+    .kasir-payment-card #ringkasanKeranjang {
+      max-height: min(300px, calc(100vh - 440px)) !important;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .kasir-pos-grid {
       grid-template-columns: 1fr;
     }
 
     .produk-scroll {
       max-height: none;
       overflow: visible;
-      padding-right: 0;
+      padding: 0 0 96px;
+    }
+
+    .produk-toolbar {
+      grid-template-columns: minmax(0, 1fr) 170px;
+    }
+
+    .kasir-payment-card.card--sticky {
+      position: fixed;
+      left: max(12px, env(safe-area-inset-left));
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      top: auto;
+      z-index: 1250;
+    }
+
+    .kasir-payment-card {
+      max-height: min(86vh, 680px);
+      margin: 0;
+      opacity: 0;
+      overflow: auto;
+      pointer-events: none;
+      transform: translateY(calc(100% + 24px));
+      transition: transform .22s ease, opacity .18s ease;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, .24);
+      border: 1px solid #e2e8f0;
+    }
+
+    .kasir-payment-card.is-open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .kasir-payment-card #ringkasanKeranjang {
+      max-height: min(38vh, 320px) !important;
+    }
+
+    .kasir-drawer-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #e5e7eb;
+      border-radius: 999px;
+      background: #fff;
+      color: #0f172a;
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .kasir-cart-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1230;
+      display: block;
+      background: rgba(15, 23, 42, .38);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+    }
+
+    .kasir-cart-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .kasir-cart-fab {
+      position: fixed;
+      left: max(16px, env(safe-area-inset-left));
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(16px, env(safe-area-inset-bottom));
+      z-index: 1240;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 58px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 16px;
+      background: #0f766e;
+      color: #fff;
+      box-shadow: 0 18px 38px rgba(15, 118, 110, .28);
+      cursor: pointer;
+      transition: transform .2s ease, opacity .2s ease;
+    }
+
+    .kasir-cart-fab.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(120%);
+    }
+
+    .kasir-cart-fab__label {
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .kasir-cart-fab__meta {
+      display: grid;
+      gap: 2px;
+      text-align: right;
+      font-size: 11px;
+      line-height: 1.1;
+    }
+
+    .kasir-cart-fab__meta strong {
+      font-size: 14px;
+    }
+
+    body.kasir-drawer-open {
+      overflow: hidden;
     }
   }
 
@@ -531,6 +745,38 @@
 
     .produk-card--img {
       min-height: 198px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .kasir-menu-card,
+    .kasir-payment-card {
+      padding: 12px;
+    }
+
+    .kasir-menu-head,
+    .kasir-payment-head,
+    .order-footer {
+      align-items: flex-start !important;
+      flex-direction: column;
+    }
+
+    .menu-count {
+      align-self: flex-start;
+    }
+
+    .cash-panel-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .cash-panel-grid > div:nth-child(even) {
+      justify-self: stretch;
+      width: 100%;
+    }
+
+    #inputCash {
+      min-width: 0 !important;
+      width: 100%;
     }
   }
 </style>
@@ -552,7 +798,6 @@ $(function(){
   const customerDiscountAmount = $('#customerDiscountAmount');
   const metodeBayar = $('#metodeBayar');
   const panelTempo = $('#panelTempo');
-  const invoiceToName = $('[name=invoice_to_name]');
   const tempoHint = $('#tempoHint');
   const panelCash = $('#panelCash');
   const cashTotal = $('#cashTotal');
@@ -562,6 +807,13 @@ $(function(){
   const cashHint = $('#cashHint');
   const btnProses = $('#btnProses');
   const btnKosongkan = $('#btnKosongkan');
+  const paymentCard = $('#kasirPaymentPanel');
+  const btnCartDrawer = $('#btnCartDrawer');
+  const btnCloseCart = $('#btnCloseCart');
+  const cartBackdrop = $('#cartBackdrop');
+  const cartFabCount = $('#cartFabCount');
+  const cartFabTotal = $('#cartFabTotal');
+  const cartDrawerMedia = window.matchMedia('(max-width: 900px)');
 
   // Selektor Tombol Cetak & Selesaikan
   const btnCetakWrap = $('#btnCetakWrap'); 
@@ -608,6 +860,28 @@ $(function(){
   function parseRupiahToInt(s){ s=String(s||'').replace(/[^\d]/g,''); return parseInt(s||'0',10); }
   function getGrandTotal(){ return Math.max(0, parseInt(DISCOUNT.total_after_discount ?? CART.subtotal ?? 0, 10)); }
   function hasCart(){ return Boolean(CART.items && CART.items.length); }
+  function cartItemCount(){
+    return (CART.items || []).reduce((total, item) => total + (parseInt(item.qty || 0, 10) || 0), 0);
+  }
+
+  function updateCartFab(){
+    const count = cartItemCount();
+    cartFabCount.text(count + ' item');
+    cartFabTotal.text(formatRupiah(getGrandTotal()));
+    btnCartDrawer.toggleClass('has-items', count > 0);
+  }
+
+  function setCartDrawer(open){
+    const shouldOpen = Boolean(open && cartDrawerMedia.matches);
+    paymentCard.toggleClass('is-open', shouldOpen);
+    cartBackdrop.toggleClass('is-open', shouldOpen);
+    btnCartDrawer
+      .toggleClass('is-hidden', shouldOpen)
+      .attr('aria-expanded', shouldOpen ? 'true' : 'false');
+    paymentCard.attr('aria-hidden', cartDrawerMedia.matches && !shouldOpen ? 'true' : 'false');
+    paymentCard.prop('inert', cartDrawerMedia.matches && !shouldOpen);
+    $('body').toggleClass('kasir-drawer-open', shouldOpen);
+  }
 
   function resetCashInput(){
     cashTenderedRaw.val('0');
@@ -619,13 +893,10 @@ $(function(){
   function processButtonShouldDisable(){
     if (transactionLocked || !hasCart()) return true;
     if (!String(inputNama.val() || '').trim()) return true;
-
-    const metode = metodeBayar.val();
-    if (metode === 'cash') {
-      return parseInt(cashTenderedRaw.val() || '0', 10) < getGrandTotal();
-    }
-    if (metode === 'tempo') {
-      return !String(invoiceToName.val() || '').trim();
+    if (metodeBayar.val() === 'cash') {
+      const totalBayar = getGrandTotal();
+      const bayar = parseInt(cashTenderedRaw.val()||'0', 10);
+      if (bayar < totalBayar) return true;
     }
     return false;
   }
@@ -655,14 +926,14 @@ $(function(){
     clearTimeout(pollTimer);
     salesCode = null;
     localStorage.removeItem(salesStorageKey);
+    setCartDrawer(false);
     setTransactionLocked(false);
-    btnProses.text('Proses Pembayaran');
-    linkCetakRawBT.attr('href', '#').removeAttr('data-kode data-metode');
+    btnProses.text('Catat Penjualan');
+    linkCetakRawBT.attr('href', '#').text('Cetak via Bluetooth').removeAttr('data-kode data-metode target');
     btnCetakWrap.hide();
 
     if (cfg.clearCustomer) {
       inputNama.val('');
-      invoiceToName.val('');
     }
 
     resetCashInput();
@@ -676,7 +947,7 @@ $(function(){
 
     if (cfg.hideStatus) {
       statusWrap.hide();
-      statusBadge.text('Menunggu pembayaran...').css({background:'#fff3cd', color:'#7a5a00'});
+      statusBadge.text('Siap mencatat').css({background:'#f8fafc', color:'#334155'});
       statusInfo.text('');
     }
   }
@@ -700,6 +971,7 @@ $(function(){
       elTotal.text(formatRupiah(CART.subtotal || 0));
       updateCashPanel();
     }
+    updateCartFab();
   }
 
   function applyDiscountInfo(data){
@@ -726,6 +998,7 @@ $(function(){
 
     elTotal.text(formatRupiah(getGrandTotal()));
     updateCashPanel();
+    updateCartFab();
   }
 
   function refreshDiscountInfo(){
@@ -739,6 +1012,7 @@ $(function(){
     window.clearTimeout(discountTimer);
     DISCOUNT.total_after_discount = CART.subtotal || 0;
     elTotal.text(formatRupiah(CART.subtotal || 0));
+    updateCartFab();
     updateCashPanel();
     discountTimer = window.setTimeout(function(){
       $.get('{{ route('kasir.customer.discount') }}', {
@@ -754,6 +1028,26 @@ $(function(){
 
   $.ajaxSetup({ headers:{ 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }, cache:false });
 
+  btnCartDrawer.on('click', function(){
+    setCartDrawer(true);
+  });
+
+  btnCloseCart.add(cartBackdrop).on('click', function(){
+    setCartDrawer(false);
+  });
+
+  $(document).on('keydown', function(e){
+    if (e.key === 'Escape') setCartDrawer(false);
+  });
+
+  $(window).on('resize', function(){
+    if (!cartDrawerMedia.matches) setCartDrawer(false);
+    paymentCard.attr('aria-hidden', cartDrawerMedia.matches && !paymentCard.hasClass('is-open') ? 'true' : 'false');
+    paymentCard.prop('inert', cartDrawerMedia.matches && !paymentCard.hasClass('is-open'));
+  });
+
+  setCartDrawer(false);
+
   function renderKeranjang(data){
     if (data) CART = { ...CART, ...data };
     let html = '';
@@ -761,6 +1055,7 @@ $(function(){
       wadahKeranjang.html('<p class="text-muted">Belum ada item dipilih.</p>');
       resetDiscount(false);
       elTotal.text('Rp 0');
+      updateCartFab();
       showHidePanels();
       setTransactionLocked(transactionLocked);
       return;
@@ -783,6 +1078,7 @@ $(function(){
         </div>`;
     });
     wadahKeranjang.html(html);
+    updateCartFab();
     refreshDiscountInfo();
     showHidePanels();
     setTransactionLocked(transactionLocked);
@@ -900,24 +1196,27 @@ $(function(){
     const bayar = parseInt(cashTenderedRaw.val()||'0',10);
     const selisih = bayar - totalBayar;
     cashChange.text(formatRupiah(Math.max(0, selisih)));
-    if (metodeBayar.val()==='cash') {
-      if (bayar < totalBayar) { cashHint.text('Uang kurang ' + formatRupiah(totalBayar - bayar)); }
-      else { cashHint.text('Siap proses. Kembalian: ' + formatRupiah(selisih)); }
-    } else { cashHint.text(''); }
+    
+    if (metodeBayar.val() === 'cash') {
+      if (bayar < totalBayar) {
+        cashHint.text('Uang kurang ' + formatRupiah(totalBayar - bayar));
+      } else {
+        cashHint.text('');
+      }
+    } else {
+      cashHint.text('');
+    }
     updateProcessButtonState();
   }
 
   function updateTempoPanel(){
-    if (metodeBayar.val() !== 'tempo') {
-      tempoHint.text('');
-      updateProcessButtonState();
-      return;
-    }
-    const nm = String(invoiceToName.val()||'').trim();
+    if (metodeBayar.val() !== 'tempo') { tempoHint.text(''); return; }
+
+    const nm = String(inputNama.val()||'').trim();
     if (!nm) {
-      tempoHint.text('Isi "Invoice to" agar tagihan jelas.');
+      tempoHint.text('Isi nama pelanggan di atas untuk tagihan invoice.');
     } else {
-      tempoHint.text('Halaman invoice akan terbuka otomatis.');
+      tempoHint.text('Setelah proses, halaman invoice akan terbuka untuk dicetak/dikirim.');
     }
     updateProcessButtonState();
   }
@@ -926,11 +1225,7 @@ $(function(){
     const m = metodeBayar.val();
     panelCash.toggle(m === 'cash');
     panelTempo.toggle(m === 'tempo');
-    if (m === 'tempo') {
-      const inv = String(invoiceToName.val()||'').trim();
-      const cust = String(inputNama.val()||'').trim();
-      if (!inv && cust) invoiceToName.val(cust);
-    }
+
     updateCashPanel(); updateTempoPanel();
     updateProcessButtonState();
   }
@@ -940,11 +1235,9 @@ $(function(){
     showHidePanels();
   });
   inputNama.on('input', function(){
-    if (metodeBayar.val() === 'tempo' && !String(invoiceToName.val()||'').trim()) invoiceToName.val($(this).val());
     refreshDiscountInfo();
     updateTempoPanel();
   });
-  invoiceToName.on('input', updateTempoPanel);
   inputCash.on('input', function(){
     const v=parseRupiahToInt($(this).val()); cashTenderedRaw.val(String(v)); $(this).val(formatRupiah(v)); updateCashPanel();
   });
@@ -964,7 +1257,7 @@ $(function(){
     setTransactionLocked(true);
     btnProses.text('Transaksi berjalan');
     statusWrap.show();
-    statusBadge.text('Menunggu pembayaran…').css({background:'#fff3cd', color:'#7a5a00'});
+    statusBadge.text('Transaksi tercatat').css({background:'#dcfce7', color:'#14532d'});
     btnCetakWrap.hide();
     statusInfo.text('Transaksi sedang berjalan. Selesaikan transaksi ini sebelum membuat order baru.');
 
@@ -972,18 +1265,23 @@ $(function(){
       statusBadge.text(text).css({background:bg, color:fg});
       
       if (isPaid) {
-        let rawbtUrl = (metode === 'tempo')
-            ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=0&rawbt=1"
+        let printUrl = (metode === 'tempo')
+            ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=1"
             : "{{ url('/kasir/struk') }}/" + encodeURIComponent(kode) + "?print=0&rawbt=1";
         
         linkCetakRawBT
-          .attr('href', rawbtUrl)
+          .attr('href', printUrl)
           .attr('data-kode', kode)
           .attr('data-metode', metode);
+        
+        if (metode === 'tempo') {
+          linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
+          statusInfo.text('Invoice siap dicetak.');
+        } else {
+          linkCetakRawBT.text('Cetak via Bluetooth').removeAttr('target');
+          statusInfo.text('Struk siap dicetak via Bluetooth.');
+        }
         btnCetakWrap.css({display:'flex'});
-        statusInfo.text(metode === 'tempo'
-          ? 'Invoice siap dicetak via Bluetooth.'
-          : 'Struk siap dicetak via Bluetooth.');
       } else {
         setTimeout(() => {
           resetKasirState({clearCustomer:false});
@@ -1036,7 +1334,7 @@ $(function(){
         // 2. Sembunyikan box status secara visual
         statusWrap.fadeOut(400, function(){
             // Reset isi badge ke default setelah animasi hilang
-            statusBadge.text('Menunggu pembayaran…').css({background:'#fff3cd', color:'#7a5a00'});
+            statusBadge.text('Siap mencatat').css({background:'#f8fafc', color:'#334155'});
             btnCetakWrap.hide();
         });
 
@@ -1129,28 +1427,49 @@ $(function(){
       if (!res || !res.ok) {
         statusWrap.show();
         statusBadge.text('Gagal').css({background:'#fee2e2', color:'#7f1d1d'});
-        statusInfo.text((res && res.message) ? res.message : 'Gagal memproses pembayaran.');
-        return;
-      }
-
-      if (res.metode === 'tempo' && res.invoice_url) {
-        window.location.href = res.invoice_url;
+        statusInfo.text((res && res.message) ? res.message : 'Gagal mencatat penjualan.');
         return;
       }
 
       salesCode = res.sales_code;
       if (salesCode) {
-        startPolling(salesCode);
+        localStorage.removeItem(salesStorageKey);
+        statusWrap.show();
+        statusBadge.text('Tercatat').css({background:'#dcfce7', color:'#14532d'});
+        statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode);
+        let cetakUrl = (res.metode === 'tempo')
+          ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(salesCode) + "?print=1"
+          : "{{ url('/kasir/struk') }}/" + encodeURIComponent(salesCode) + "?print=0&rawbt=1";
+
+        linkCetakRawBT
+          .attr('href', cetakUrl)
+          .attr('data-kode', salesCode)
+          .attr('data-metode', res.metode || 'cash');
+        
+        if ((res.metode || 'cash') === 'tempo') {
+          linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
+          statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode + '. Invoice siap dicetak.');
+        } else {
+          linkCetakRawBT.text('Cetak via Bluetooth').removeAttr('target');
+          statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode + '. Struk siap dicetak via Bluetooth.');
+        }
+        btnCetakWrap.css({display:'flex'});
+        inputNama.val('');
+        CART = { items: [], subtotal: 0, subtotal_text: 'Rp 0' };
+        resetDiscount(false);
+        renderKeranjang();
+        setTransactionLocked(false);
+        setCartDrawer(false);
       }
     }).fail(function(xhr){
       const res = xhr.responseJSON || {};
       statusWrap.show();
       statusBadge.text('Gagal').css({background:'#fee2e2', color:'#7f1d1d'});
-      statusInfo.text(res.message || 'Gagal memproses pembayaran.');
+      statusInfo.text(res.message || 'Gagal mencatat penjualan.');
       setTransactionLocked(false);
     }).always(function(){
       if (!transactionLocked) {
-        btnProses.text(prosesText || 'Proses Pembayaran');
+        btnProses.text(prosesText || 'Catat Penjualan');
         updateProcessButtonState();
       }
     });
@@ -1158,7 +1477,10 @@ $(function(){
     return false;
   });
 
-  if (salesCode) startPolling(salesCode);
+  if (salesCode) {
+    localStorage.removeItem(salesStorageKey);
+    salesCode = null;
+  }
 
   // Efek Animasi
   let fxEl = null;

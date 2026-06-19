@@ -183,9 +183,9 @@
 
 {{-- REKAP METODE PEMBAYARAN --}}
 @if($sections['payments'])
-  <h3 class="keep-with-next">Rekap Per Metode Pembayaran</h3>
+  <h3 class="keep-with-next">Rekap Per Metode Pencatatan</h3>
   @if($payments->isEmpty())
-    <div class="muted">Belum ada pembayaran tersettlement.</div>
+    <div class="muted">Belum ada penjualan tercatat.</div>
   @else
     @php
       $payTrx = $payments->sum('trx');
@@ -263,9 +263,7 @@
       </tr>
     </tfoot>
   </table>
-@endif
-
-{{-- JURNAL UMUM --}}
+@endif{{-- JURNAL UMUM --}}
 @if($sections['journal'])
   <h3 class="keep-with-next">Jurnal Umum</h3>
   @if($journal->isEmpty())
@@ -279,28 +277,38 @@
       <thead>
         <tr>
           <th>Tanggal</th>
-          <th>No. Jurnal</th>
+          <th>Kode Akun</th>
+          <th>Keterangan</th>
           <th>Ref</th>
-          <th>Akun</th>
           <th class="right">Debit</th>
-          <th class="right">Credit</th>
+          <th class="right">Kredit</th>
         </tr>
       </thead>
       <tbody>
-        @foreach($journal as $j)
-          <tr>
-            <td>{{ \Carbon\Carbon::parse($j->date)->format('d/m/Y') }}</td>
-            <td>{{ $j->entry_no }}</td>
-            <td>{{ $j->ref_no }}</td>
-            <td>{{ $j->code }} — {{ $j->name }}</td>
-            <td class="right money">{{ $fmt($j->debit) }}</td>
-            <td class="right money">{{ $fmt($j->credit) }}</td>
-          </tr>
+        @php
+          $grouped = $journal->groupBy('entry_no');
+        @endphp
+        @foreach($grouped as $entryNo => $lines)
+          @php
+            $sortedLines = $lines->sortBy(fn($line) => $line->credit > 0 ? 1 : 0);
+          @endphp
+          @foreach($sortedLines as $idx => $j)
+            <tr>
+              <td>{{ $idx === 0 ? \Carbon\Carbon::parse($j->date)->format('d/m/Y') : '' }}</td>
+              <td>{{ $j->code }}</td>
+              <td style="{{ $j->credit > 0 ? 'padding-left: 20px;' : '' }}">
+                {{ $j->name }}
+              </td>
+              <td>{{ $idx === 0 ? ($j->ref_no ?: $j->entry_no) : '' }}</td>
+              <td class="right money">{{ $fmt($j->debit) }}</td>
+              <td class="right money">{{ $fmt($j->credit) }}</td>
+            </tr>
+          @endforeach
         @endforeach
       </tbody>
       <tfoot>
         <tr>
-          <th colspan="4">Total</th>
+          <th colspan="4" class="right">Total</th>
           <th class="right money">{{ $fmt($tDebit) }}</th>
           <th class="right money">{{ $fmt($tCredit) }}</th>
         </tr>
@@ -317,40 +325,74 @@
     <div class="muted">Belum ada pergerakan buku besar di periode ini.</div>
   @else
     @foreach($ledger as $acc => $bag)
+      @php
+        $normalSide = strtoupper($bag['normal'] ?? 'DEBIT');
+      @endphp
       <h4 class="keep-with-next" style="margin:10px 0 6px 0; font-size:13px">{{ $acc }}</h4>
       <table class="tbl" style="margin-bottom:10px;">
         <thead>
           <tr>
-            <th>Tanggal</th>
-            <th>No.</th>
-            <th>Ref</th>
-            <th>Keterangan</th>
+            <th rowspan="2">Tanggal</th>
+            <th rowspan="2">Keterangan</th>
+            <th rowspan="2">Ref</th>
+            <th rowspan="2" class="right">Debit</th>
+            <th rowspan="2" class="right">Kredit</th>
+            <th colspan="2" style="text-align:center;">Saldo</th>
+          </tr>
+          <tr>
             <th class="right">Debit</th>
-            <th class="right">Credit</th>
-            <th class="right">Saldo ({{ $bag['normal']==='DEBIT'?'D':'C' }})</th>
+            <th class="right">Kredit</th>
           </tr>
         </thead>
         <tbody>
           @foreach($bag['rows'] as $r)
+            @php
+              $rawSaldo = (float) ($r['saldo'] ?? 0);
+              $isDebit = (
+                  ($normalSide === 'DEBIT'  && $rawSaldo >= 0) ||
+                  ($normalSide === 'CREDIT' && $rawSaldo <  0)
+              );
+              $nominalSaldo = abs($rawSaldo);
+            @endphp
             <tr>
               <td>{{ \Carbon\Carbon::parse($r['date'])->format('d/m/Y') }}</td>
-              <td>{{ $r['entry'] }}</td>
-              <td>{{ $r['ref'] ?? '-' }}</td>
               <td>{{ $r['memo'] ?? '-' }}</td>
+              <td>{{ $r['ref'] ?: $r['entry'] }}</td>
               <td class="right money">{{ $fmt($r['debit']) }}</td>
               <td class="right money">{{ $fmt($r['credit']) }}</td>
-              <td class="right money">{{ $fmt($r['saldo']) }}</td>
+              <td class="right money">
+                {{ $isDebit ? $fmt($nominalSaldo) : $fmt(0) }}
+              </td>
+              <td class="right money">
+                {{ !$isDebit ? $fmt($nominalSaldo) : $fmt(0) }}
+              </td>
             </tr>
           @endforeach
-        </tbody>
-        <tfoot>
+
+          @php
+            $rawBalance = (float) ($bag['balance'] ?? 0);
+            $isDebitBalance = (
+                ($normalSide === 'DEBIT'  && $rawBalance >= 0) ||
+                ($normalSide === 'CREDIT' && $rawBalance <  0)
+            );
+            $nominalBalance = abs($rawBalance);
+          @endphp
           <tr>
-            <th colspan="4">Total</th>
-            <th class="right money">{{ $fmt($bag['total_debit']) }}</th>
-            <th class="right money">{{ $fmt($bag['total_credit']) }}</th>
-            <th class="right money">{{ $fmt($bag['balance']) }}</th>
+            <th colspan="3">Total</th>
+            <th class="right money">
+              {{ $fmt($bag['total_debit']) }}
+            </th>
+            <th class="right money">
+              {{ $fmt($bag['total_credit']) }}
+            </th>
+            <th class="right money">
+              {{ $isDebitBalance ? $fmt($nominalBalance) : $fmt(0) }}
+            </th>
+            <th class="right money">
+              {{ !$isDebitBalance ? $fmt($nominalBalance) : $fmt(0) }}
+            </th>
           </tr>
-        </tfoot>
+        </tbody>
       </table>
     @endforeach
   @endif

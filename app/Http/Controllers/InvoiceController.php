@@ -14,6 +14,54 @@ class InvoiceController extends Controller
 {
     public function index(Request $request): View
     {
+        $data = $this->getInvoiceReportData($request);
+        $invoices = $data['query']
+            ->orderBy('tanggal_jatuh_tempo')
+            ->orderBy('tanggal_invoice')
+            ->paginate(15)
+            ->withQueryString();
+
+        $summary = $data['summary'];
+        $filters = $data['filters'];
+
+        return view('invoices.index', compact('invoices', 'summary', 'filters'));
+    }
+
+    public function pdf(Request $request)
+    {
+        $data = $this->getInvoiceReportData($request);
+        $invoices = $data['query']
+            ->orderBy('tanggal_jatuh_tempo')
+            ->orderBy('tanggal_invoice')
+            ->get();
+
+        $summary = $data['summary'];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.pdf.invoices_pdf', compact('invoices', 'summary'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download("Laporan-Piutang-Invoice_" . now()->format('Ymd_His') . ".pdf");
+    }
+
+    public function excel(Request $request)
+    {
+        $data = $this->getInvoiceReportData($request);
+        $invoices = $data['query']
+            ->orderBy('tanggal_jatuh_tempo')
+            ->orderBy('tanggal_invoice')
+            ->get();
+
+        $summary = $data['summary'];
+
+        $html = view('reports.excel.invoices_excel', compact('invoices', 'summary'))->render();
+
+        return response($html)
+            ->header('Content-Type', 'application/vnd.ms-excel')
+            ->header('Content-Disposition', "attachment; filename=\"Laporan-Piutang-Invoice_" . now()->format('Ymd_His') . ".xls\"");
+    }
+
+    private function getInvoiceReportData(Request $request)
+    {
         $filters = $request->validate([
             'nama_toko' => ['nullable', 'string', 'max:255'],
             'due_from' => ['nullable', 'date'],
@@ -54,13 +102,7 @@ class InvoiceController extends Controller
             'total' => (float) (clone $summaryQuery)->sum('total_tagihan'),
         ];
 
-        $invoices = $query
-            ->orderBy('tanggal_jatuh_tempo')
-            ->orderBy('tanggal_invoice')
-            ->paginate(15)
-            ->withQueryString();
-
-        return view('invoices.index', compact('invoices', 'summary', 'filters'));
+        return compact('query', 'summary', 'filters');
     }
 
     public function updateStatusLunas(Invoice $invoice): RedirectResponse

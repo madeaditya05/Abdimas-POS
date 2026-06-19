@@ -26,6 +26,7 @@ class ChartOfAccountController extends Controller
                 'Kas'                                   => 'Kas',
                 'Bank'                                  => 'Bank',
                 'Piutang Usaha'                         => 'Piutang Usaha',
+                'Persediaan Bahan'                      => 'Persediaan Bahan',
                 'Persediaan Bahan Baku'                 => 'Persediaan Bahan Baku',
                 'Persediaan Bahan Penolong'            => 'Persediaan Bahan Penolong',
                 'Peralatan Kedai'                       => 'Peralatan Kedai',
@@ -38,18 +39,24 @@ class ChartOfAccountController extends Controller
                 'Modal Pemilik'                         => 'Modal Pemilik',
                 'Prive'                                 => 'Prive',
                 'Laba Ditahan'                          => 'Laba Ditahan',
+                'Pendapatan Penjualan'                  => 'Pendapatan Penjualan',
                 'Penjualan Minuman'                     => 'Penjualan Minuman',
                 'Penjualan Makanan'                     => 'Penjualan Makanan',
                 'Penjualan Lain-lain'                   => 'Penjualan Lain-lain',
                 'Retur & Potongan Penjualan'            => 'Retur & Potongan Penjualan',
+                'Pembelian Bahan'                       => 'Pembelian Bahan',
+                'HPP Bahan Baku'                        => 'HPP Bahan Baku',
                 'HPP Bahan Baku Minuman'                => 'HPP Bahan Baku Minuman',
                 'HPP Bahan Baku Makanan'                => 'HPP Bahan Baku Makanan',
+                'Beban Gaji'                            => 'Beban Gaji',
                 'Beban Gaji Karyawan'                   => 'Beban Gaji Karyawan',
+                'Beban Listrik'                         => 'Beban Listrik',
                 'Beban Listrik & Air'                   => 'Beban Listrik & Air',
                 'Beban Sewa'                            => 'Beban Sewa',
                 'Beban Perlengkapan Kedai'              => 'Beban Perlengkapan Kedai',
                 'Beban Perawatan & Servis Mesin'        => 'Beban Perawatan & Servis Mesin',
                 'Beban Transportasi / Delivery'         => 'Beban Transportasi / Delivery',
+                'Beban Promosi'                         => 'Beban Promosi',
                 'Beban Marketing & Promosi'             => 'Beban Marketing & Promosi',
                 'Beban Lain-lain'                       => 'Beban Lain-lain',
             ],
@@ -68,6 +75,7 @@ class ChartOfAccountController extends Controller
         if (!in_array($sort, $allowedSort, true)) $sort = 'code';
 
         $q = ChartOfAccount::query()
+            ->withCount('journalLines')
             ->when($search !== '', function ($qq) use ($search) {
                 $qq->where(function ($w) use ($search) {
                     $w->where('code', 'like', "%{$search}%")
@@ -178,6 +186,10 @@ class ChartOfAccountController extends Controller
 
     public function destroy(ChartOfAccount $chart_of_account)
     {
+        if ($chart_of_account->journalLines()->exists()) {
+            return back()->with('error', 'Akun sudah dipakai di jurnal, jadi tidak bisa dihapus.');
+        }
+
         $chart_of_account->delete();
 
         return redirect()

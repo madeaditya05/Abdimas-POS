@@ -5,11 +5,31 @@
     --om-text: #0f172a;
     --om-muted: #64748b;
     --om-line: #e5e7eb;
-    --om-accent: #10b981;
+    --om-accent: #5a4035;
+    --om-accent-contrast: #ffffff;
+    --om-accent-soft: rgba(90, 64, 53, 0.12);
+    --om-ring: rgba(90, 64, 53, 0.18);
+    --om-focus: rgba(90, 64, 53, 0.35);
 
     --om-radius: 18px;
     --om-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
     --om-shadow-hover: 0 16px 40px rgba(2, 6, 23, 0.12);
+}
+
+body.theme-day {
+    --om-accent: #5a4035;
+    --om-accent-contrast: #ffffff;
+    --om-accent-soft: rgba(90, 64, 53, 0.12);
+    --om-ring: rgba(90, 64, 53, 0.18);
+    --om-focus: rgba(90, 64, 53, 0.35);
+}
+
+body.theme-coffee {
+    --om-accent: #44342c;
+    --om-accent-contrast: #ffffff;
+    --om-accent-soft: rgba(68, 52, 44, 0.12);
+    --om-ring: rgba(68, 52, 44, 0.18);
+    --om-focus: rgba(68, 52, 44, 0.35);
 }
 
 .om-page {
@@ -85,7 +105,7 @@
 
 .om-input:focus {
     border-color: color-mix(in srgb, var(--om-accent) 55%, var(--om-line));
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
+    box-shadow: 0 0 0 4px var(--om-ring);
 }
 
 .om-actions {
@@ -113,7 +133,7 @@
 }
 
 .om-btn:focus-visible {
-    outline: 2px solid rgba(16, 185, 129, 0.35);
+    outline: 2px solid var(--om-focus);
     outline-offset: 3px;
 }
 
@@ -124,7 +144,7 @@
 
 .om-btn--primary {
     background: var(--om-accent);
-    color: #fff;
+    color: var(--om-accent-contrast);
     border-color: var(--om-accent);
 }
 
@@ -172,7 +192,7 @@
     width: 42px;
     height: 42px;
     border-radius: 12px;
-    background: rgba(16, 185, 129, 0.12);
+    background: var(--om-accent-soft);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -205,14 +225,14 @@
 .om-tile--primary {
     background: linear-gradient(
         180deg,
-        rgba(16, 185, 129, 0.14),
-        rgb(185, 176, 16)
+        var(--om-accent-soft),
+        var(--om-card)
     );
-    border-color: rgba(185, 117, 16, 0.35);
+    border-color: color-mix(in srgb, var(--om-accent) 32%, var(--om-line));
 }
 
 .om-tile--primary .om-tile__icon {
-    background: rgba(16, 185, 129, 0.18);
+    background: color-mix(in srgb, var(--om-accent-soft) 85%, var(--om-card));
 }
 
 @media (max-width: 1100px) {

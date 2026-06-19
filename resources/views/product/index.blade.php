@@ -12,6 +12,7 @@
       <div class="card">
         <div class="card-body">
           @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+          @if(session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
 
           <h2 class="page-title m-0 mb-3">Produk</h2>
 
@@ -50,9 +51,13 @@
                         <td>
                           <div class="d-flex gap-2">
                             <a href="{{ route('product.edit', $p->id) }}" class="btn btn-edit btn-sm">Edit</a>
-                            <a href="#" class="btn btn-delete btn-sm"
-                               data-id="{{ $p->id }}"
-                               onclick="deleteConfirm(this); return false;">Hapus</a>
+                            @if ((int) ($p->order_items_count ?? 0) > 0)
+                              <button type="button" class="btn btn-disabled btn-sm" disabled title="Produk sudah dipakai di order">Terkunci</button>
+                            @else
+                              <a href="#" class="btn btn-delete btn-sm"
+                                 data-id="{{ $p->id }}"
+                                 onclick="deleteConfirm(this); return false;">Hapus</a>
+                            @endif
                           </div>
                         </td>
                       </tr>

@@ -18,7 +18,7 @@
   $secTitle = [
     'labarugi' => 'Laba Rugi',
     'items'    => 'Rekap Per Produk',
-    'payments' => 'Rekap Metode Pembayaran',
+    'payments' => 'Rekap Metode Pencatatan',
     'unified'  => 'Laporan Penjualan',
     'journal'  => 'Jurnal Umum',
     'ledger'   => 'Buku Besar',
@@ -62,6 +62,20 @@
         <input type="date" name="end_date" value="{{ request('end_date', now()->toDateString()) }}">
       </div>
 
+      @if(in_array('ledger', $secSel))
+      <div class="kr-field">
+        <label>Akun</label>
+        <select name="account_code" style="width: 100%; height: 42px; border: 1px solid #c7cdd4; border-radius: 12px; padding: 0 10px; background-color: #fff; color: #0f172a; font-size: 13px; outline: none;">
+          <option value="">Semua Akun</option>
+          @foreach($accounts as $acc)
+            <option value="{{ $acc->code }}" {{ request('account_code') == $acc->code ? 'selected' : '' }}>
+              {{ $acc->code }} - {{ $acc->name }}
+            </option>
+          @endforeach
+        </select>
+      </div>
+      @endif
+
       {{-- Dropdown hanya tampil kalau tidak dari sidebar --}}
       @if(!$hidePicker)
       <details class="kr-dd">
@@ -74,7 +88,7 @@
         <div class="kr-dd-menu">
           <label><input class="sec-check" type="checkbox" name="sec[]" value="labarugi" {{ in_array('labarugi',$secSel)?'checked':'' }}> Laba Rugi</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="items"    {{ in_array('items',$secSel)?'checked':'' }}> Rekap Per Produk</label>
-          <label><input class="sec-check" type="checkbox" name="sec[]" value="payments" {{ in_array('payments',$secSel)?'checked':'' }}> Rekap Per Metode Pembayaran</label>
+          <label><input class="sec-check" type="checkbox" name="sec[]" value="payments" {{ in_array('payments',$secSel)?'checked':'' }}> Rekap Per Metode Pencatatan</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="unified"  {{ in_array('unified',$secSel)?'checked':'' }}> Laporan Penjualan</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="journal"  {{ in_array('journal',$secSel)?'checked':'' }}> Jurnal Umum</label>
           <label><input class="sec-check" type="checkbox" name="sec[]" value="ledger"   {{ in_array('ledger',$secSel)?'checked':'' }}> Buku Besar</label>
@@ -107,6 +121,9 @@
 
       <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('owner.labarugi.pdf', $pdfSel) }}">
         PDF (sesuai pilihan)
+      </a>
+      <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('owner.labarugi.excel', $pdfSel) }}">
+        Excel (sesuai pilihan)
       </a>
     </div>
     </form>

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Penjualan extends Model
 {
@@ -162,7 +163,16 @@ class Penjualan extends Model
         // Setelah tersimpan: hitung ulang total & post jurnal
         static::saved(function (self $m) {
             $m->recalcTotal(); // quietly
-            app(JournalPoster::class)->postForPenjualan($m);
+
+            try {
+                app(JournalPoster::class)->postForPenjualan($m);
+            } catch (\Throwable $e) {
+                Log::warning('Gagal post jurnal penjualan, transaksi tetap dicatat.', [
+                    'penjualan_id' => $m->id,
+                    'kode_penjualan' => $m->kode_penjualan,
+                    'message' => $e->getMessage(),
+                ]);
+            }
         });
 
         // Saat dihapus: hapus jurnal yang terkait

@@ -113,4 +113,5 @@ return [
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
     // ==== Tambahan kamu (kode proteksi owner) ====
     'owner_signup_code' => env('OWNER_SIGNUP_CODE', null),
+    'kasir_signup_code' => env('KASIR_SIGNUP_CODE', null),
 ];

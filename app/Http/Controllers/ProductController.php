@@ -9,7 +9,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $product = Product::orderBy('name')->get();
+        $product = Product::withCount('orderItems')->orderBy('name')->get();
         return view('product.index', compact('product'));
     }
 
@@ -69,6 +69,7 @@ class ProductController extends Controller
         }
 
         $product = Product::query()
+            ->withCount('orderItems')
             ->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
                 ->orWhere('sku',  'like', "%{$s}%");
@@ -84,6 +85,11 @@ class ProductController extends Controller
     public function destroy($id)
     {
         $p = Product::findOrFail($id);
+
+        if ($p->orderItems()->exists()) {
+            return redirect()->route('product.index')->with('error', 'Produk sudah dipakai di order, jadi tidak bisa dihapus.');
+        }
+
         $p->delete();
         return redirect()->route('product.index')->with('success','Produk berhasil dihapus');
     }

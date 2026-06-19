@@ -27,7 +27,8 @@ class BahanBakuController extends Controller
 
     public function index(Request $req)
     {
-        $q = BahanBaku::query();
+        $q = BahanBaku::query()
+            ->withCount(['resepDetails', 'pembelianDetails', 'mutasi']);
 
         // search
         if ($s = $req->input('q')) {
@@ -123,6 +124,14 @@ class BahanBakuController extends Controller
 
     public function destroy(BahanBaku $bahan_baku)
     {
+        if (
+            $bahan_baku->resepDetails()->exists()
+            || $bahan_baku->pembelianDetails()->exists()
+            || $bahan_baku->mutasi()->exists()
+        ) {
+            return back()->with('error', 'Bahan baku sudah dipakai di resep, pembelian, atau mutasi stok, jadi tidak bisa dihapus.');
+        }
+
         if ($bahan_baku->foto_path) {
             Storage::disk('public')->delete($bahan_baku->foto_path);
         }

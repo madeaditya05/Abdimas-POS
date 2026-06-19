@@ -240,7 +240,7 @@ class LaporanJurnalController extends Controller
         $to   = $request->query('to');
 
         // ambil akun tipe "EXPENSE"
-        $expenseAccounts = ChartOfAccount::where('type','EXPENSE')->pluck('id')->toArray();
+        $expenseAccounts = ChartOfAccount::whereIn('type', ['expense', 'EXPENSE'])->pluck('id')->toArray();
 
         $query = JournalLine::query()
             ->with(['entry','coa'])

@@ -467,6 +467,8 @@
     <div class="inv-actions-filter">
       <button class="inv-btn inv-btn--primary" type="submit">Filter</button>
       <a class="inv-btn" href="{{ route('invoices.index') }}">Reset</a>
+      <a class="inv-btn" target="_blank" href="{{ route('invoices.pdf', request()->all()) }}">PDF</a>
+      <a class="inv-btn" target="_blank" href="{{ route('invoices.excel', request()->all()) }}">Excel</a>
     </div>
   </form>
 

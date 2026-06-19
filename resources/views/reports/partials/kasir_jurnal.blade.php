@@ -34,28 +34,38 @@ tr { page-break-inside: avoid; break-inside: avoid; }
       <thead>
         <tr>
           <th>Tanggal</th>
-          <th>No. Jurnal</th>
+          <th>Kode Akun</th>
+          <th>Keterangan</th>
           <th>Ref</th>
-          <th>Akun</th>
           <th class="kr-right">Debit</th>
-          <th class="kr-right">Credit</th>
+          <th class="kr-right">Kredit</th>
         </tr>
       </thead>
       <tbody>
-        @foreach($journal as $j)
-          <tr>
-            <td>{{ \Carbon\Carbon::parse($j->date)->format('d/m/Y') }}</td>
-            <td>{{ $j->entry_no }}</td>
-            <td>{{ $j->ref_no }}</td>
-            <td>{{ $j->code }} — {{ $j->name }}</td>
-            <td class="kr-right kr-money">Rp {{ number_format($j->debit,0,',','.') }}</td>
-            <td class="kr-right kr-money">Rp {{ number_format($j->credit,0,',','.') }}</td>
-          </tr>
+        @php
+          $grouped = $journal->groupBy('entry_no');
+        @endphp
+        @foreach($grouped as $entryNo => $lines)
+          @php
+            $sortedLines = $lines->sortBy(fn($line) => $line->credit > 0 ? 1 : 0);
+          @endphp
+          @foreach($sortedLines as $idx => $j)
+            <tr>
+              <td>{{ $idx === 0 ? \Carbon\Carbon::parse($j->date)->format('d/m/Y') : '' }}</td>
+              <td>{{ $j->code }}</td>
+              <td style="{{ $j->credit > 0 ? 'padding-left: 25px;' : '' }}">
+                {{ $j->name }}
+              </td>
+              <td>{{ $idx === 0 ? ($j->ref_no ?: $j->entry_no) : '' }}</td>
+              <td class="kr-right kr-money">Rp {{ number_format($j->debit,0,',','.') }}</td>
+              <td class="kr-right kr-money">Rp {{ number_format($j->credit,0,',','.') }}</td>
+            </tr>
+          @endforeach
         @endforeach
       </tbody>
       <tfoot>
         <tr>
-          <th colspan="4">Total</th>
+          <th colspan="4" class="kr-right">Total</th>
           <th class="kr-right kr-money">Rp {{ number_format($tDebit,0,',','.') }}</th>
           <th class="kr-right kr-money">Rp {{ number_format($tCredit,0,',','.') }}</th>
         </tr>

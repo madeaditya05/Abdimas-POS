@@ -21,15 +21,17 @@
 
     <form class="kr-filter" method="GET" action="{{ route('owner.tutupbuku') }}">
       <div class="kr-field">
-        <label>Dari</label>
-        <input type="date" name="start_date" value="{{ $start }}">
-      </div>
-      <div class="kr-field">
-        <label>Sampai</label>
-        <input type="date" name="end_date" value="{{ $end }}">
+        <label>Pilih Bulan</label>
+        <select name="month" onchange="this.form.submit()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; background-color: #fff; color: #374151; min-width: 180px; font-weight: 500;">
+          @foreach($monthsList as $val => $label)
+            <option value="{{ $val }}" {{ $selectedMonth == $val ? 'selected' : '' }}>{{ $label }}</option>
+          @endforeach
+        </select>
       </div>
       <div class="kr-actions">
         <button class="kr-btn kr-btn-primary" type="submit">Preview</button>
+        <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('owner.tutupbuku.pdf', ['month' => $selectedMonth]) }}">PDF</a>
+        <a class="kr-btn kr-btn-ghost" target="_blank" href="{{ route('owner.tutupbuku.excel', ['month' => $selectedMonth]) }}">Excel</a>
       </div>
     </form>
 
@@ -71,15 +73,19 @@
 
       <div style="margin-top:14px; display:flex; gap:10px;">
         @if($already)
-          <button class="kr-btn kr-btn-ghost" type="button" disabled
-                  style="opacity:.7; cursor:not-allowed;">
-            Periode sudah ditutup ✅
-          </button>
+          <form method="POST" action="{{ route('owner.tutupbuku.reopen', $already) }}" 
+                onsubmit="return confirm('Apakah Anda yakin ingin membuka kembali periode tutup buku ini? Jurnal penyesuaian penutupan buku akan otomatis dihapus.');">
+            @csrf
+            <input type="hidden" name="month" value="{{ $selectedMonth }}">
+            <button class="kr-btn" type="submit" 
+                    style="background-color:#dc2626; border-color:#dc2626; color:#fff; cursor:pointer;">
+              Buka Kembali Periode
+            </button>
+          </form>
         @else
           <form method="POST" action="{{ route('owner.tutupbuku.close') }}">
             @csrf
-            <input type="hidden" name="start_date" value="{{ $start }}">
-            <input type="hidden" name="end_date" value="{{ $end }}">
+            <input type="hidden" name="month" value="{{ $selectedMonth }}">
             <button class="kr-btn kr-btn-primary" type="submit">
               Tutup Buku Sekarang
             </button>

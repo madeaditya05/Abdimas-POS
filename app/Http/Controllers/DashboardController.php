@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Produk;
+use App\Models\Customer;
+use App\Models\Penjualan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -15,104 +16,351 @@ use App\Models\BahanBaku;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $today = now();
+        [
+            $filters,
+            $rangeStart,
+            $rangeEnd,
+            $periodLabel,
+            $salesSummaryTitle,
+            $chartTitle,
+        ] = $this->resolveDashboardFilter($request);
 
-        // ---- Penjualan per minggu (7 hari terakhir, per hari)
-        $weekly = Order::selectRaw('DATE(created_at) as d, SUM(grand_total) as total')
-            ->where('status', 'paid')
-            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
-            ->groupBy('d')
-            ->orderBy('d')
-            ->pluck('total', 'd');
+        $channelComparison = $this->channelComparisonData($rangeStart, $rangeEnd);
+        $salesTotal = $channelComparison['total_revenue'];
+        $paidOrdersCount = $channelComparison['total_count'];
+        $newOrders = Order::where('status', 'pending')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->count();
+        $newCustomers = Customer::whereBetween('created_at', [$rangeStart, $rangeEnd])->count();
 
-        // ---- Penjualan per bulan (12 bulan terakhir, per bulan)
-        $monthly = Order::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as ym, SUM(grand_total) as total')
-            ->where('status', 'paid')
-            ->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
-            ->groupBy('ym')
-            ->orderBy('ym')
-            ->pluck('total', 'ym');
+        $salesChartData = $this->salesChartData($filters['period'], $rangeStart, $rangeEnd, $chartTitle);
 
-        // ---- Penjualan per tahun (per tahun)
-        $yearly = Order::selectRaw('YEAR(created_at) as y, SUM(grand_total) as total')
-            ->where('status', 'paid')
-            ->groupBy('y')
-            ->orderBy('y')
-            ->pluck('total', 'y');
-
-        // ---- Pie chart produk terlaris
+        // ---- Pie chart produk terlaris sesuai periode filter
         $topProductsChart = OrderItem::select(
                 'product_id',
+                DB::raw('MIN(name) as item_name'),
                 DB::raw('SUM(qty) as sold')
             )
+            ->whereHas('order', function ($query) use ($rangeStart, $rangeEnd) {
+                $query->where('status', 'paid')
+                    ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+            })
             ->groupBy('product_id')
             ->orderByDesc('sold')
             ->limit(5)
             ->with('product:id,name')
-            ->get();
-
-        // ---- KPI lain (masih sama)
-        $salesToday = \App\Models\Order::where('status','paid')
-            ->whereDate('created_at', now())
-            ->sum('grand_total');
-
-        $newOrders = \App\Models\Order::where('status','pending')->count();
-        $newCustomers = 12;
-
-        // ===============================
-        //   Peringatan Stok (pakai stok_mutasi + min_stock bahan baku)
-        // ===============================
-
-        // Hitung stok current per bahan dari stok_mutasi (IN - OUT)
-        $stokPerBahan = StokMutasi::select(
-                'bahan_baku_id',
-                DB::raw("SUM(CASE WHEN tipe = 'in'  THEN qty ELSE 0 END) as total_in"),
-                DB::raw("SUM(CASE WHEN tipe = 'out' THEN qty ELSE 0 END) as total_out")
-            )
-            ->groupBy('bahan_baku_id')
             ->get()
-            ->mapWithKeys(function ($row) {
-                $stok = (float) $row->total_in - (float) $row->total_out;
-                return [$row->bahan_baku_id => $stok];
+            ->map(function ($item) {
+                return [
+                    'product_id' => $item->product_id,
+                    'name' => $item->product?->name
+                        ?? $item->item_name
+                        ?? ('Produk #' . ($item->product_id ?: '-')),
+                    'sold' => (int) $item->sold,
+                ];
             });
 
-        // Ambil semua bahan baku (atau boleh difilter aktif saja kalau mau)
-        $allBahan = BahanBaku::all();
-
-        // Tentukan mana yang stoknya sudah di bawah min_stock
-        $lowStockItems = $allBahan->filter(function ($bahan) use ($stokPerBahan) {
-                // stok real dari mutasi, default 0 kalau belum pernah ada mutasi
-                $currentStock = $stokPerBahan[$bahan->id] ?? 0.0;
-
-                // override property stok di instance ini (hanya buat tampilan, tidak di-save)
-                $bahan->stok = $currentStock;
-
-                $min = (float) ($bahan->min_stock ?? 0);
-
-                // kalau min_stock <= 0, anggap tidak dipantau
-                if ($min <= 0) {
-                    return false;
-                }
-
-                return $currentStock <= $min;
-            })
-            ->values(); // reset index
-
-        $lowStockCount = $lowStockItems->count();
-
         return view('tampilan.dashboard', compact(
-            'salesToday',
+            'salesTotal',
+            'paidOrdersCount',
             'newOrders',
-            'lowStockCount',
             'newCustomers',
-            'weekly',
-            'monthly',
-            'yearly',
+            'filters',
+            'periodLabel',
+            'salesSummaryTitle',
+            'salesChartData',
             'topProductsChart',
-            'lowStockItems'
+            'channelComparison'
         ));
+    }
+
+    private function channelComparisonData(Carbon $rangeStart, Carbon $rangeEnd): array
+    {
+        $offlineQuery = Penjualan::completedPurchase()
+            ->whereBetween('tanggal', [$rangeStart, $rangeEnd]);
+        $onlineQuery = Order::where('status', 'paid')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+
+        $offlineCount = (clone $offlineQuery)->count();
+        $onlineCount = (clone $onlineQuery)->count();
+        $offlineRevenue = (float) (clone $offlineQuery)->sum('total');
+        $onlineRevenue = (float) (clone $onlineQuery)->sum('grand_total');
+
+        $totalCount = $offlineCount + $onlineCount;
+        $totalRevenue = $offlineRevenue + $onlineRevenue;
+
+        $channels = [
+            'offline' => [
+                'key' => 'offline',
+                'label' => 'Offline',
+                'count' => $offlineCount,
+                'revenue' => $offlineRevenue,
+                'count_percent' => $totalCount > 0 ? round(($offlineCount / $totalCount) * 100, 1) : 0,
+                'revenue_percent' => $totalRevenue > 0 ? round(($offlineRevenue / $totalRevenue) * 100, 1) : 0,
+            ],
+            'online' => [
+                'key' => 'online',
+                'label' => 'Online',
+                'count' => $onlineCount,
+                'revenue' => $onlineRevenue,
+                'count_percent' => $totalCount > 0 ? round(($onlineCount / $totalCount) * 100, 1) : 0,
+                'revenue_percent' => $totalRevenue > 0 ? round(($onlineRevenue / $totalRevenue) * 100, 1) : 0,
+            ],
+        ];
+
+        if ($totalCount === 0) {
+            $dominant = [
+                'key' => 'none',
+                'label' => 'Belum ada data',
+                'count' => 0,
+                'revenue' => 0,
+            ];
+        } elseif ($offlineCount === $onlineCount && $offlineRevenue === $onlineRevenue) {
+            $dominant = [
+                'key' => 'balanced',
+                'label' => 'Seimbang',
+                'count' => $offlineCount,
+                'revenue' => $offlineRevenue,
+            ];
+        } else {
+            $dominantKey = (
+                $offlineCount > $onlineCount
+                || ($offlineCount === $onlineCount && $offlineRevenue > $onlineRevenue)
+            ) ? 'offline' : 'online';
+            $dominant = $channels[$dominantKey];
+        }
+
+        return [
+            'channels' => $channels,
+            'dominant' => $dominant,
+            'total_count' => $totalCount,
+            'total_revenue' => $totalRevenue,
+            'difference_count' => abs($offlineCount - $onlineCount),
+            'difference_revenue' => abs($offlineRevenue - $onlineRevenue),
+        ];
+    }
+
+    private function resolveDashboardFilter(Request $request): array
+    {
+        $period = $request->query('period', 'week');
+        if (! in_array($period, ['day', 'week', 'month', 'year'], true)) {
+            $period = 'week';
+        }
+
+        $today = now();
+        $selectedDay = $this->parseDay($request->query('date'), $today);
+        $selectedWeek = $this->parseWeek($request->query('week'), $today);
+        $selectedMonth = $this->parseMonth($request->query('month'), $today);
+        $selectedYear = $this->parseYear($request->query('year'), (int) $today->format('Y'));
+
+        if ($period === 'month') {
+            $rangeStart = $selectedMonth->copy()->startOfMonth();
+            $rangeEnd = $selectedMonth->copy()->endOfMonth();
+            $periodLabel = 'Bulan ' . $selectedMonth->locale('id')->translatedFormat('F Y');
+            $salesSummaryTitle = 'Penjualan Bulanan';
+            $chartTitle = 'Penjualan per Hari';
+        } elseif ($period === 'year') {
+            $rangeStart = Carbon::create($selectedYear, 1, 1)->startOfYear();
+            $rangeEnd = Carbon::create($selectedYear, 12, 31)->endOfYear();
+            $periodLabel = 'Tahun ' . $selectedYear;
+            $salesSummaryTitle = 'Penjualan Tahunan';
+            $chartTitle = 'Penjualan per Bulan';
+        } elseif ($period === 'week') {
+            $rangeStart = $selectedWeek->copy()->startOfDay();
+            $rangeEnd = $selectedWeek->copy()->addDays(6)->endOfDay();
+            $periodLabel = 'Minggu ' . $rangeStart->format('d/m/Y') . ' - ' . $rangeEnd->format('d/m/Y');
+            $salesSummaryTitle = 'Penjualan Mingguan';
+            $chartTitle = 'Penjualan per Hari';
+        } else {
+            $rangeStart = $selectedDay->copy()->startOfDay();
+            $rangeEnd = $selectedDay->copy()->endOfDay();
+            $periodLabel = 'Tanggal ' . $selectedDay->format('d/m/Y');
+            $salesSummaryTitle = 'Penjualan Harian';
+            $chartTitle = 'Penjualan per Jam';
+        }
+
+        return [
+            [
+                'period' => $period,
+                'date' => $selectedDay->toDateString(),
+                'week' => $selectedWeek->format('o-\WW'),
+                'month' => $selectedMonth->format('Y-m'),
+                'year' => (string) $selectedYear,
+            ],
+            $rangeStart,
+            $rangeEnd,
+            $periodLabel,
+            $salesSummaryTitle,
+            $chartTitle,
+        ];
+    }
+
+    private function salesChartData(string $period, Carbon $rangeStart, Carbon $rangeEnd, string $chartTitle): array
+    {
+        if ($period === 'week') {
+            $onlineRows = Order::selectRaw('DATE(created_at) as bucket, SUM(grand_total) as total')
+                ->where('status', 'paid')
+                ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+                ->groupBy('bucket')
+                ->orderBy('bucket')
+                ->pluck('total', 'bucket');
+            $offlineRows = Penjualan::completedPurchase()
+                ->selectRaw('DATE(tanggal) as bucket, SUM(total) as total')
+                ->whereBetween('tanggal', [$rangeStart, $rangeEnd])
+                ->groupBy('bucket')
+                ->orderBy('bucket')
+                ->pluck('total', 'bucket');
+
+            $labels = [];
+            $values = [];
+
+            for ($day = 0; $day < 7; $day++) {
+                $date = $rangeStart->copy()->addDays($day);
+                $labels[] = $date->locale('id')->translatedFormat('D d/m');
+                $values[] = (float) ($onlineRows[$date->toDateString()] ?? 0)
+                    + (float) ($offlineRows[$date->toDateString()] ?? 0);
+            }
+
+            return compact('labels', 'values', 'chartTitle');
+        }
+
+        if ($period === 'month') {
+            $onlineRows = Order::selectRaw('DAY(created_at) as bucket, SUM(grand_total) as total')
+                ->where('status', 'paid')
+                ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+                ->groupBy('bucket')
+                ->orderBy('bucket')
+                ->pluck('total', 'bucket');
+            $offlineRows = Penjualan::completedPurchase()
+                ->selectRaw('DAY(tanggal) as bucket, SUM(total) as total')
+                ->whereBetween('tanggal', [$rangeStart, $rangeEnd])
+                ->groupBy('bucket')
+                ->orderBy('bucket')
+                ->pluck('total', 'bucket');
+
+            $labels = [];
+            $values = [];
+
+            for ($day = 1; $day <= $rangeStart->daysInMonth; $day++) {
+                $labels[] = str_pad((string) $day, 2, '0', STR_PAD_LEFT) . '/' . $rangeStart->format('m');
+                $values[] = (float) ($onlineRows[$day] ?? 0)
+                    + (float) ($offlineRows[$day] ?? 0);
+            }
+
+            return compact('labels', 'values', 'chartTitle');
+        }
+
+        if ($period === 'year') {
+            $onlineRows = Order::selectRaw('MONTH(created_at) as bucket, SUM(grand_total) as total')
+                ->where('status', 'paid')
+                ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+                ->groupBy('bucket')
+                ->orderBy('bucket')
+                ->pluck('total', 'bucket');
+            $offlineRows = Penjualan::completedPurchase()
+                ->selectRaw('MONTH(tanggal) as bucket, SUM(total) as total')
+                ->whereBetween('tanggal', [$rangeStart, $rangeEnd])
+                ->groupBy('bucket')
+                ->orderBy('bucket')
+                ->pluck('total', 'bucket');
+
+            $labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            $values = [];
+
+            for ($month = 1; $month <= 12; $month++) {
+                $values[] = (float) ($onlineRows[$month] ?? 0)
+                    + (float) ($offlineRows[$month] ?? 0);
+            }
+
+            return compact('labels', 'values', 'chartTitle');
+        }
+
+        $onlineRows = Order::selectRaw('HOUR(created_at) as bucket, SUM(grand_total) as total')
+            ->where('status', 'paid')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd])
+            ->groupBy('bucket')
+            ->orderBy('bucket')
+            ->pluck('total', 'bucket');
+        $offlineRows = Penjualan::completedPurchase()
+            ->selectRaw('HOUR(tanggal) as bucket, SUM(total) as total')
+            ->whereBetween('tanggal', [$rangeStart, $rangeEnd])
+            ->groupBy('bucket')
+            ->orderBy('bucket')
+            ->pluck('total', 'bucket');
+
+        $labels = [];
+        $values = [];
+
+        for ($hour = 0; $hour < 24; $hour++) {
+            $labels[] = str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00';
+            $values[] = (float) ($onlineRows[$hour] ?? 0)
+                + (float) ($offlineRows[$hour] ?? 0);
+        }
+
+        return compact('labels', 'values', 'chartTitle');
+    }
+
+    private function parseDay(?string $value, Carbon $fallback): Carbon
+    {
+        if ($value) {
+            try {
+                $date = Carbon::createFromFormat('!Y-m-d', $value);
+                if ($date && $date->format('Y-m-d') === $value) {
+                    return $date;
+                }
+            } catch (\Throwable $e) {
+                //
+            }
+        }
+
+        return $fallback->copy()->startOfDay();
+    }
+
+    private function parseWeek(?string $value, Carbon $fallback): Carbon
+    {
+        if ($value && preg_match('/^(\d{4})-W(\d{2})$/', $value, $matches)) {
+            try {
+                $year = (int) $matches[1];
+                $week = (int) $matches[2];
+
+                if ($week >= 1 && $week <= 53) {
+                    return Carbon::now()
+                        ->setISODate($year, $week, 1)
+                        ->startOfDay();
+                }
+            } catch (\Throwable $e) {
+                //
+            }
+        }
+
+        return $fallback->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
+    }
+
+    private function parseMonth(?string $value, Carbon $fallback): Carbon
+    {
+        if ($value) {
+            try {
+                $date = Carbon::createFromFormat('!Y-m-d', $value . '-01');
+                if ($date && $date->format('Y-m') === $value) {
+                    return $date->startOfMonth();
+                }
+            } catch (\Throwable $e) {
+                //
+            }
+        }
+
+        return $fallback->copy()->startOfMonth();
+    }
+
+    private function parseYear(?string $value, int $fallback): int
+    {
+        if ($value && preg_match('/^\d{4}$/', $value)) {
+            return (int) $value;
+        }
+
+        return $fallback;
     }
 
     // Endpoint JSON untuk tombol lonceng
@@ -127,14 +375,11 @@ class DashboardController extends Controller
 
     private function stockNotificationsPayload(): array
     {
-        // batas stok rendah global (boleh kamu ubah: 5, 10, dll)
-        $minThreshold = 10;
-
         // 1) Hitung stok current per bahan dari tabel stok_mutasi (IN - OUT)
         $stokPerBahan = StokMutasi::select(
                 'bahan_baku_id',
-                DB::raw("SUM(CASE WHEN tipe = 'in'  THEN qty ELSE 0 END) as total_in"),
-                DB::raw("SUM(CASE WHEN tipe = 'out' THEN qty ELSE 0 END) as total_out")
+                DB::raw("SUM(CASE WHEN tipe = '" . StokMutasi::TYPE_IN . "' THEN qty ELSE 0 END) as total_in"),
+                DB::raw("SUM(CASE WHEN tipe = '" . StokMutasi::TYPE_OUT . "' THEN qty ELSE 0 END) as total_out")
             )
             ->groupBy('bahan_baku_id')
             ->get()
@@ -143,30 +388,31 @@ class DashboardController extends Controller
                 return [$row->bahan_baku_id => $stok];
             });
 
-        // Ambil data nama/kode bahan untuk ditampilkan di notif
-        $bahan = BahanBaku::whereIn('id', $stokPerBahan->keys())
-            ->get()
-            ->keyBy('id');
+        // Ambil semua bahan yang punya batas minimal, termasuk yang belum pernah punya mutasi.
+        $bahan = BahanBaku::query()
+            ->where('aktif', true)
+            ->where('min_order_qty', '>', 0)
+            ->orderBy('nama_bahan')
+            ->get();
 
         $items = collect();
 
         // 2) Notif untuk stok habis / rendah
-        foreach ($stokPerBahan as $bahanId => $stok) {
-            $row = $bahan->get($bahanId);
-            if (! $row) {
-                continue;
-            }
+        foreach ($bahan as $row) {
+            $stok = (float) ($stokPerBahan[$row->id] ?? 0);
+            $minThreshold = (float) ($row->min_order_qty ?? 0);
+            $satuan = $row->satuan_pakai ? ' ' . $row->satuan_pakai : '';
 
             if ($stok <= 0) {
                 $items->push([
                     'title'    => 'Stok Habis',
-                    'subtitle' => "{$row->nama_bahan} — {$stok} (<= 0)",
+                    'subtitle' => "{$row->nama_bahan} - {$stok}{$satuan} tersedia, minimal {$minThreshold}{$satuan}",
                     'color'    => '#ef4444', // merah
                 ]);
             } elseif ($stok <= $minThreshold) {
                 $items->push([
                     'title'    => 'Stok Rendah',
-                    'subtitle' => "{$row->nama_bahan} — {$stok} (<= {$minThreshold})",
+                    'subtitle' => "{$row->nama_bahan} - {$stok}{$satuan} tersedia, minimal {$minThreshold}{$satuan}",
                     'color'    => '#f59e0b', // oranye
                 ]);
             }
@@ -181,7 +427,7 @@ class DashboardController extends Controller
 
         foreach ($adjustments as $adj) {
             $nama = $adj->bahan->nama_bahan ?? 'Bahan tidak diketahui';
-            $sign = $adj->tipe === 'in' ? '+' : '-';
+            $sign = $adj->tipe === StokMutasi::TYPE_IN ? '+' : '-';
             $qty  = (float) $adj->qty;
             $tgl  = optional($adj->tanggal)->format('d M Y');
 

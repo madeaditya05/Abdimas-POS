@@ -18,11 +18,14 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'password' => 'password',
+                'user_group' => 'owner',
             ]
         );
 
         $this->call([
+            ChartOfAccountSeeder::class,
             UmkmFoodCatalogSeeder::class,
+            WeeklySalesDemoSeeder::class,
         ]);
     }
 }

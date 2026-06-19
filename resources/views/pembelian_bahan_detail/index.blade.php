@@ -324,6 +324,8 @@
             <div class="form-actions">
               <button class="btn btn--outline-coffee" type="submit">Terapkan Filter</button>
               <a href="{{ route('pembelian-bahan-detail.index') }}" class="btn btn--danger">Reset</a>
+              <a class="btn btn--outline-success" target="_blank" href="{{ route('pembelian-bahan-detail.pdf', request()->all()) }}">PDF</a>
+              <a class="btn btn--outline-success" target="_blank" href="{{ route('pembelian-bahan-detail.excel', request()->all()) }}">Excel</a>
             </div>
           </div>
         </div>

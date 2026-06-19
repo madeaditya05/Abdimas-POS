@@ -1,6 +1,6 @@
 <header class="topbar" id="topbar">
   <div class="topbar-left">
-    <button class="icon-btn" id="btnSidebar" type="button">
+    <button class="icon-btn" id="btnSidebar" type="button" data-action="toggle-sidebar" aria-label="Buka menu" aria-controls="sidebar" aria-expanded="false">
       <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
         stroke-linejoin="round">
         <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -206,5 +206,4 @@ document.addEventListener('DOMContentLoaded', () => {
   startPolling();           // polling cepat
 });
 </script>
-
 

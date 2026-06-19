@@ -14,7 +14,8 @@ class CustomerController extends Controller
     {
         $search = trim((string) $request->get('q', ''));
 
-        $query = Customer::query()->withCount('completedPenjualans');
+        $query = Customer::query()
+            ->withCount(['completedPenjualans', 'penjualans', 'orders']);
 
         if ($search !== '') {
             // normalisasi sama seperti di model
@@ -114,10 +115,13 @@ class CustomerController extends Controller
 
     /**
      * Hapus customer.
-     * (Nanti kalau sudah ada relasi order dan mau dicek dulu, bisa dimodif di sini)
      */
     public function destroy(Customer $customer)
     {
+        if ($customer->penjualans()->exists() || $customer->orders()->exists()) {
+            return back()->with('error', 'Customer sudah dipakai di transaksi atau order, jadi tidak bisa dihapus.');
+        }
+
         $customer->delete();
 
         return redirect()

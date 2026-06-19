@@ -1,6 +1,6 @@
 @push('styles')
   <link rel="stylesheet" href="{{ asset('assets/bahanbaku.css') }}">
-  <link rel="stylesheet" href="{{ asset('assets/produk.css') }}">
+  <link rel="stylesheet" href="{{ asset('assets/kategori-produk.css') }}">
 @endpush
 
 @extends('layouts.main')
@@ -17,6 +17,18 @@
       <span>Tambah Kategori</span>
     </a>
   </div>
+
+  @if (session('success'))
+    <div class="alert alert--success" style="margin:12px 0;">
+      {{ session('success') }}
+    </div>
+  @endif
+
+  @if (session('error'))
+    <div class="alert alert--error" style="margin:12px 0;">
+      {{ session('error') }}
+    </div>
+  @endif
 
   <form method="GET"
         action="{{ route('kategori-produk.index') }}"
@@ -59,7 +71,6 @@
       <thead>
         <tr>
           <th>Nama</th>
-          <th>Slug</th>
           <th class="num">Urutan</th>
           <th>Status</th>
           <th class="num">Dipakai Produk</th>
@@ -71,7 +82,6 @@
         @forelse($items as $row)
           <tr>
             <td>{{ $row->nama }}</td>
-            <td><code>{{ $row->slug }}</code></td>
             <td class="num">{{ $row->urutan }}</td>
             <td>
               <span class="bool {{ $row->aktif ? 'bool--yes' : 'bool--no' }}">
@@ -80,7 +90,13 @@
               </span>
             </td>
             <td class="num">{{ $row->produks_count }}</td>
-            <td>{{ $row->deskripsi ?: '–' }}</td>
+            <td>
+              @if($row->deskripsi)
+                <div class="desc-text" title="{{ $row->deskripsi }}">{{ $row->deskripsi }}</div>
+              @else
+                –
+              @endif
+            </td>
             <td>
               <div class="actions">
                 <a href="{{ route('kategori-produk.edit', $row) }}"
@@ -90,25 +106,27 @@
                   <span class="sr-only">Edit</span>
                 </a>
 
-                <form action="{{ route('kategori-produk.destroy', $row) }}"
-                      method="POST"
-                      onsubmit="return confirm('Hapus kategori produk ini?')">
-                  @csrf
-                  @method('DELETE')
+                @if ((int) ($row->produks_count ?? 0) <= 0)
+                  <form action="{{ route('kategori-produk.destroy', $row) }}"
+                        method="POST"
+                        onsubmit="return confirm('Hapus kategori produk ini?')">
+                    @csrf
+                    @method('DELETE')
 
-                  <button type="submit"
-                          class="btn btn--outline-danger btn--sm btn--icon"
-                          title="Hapus">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
-                    <span class="sr-only">Hapus</span>
-                  </button>
-                </form>
+                    <button type="submit"
+                            class="btn btn--outline-danger btn--sm btn--icon"
+                            title="Hapus">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+                      <span class="sr-only">Hapus</span>
+                    </button>
+                  </form>
+                @endif
               </div>
             </td>
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="muted" style="text-align:center;">
+            <td colspan="6" class="muted" style="text-align:center;">
               Belum ada data kategori produk.
             </td>
           </tr>

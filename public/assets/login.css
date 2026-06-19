@@ -29,7 +29,7 @@ html,
 body {
     margin: 0;
     padding: 0;
-    height: 100%;
+    min-height: 100%;
 }
 
 body {
@@ -45,11 +45,12 @@ body {
 
 .auth-page {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     width: 100%;
     align-items: stretch;
     justify-content: flex-end;
-    overflow: hidden;
+    overflow-x: hidden;
     background-color: var(--auth-bg); /* cream di belakang */
 }
 
@@ -58,6 +59,7 @@ body {
     flex: 1.4; /* kiri lebih lebar dari kanan */
     min-width: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 0;
     display: block;
 }
@@ -76,13 +78,15 @@ body {
 
 /* KANAN: panel putih berisi form */
 .auth-panel {
-    flex: 0 0 420px; /* lebar tetap, mirip Sneat */
-    max-width: 480px;
+    flex: 0 1 460px; /* panel bisa mengecil di layar tablet */
+    width: min(46vw, 460px);
+    max-width: 100%;
     min-width: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     background-color: #ffffff; /* panel putih */
     box-shadow: -12px 0 32px rgba(0, 0, 0, 0.08);
-    padding: 32px 40px;
+    padding: clamp(24px, 4vw, 40px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -353,31 +357,79 @@ form {
    ====================== */
 
 @media (max-width: 992px) {
-    .auth-hero {
-        padding-left: 32px;
-    }
-
     .auth-panel {
-        padding-right: 32px;
+        width: min(52vw, 440px);
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .auth-page {
         flex-direction: column;
         align-items: stretch;
+        justify-content: center;
+        background:
+            linear-gradient(rgba(246, 237, 227, 0.88), rgba(246, 237, 227, 0.96)),
+            var(--auth-mobile-bg) center / cover no-repeat;
     }
 
     .auth-hero {
-        display: none; /* di HP, fokus ke form aja */
+        display: none; /* di tablet/HP, fokus ke form aja */
     }
 
     .auth-panel {
-        padding: 24px 18px 32px;
+        width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 28px 18px;
+        background-color: rgba(255, 255, 255, 0.92);
+        box-shadow: none;
     }
 
     .login-card {
         max-width: 480px;
+        padding: 24px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 18px 50px rgba(59, 42, 36, 0.16);
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-panel {
+        align-items: stretch;
+        padding: 18px 14px;
+    }
+
+    .login-card {
+        max-width: none;
+        padding: 20px 16px;
+        border-radius: 16px;
+    }
+
+    .login-logo {
+        gap: 10px;
+    }
+
+    .logo-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .login-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .login-header p,
+    .form-group label,
+    .remember-checkbox,
+    .auth-footer-text {
+        font-size: 0.82rem;
+    }
+
+    .form-input,
+    .cs-trigger,
+    .btn-login {
+        min-height: 44px;
     }
 }
 

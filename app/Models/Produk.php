@@ -32,6 +32,11 @@ class Produk extends Model
         return $this->hasMany(\App\Models\Resep::class, 'produk_id');
     }
 
+    public function penjualanDetails(): HasMany
+    {
+        return $this->hasMany(\App\Models\PenjualanDetail::class, 'produk_id');
+    }
+
     public function resepAktif(): HasOne
     {
         return $this->hasOne(\App\Models\Resep::class, 'produk_id')->where('is_active', 1);

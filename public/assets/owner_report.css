@@ -5,7 +5,10 @@
   --text:#0f172a;
   --muted:#64748b;
   --line:#e5e7eb;
-  --accent:#10b981;
+  --accent:#5a4035;
+  --accent-contrast:#ffffff;
+  --accent-ring:rgba(90,64,53,.18);
+  --accent-focus:rgba(90,64,53,.35);
 
   --btn-h:46px;
   --btn-r:14px;
@@ -13,6 +16,20 @@
   padding: 18px;
   background: var(--soft);
   border-radius: 18px;
+}
+
+body.theme-day .kr-page{
+  --accent:#5a4035;
+  --accent-contrast:#ffffff;
+  --accent-ring:rgba(90,64,53,.18);
+  --accent-focus:rgba(90,64,53,.35);
+}
+
+body.theme-coffee .kr-page{
+  --accent:#44342c;
+  --accent-contrast:#ffffff;
+  --accent-ring:rgba(68,52,44,.18);
+  --accent-focus:rgba(68,52,44,.35);
 }
 
 .kr-card{
@@ -88,7 +105,7 @@
 
 .kr-field input[type="date"]:focus{
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-  box-shadow: 0 0 0 4px rgba(16,185,129,.18);
+  box-shadow: 0 0 0 4px var(--accent-ring);
 }
 
 /* BUTTON */
@@ -121,7 +138,7 @@
 }
 
 .kr-btn:focus-visible{
-  outline: 2px solid rgba(16,185,129,.35);
+  outline: 2px solid var(--accent-focus);
   outline-offset: 3px;
 }
 .kr-btn:hover{ transform: translateY(-1px); }
@@ -129,8 +146,8 @@
 .kr-btn-primary{
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
-  box-shadow: 0 10px 20px rgba(16,185,129,.18);
+  color: var(--accent-contrast);
+  box-shadow: 0 10px 20px var(--accent-ring);
 }
 
 .kr-btn-ghost{
@@ -164,7 +181,7 @@
 
 .kr-dd:not([open]) .kr-dd-menu{ display:none; }
 .kr-dd[open] summary.kr-btn{
-  box-shadow: 0 0 0 4px rgba(16,185,129,.16);
+  box-shadow: 0 0 0 4px var(--accent-ring);
 }
 
 .kr-dd-menu label{

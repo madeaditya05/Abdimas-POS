@@ -60,6 +60,8 @@
       </div>
       <div class="filter-actions">
         <button class="btn btn-ghost" type="submit">Terapkan</button>
+        <a class="btn btn-ghost" target="_blank" href="{{ route('beban-operasional.pdf', request()->all()) }}">PDF</a>
+        <a class="btn btn-ghost" target="_blank" href="{{ route('beban-operasional.excel', request()->all()) }}">Excel</a>
       </div>
     </form>
 

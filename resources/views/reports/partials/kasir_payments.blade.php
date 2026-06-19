@@ -1,7 +1,7 @@
 <div class="kr-section">
-  <div class="kr-section-title">Rekap Per Metode Pembayaran</div>
+  <div class="kr-section-title">Rekap Per Metode Pencatatan</div>
   @if($payments->isEmpty())
-    <div class="kr-empty">Belum ada pembayaran tersettlement.</div>
+    <div class="kr-empty">Belum ada penjualan tercatat.</div>
   @else
     <table class="kr-table">
       <thead><tr><th>Metode</th><th class="kr-right">Transaksi</th><th class="kr-right">Total</th></tr></thead>
@@ -17,4 +17,3 @@
     </table>
   @endif
 </div>
-

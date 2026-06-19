@@ -1,45 +1,100 @@
 {{-- Feather Icons --}}
-  <script src="https://unpkg.com/feather-icons"></script>
+<script src="https://unpkg.com/feather-icons"></script>
 
-  {{-- Script global (sidebar toggle, notif dropdown, init icons) --}}
-  <script>
+{{-- Script global: theme, sidebar, notification, icons --}}
+<script>
 document.addEventListener('DOMContentLoaded', function () {
-  /* ==== THEME INIT (baru, tidak mengubah logika lain) ==== */
+  if (window.__pastaShellReady) return;
+  window.__pastaShellReady = true;
+
   try {
-    var saved = localStorage.getItem('uiTheme') || 'day';
-    document.body.classList.toggle('theme-coffee', saved === 'coffee');
-    document.body.classList.toggle('theme-day', saved !== 'coffee');
+    var savedTheme = localStorage.getItem('uiTheme') || 'day';
+    document.body.classList.toggle('theme-coffee', savedTheme === 'coffee');
+    document.body.classList.toggle('theme-day', savedTheme !== 'coffee');
   } catch (e) {}
 
-  // Feather init
-  feather.replace({ width: 20, height: 20, 'stroke-width': 2 });
+  if (window.feather) {
+    feather.replace({ width: 20, height: 20, 'stroke-width': 2 });
+  }
 
-  // Sidebar toggle
   const body = document.body;
-  const logoToggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('sidebar');
   const btnSidebar = document.getElementById('btnSidebar');
+  const mobileSidebar = window.matchMedia('(max-width: 900px)');
+  const SIDEBAR_KEY = 'cofit.sidebar.state';
 
-  if (localStorage.getItem('sidebar') === 'collapsed') {   // ✅ sudah benar
-    body.classList.add('sidebar-collapsed');
+  function syncSidebarButton(){
+    btnSidebar?.setAttribute('aria-controls', 'sidebar');
+    btnSidebar?.setAttribute('aria-expanded', body.classList.contains('sidebar-open') ? 'true' : 'false');
   }
+
+  function closeMobileSidebar(){
+    body.classList.remove('sidebar-open');
+    syncSidebarButton();
+  }
+
+  function restoreDesktopSidebar(){
+    body.classList.remove('sidebar-open');
+    const saved = localStorage.getItem(SIDEBAR_KEY) || localStorage.getItem('sidebar');
+    body.classList.toggle('sidebar-collapsed', saved === 'collapsed');
+    syncSidebarButton();
+  }
+
+  function normalizeSidebarMode(){
+    if (mobileSidebar.matches) {
+      body.classList.remove('sidebar-collapsed');
+      closeMobileSidebar();
+    } else {
+      restoreDesktopSidebar();
+    }
+  }
+
   function toggleSidebar(){
-    body.classList.toggle('sidebar-collapsed');
-    localStorage.setItem('sidebar',
-      body.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded'
-    );
-  }
-  logoToggle?.addEventListener('click', toggleSidebar);
-  btnSidebar?.addEventListener('click', toggleSidebar);
+    if (mobileSidebar.matches) {
+      body.classList.toggle('sidebar-open');
+      body.classList.remove('sidebar-collapsed');
+      syncSidebarButton();
+      return;
+    }
 
-  /* === Sidebar toggle (delegated, supaya klik di SVG/area tombol tetap kena) === */
+    body.classList.toggle('sidebar-collapsed');
+    const state = body.classList.contains('sidebar-collapsed') ? 'collapsed' : 'expanded';
+    localStorage.setItem(SIDEBAR_KEY, state);
+    localStorage.setItem('sidebar', state);
+    closeMobileSidebar();
+  }
+
   document.addEventListener('click', function (e) {
-    const t = e.target.closest('[data-action="toggle-sidebar"], #btnSidebar, #menuToggle');
-    if (!t) return;
-    e.preventDefault();
-    toggleSidebar();
+    const toggle = e.target.closest('[data-action="toggle-sidebar"], #btnSidebar, #menuToggle');
+    if (toggle) {
+      e.preventDefault();
+      toggleSidebar();
+      return;
+    }
+
+    if (!mobileSidebar.matches || !body.classList.contains('sidebar-open')) return;
+    if (e.target.closest('#sidebar')) return;
+    closeMobileSidebar();
   });
 
-  // === Notification dropdown (robust & delegated) ===
+  sidebar?.addEventListener('click', function(e){
+    if (!mobileSidebar.matches) return;
+    if (e.target.closest('a.nav-item, a.subnav-item, .sidebar-footer a')) {
+      closeMobileSidebar();
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeMobileSidebar();
+  });
+
+  if (mobileSidebar.addEventListener) {
+    mobileSidebar.addEventListener('change', normalizeSidebarMode);
+  } else {
+    mobileSidebar.addListener(normalizeSidebarMode);
+  }
+  normalizeSidebarMode();
+
   (function(){
     const menu = document.getElementById('menuNotif');
     if (!menu) return;
@@ -50,7 +105,6 @@ document.addEventListener('DOMContentLoaded', function () {
       btn?.setAttribute('aria-expanded','false');
     }
 
-    // Delegasi klik: bekerja walau klik di SVG/badge di dalam tombol
     document.addEventListener('click', function(e){
       const btn = e.target.closest('#btnNotif');
       const insidePanel = e.target.closest('#menuNotif');
@@ -63,21 +117,20 @@ document.addEventListener('DOMContentLoaded', function () {
           menu.classList.add('show');
           btn.setAttribute('aria-expanded','true');
         }
-        return; // jangan terus ke “klik di luar”
+        return;
       }
 
-      // klik di luar panel
       if (!insidePanel) closeAll();
     });
 
-    document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') closeAll(); });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') closeAll();
+    });
   })();
 
-
-  /* ==== THEME TOGGLE HANDLER (baru) ==== */
   document.addEventListener('click', function(e){
-    var t = e.target.closest('[data-action="toggle-theme"], #btnTheme');
-    if (!t) return;
+    var themeToggle = e.target.closest('[data-action="toggle-theme"], #btnTheme');
+    if (!themeToggle) return;
     var isCoffee = document.body.classList.contains('theme-coffee');
     document.body.classList.toggle('theme-coffee', !isCoffee);
     document.body.classList.toggle('theme-day', isCoffee);

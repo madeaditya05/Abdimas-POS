@@ -29,6 +29,12 @@
     </div>
   @endif
 
+  @if (session('error'))
+    <div class="form-section" style="border-color:#fecaca;background:#fef2f2;margin-top:12px;color:#991b1b;">
+      <strong>Gagal:</strong> {{ session('error') }}
+    </div>
+  @endif
+
   {{-- Filter & Search --}}
   <form method="GET" action="{{ route('chart-of-accounts.index') }}"
         class="filter-bar"
@@ -127,20 +133,22 @@
                   <span class="sr-only">Edit</span>
                 </a>
 
-                {{-- HAPUS --}}
-                <form action="{{ route('chart-of-accounts.destroy', $row) }}"
-                      method="POST"
-                      onsubmit="return confirm('Hapus akun ini?')">
-                  @csrf
-                  @method('DELETE')
+                @if ((int) ($row->journal_lines_count ?? 0) <= 0)
+                  {{-- HAPUS --}}
+                  <form action="{{ route('chart-of-accounts.destroy', $row) }}"
+                        method="POST"
+                        onsubmit="return confirm('Hapus akun ini?')">
+                    @csrf
+                    @method('DELETE')
 
-                  <button type="submit"
-                          class="btn btn--outline-danger btn--sm btn--icon"
-                          title="Hapus">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
-                    <span class="sr-only">Hapus</span>
-                  </button>
-                </form>
+                    <button type="submit"
+                            class="btn btn--outline-danger btn--sm btn--icon"
+                            title="Hapus">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+                      <span class="sr-only">Hapus</span>
+                    </button>
+                  </form>
+                @endif
               </div>
             </td>
           </tr>

@@ -246,3 +246,59 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Responsive guard for beban pages */
+.beban-page,
+.beban-card,
+.table-wrap,
+.beban-form {
+    min-width: 0;
+}
+
+@media (max-width: 900px) {
+    .beban-page {
+        padding: 12px;
+    }
+
+    .beban-card {
+        padding: 14px;
+    }
+
+    .beban-header-actions,
+    .form-actions {
+        align-items: stretch;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .beban-header-actions .btn,
+    .form-actions .btn {
+        flex: 1 1 160px;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .beban-table {
+        min-width: 640px;
+    }
+
+    .beban-table th,
+    .beban-table td {
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 520px) {
+    .beban-title {
+        font-size: 21px;
+    }
+
+    .beban-header-actions .btn,
+    .form-actions .btn,
+    .beban-filter .btn {
+        width: 100%;
+    }
+}

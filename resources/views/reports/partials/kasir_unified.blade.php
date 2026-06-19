@@ -1,5 +1,5 @@
 <div class="kr-section">
-  <div class="kr-section-title">Rekapitulasi Pembayaran (Tunai vs Non-Tunai)</div>
+  <div class="kr-section-title">Rekapitulasi Penjualan (Tunai vs Non-Tunai)</div>
   @php
     $tunai = $payUnified->firstWhere('kategori','Tunai');
     $nontunai = $payUnified->firstWhere('kategori','Non Tunai');
@@ -14,4 +14,3 @@
     </tbody>
   </table>
 </div>
-

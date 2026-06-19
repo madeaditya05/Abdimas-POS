@@ -7,7 +7,6 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KasirController;
 use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\CustomerPembayaranController;
 use App\Http\Controllers\CashReconciliationController;
 use App\Http\Controllers\PanelController;
 
@@ -73,22 +72,29 @@ Route::middleware('auth')->group(function () {
     Route::get('/kasir/status/{kode}',   [KasirController::class, 'statusPenjualan'])->name('kasir.status');
 
     // Laporan (Kasir)
-    Route::get('/reports/kasir',     [KasirReportController::class, 'index'])->name('kasir.rekap');
-    Route::get('/reports/kasir/pdf', [KasirReportController::class, 'pdf'])->name('kasir.rekap.pdf');
+    Route::get('/reports/kasir',       [KasirReportController::class, 'index'])->name('kasir.rekap');
+    Route::get('/reports/kasir/pdf',   [KasirReportController::class, 'pdf'])->name('kasir.rekap.pdf');
+    Route::get('/reports/kasir/excel', [KasirReportController::class, 'excel'])->name('kasir.rekap.excel');
 
     // Laporan (Owner)
-    Route::get('/reports/owner', [OwnerReportController::class, 'menu'])->name('owner.reports.menu');
-    Route::get('/reports/owner/laba-rugi',     [OwnerReportController::class, 'index'])->name('owner.labarugi');
-    Route::get('/reports/owner/laba-rugi/pdf', [OwnerReportController::class, 'pdf'])->name('owner.labarugi.pdf');
+    Route::get('/reports/owner',                 [OwnerReportController::class, 'menu'])->name('owner.reports.menu');
+    Route::get('/reports/owner/laba-rugi',       [OwnerReportController::class, 'index'])->name('owner.labarugi');
+    Route::get('/reports/owner/laba-rugi/pdf',   [OwnerReportController::class, 'pdf'])->name('owner.labarugi.pdf');
+    Route::get('/reports/owner/laba-rugi/excel', [OwnerReportController::class, 'excel'])->name('owner.labarugi.excel');
 
     // Invoice / Piutang Tempo
-    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/invoices',                  [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('/invoices/pdf',              [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+    Route::get('/invoices/excel',            [InvoiceController::class, 'excel'])->name('invoices.excel');
     Route::patch('/invoices/{invoice}/lunas', [InvoiceController::class, 'updateStatusLunas'])
         ->name('invoices.updateStatusLunas');
 
     // Tutup Buku (Owner)
-    Route::get('/reports/owner/closing', [OwnerClosingController::class, 'index'])->name('owner.tutupbuku');
-    Route::post('/reports/owner/closing', [OwnerClosingController::class, 'close'])->name('owner.tutupbuku.close');
+    Route::get('/reports/owner/closing',       [OwnerClosingController::class, 'index'])->name('owner.tutupbuku');
+    Route::get('/reports/owner/closing/pdf',   [OwnerClosingController::class, 'pdf'])->name('owner.tutupbuku.pdf');
+    Route::get('/reports/owner/closing/excel', [OwnerClosingController::class, 'excel'])->name('owner.tutupbuku.excel');
+    Route::post('/reports/owner/closing',      [OwnerClosingController::class, 'close'])->name('owner.tutupbuku.close');
+    Route::post('/reports/owner/closing/{closingPeriod}/reopen', [OwnerClosingController::class, 'reopen'])->name('owner.tutupbuku.reopen');
 
     // Manajemen (Owner)
     Route::prefix('app')->group(function () {
@@ -112,6 +118,10 @@ Route::middleware('auth')->group(function () {
 
         Route::get('pembelian-bahan-detail', [PembelianBahanDetailController::class, 'index'])
             ->name('pembelian-bahan-detail.index');
+        Route::get('pembelian-bahan-detail/pdf', [PembelianBahanDetailController::class, 'pdf'])
+            ->name('pembelian-bahan-detail.pdf');
+        Route::get('pembelian-bahan-detail/excel', [PembelianBahanDetailController::class, 'excel'])
+            ->name('pembelian-bahan-detail.excel');
 
         Route::resource('mutasi-stok', StokMutasiController::class)
             ->only(['index'])
@@ -131,6 +141,8 @@ Route::middleware('auth')->group(function () {
 
         // Beban Operasional
         Route::get('beban-operasional', [BebanOperasionalController::class, 'index'])->name('beban-operasional.index');
+        Route::get('beban-operasional/pdf', [BebanOperasionalController::class, 'pdf'])->name('beban-operasional.pdf');
+        Route::get('beban-operasional/excel', [BebanOperasionalController::class, 'excel'])->name('beban-operasional.excel');
         Route::get('beban-operasional/create', [BebanOperasionalController::class, 'create'])->name('beban-operasional.create');
         Route::post('beban-operasional', [BebanOperasionalController::class, 'store'])->name('beban-operasional.store');
         Route::delete('beban-operasional/{id}', [BebanOperasionalController::class, 'destroy'])->name('beban-operasional.destroy');
@@ -150,7 +162,3 @@ Route::middleware('auth')->group(function () {
     Route::get('/barista/espresso/preview', [EspressoController::class, 'preview'])->name('espresso.preview');
     Route::get('/display/espresso', [EspressoController::class, 'screen'])->name('espresso.screen');
 });
-
-// ===== Public customer screen =====
-Route::get('/pembayaran', [CustomerPembayaranController::class, 'layar'])->name('customer.pembayaran.live');
-Route::get('/public/display/{code}', [CustomerPembayaranController::class, 'dataDisplay']);

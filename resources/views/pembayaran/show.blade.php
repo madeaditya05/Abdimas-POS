@@ -1,14 +1,16 @@
 @extends('layouts.customer')
-@section('title', 'Layar Customer')
+@section('title', 'Layar Pembayaran')
 
 @section('content')
 <div class="cust-wrap">
   <header class="cust-header">
     <div class="brand">
-      <div class="brand-badge">☕</div>
+      <div class="brand-badge">
+        <img src="{{ asset('images/foto logo pasta nafisa.png') }}" alt="Pasta Nafisa" class="brand-logo">
+      </div>
       <div>
-        <div class="brand-title">Cofit EV</div>
-        <div id="judulOrder" class="brand-sub">Menunggu order…</div>
+        <div class="brand-title">Pasta Nafisa</div>
+        <div id="judulOrder" class="brand-sub">Menunggu order...</div>
       </div>
     </div>
     <div class="badges">
@@ -42,7 +44,7 @@
             <p>QR String:</p>
             <code id="qrString"></code>
           </div>
-          <div id="infoQris" class="info">Menunggu metode pembayaran…</div>
+          <div id="infoQris" class="info">Menunggu metode pembayaran...</div>
         </div>
 
         <div id="boxVa" class="va-box" style="display:none;">
@@ -52,7 +54,7 @@
 
         <div id="stateRow" class="state">
           <span class="dot"></span>
-          <span id="stateText">Menunggu order dari kasir…</span>
+          <span id="stateText">Menunggu order dari kasir...</span>
         </div>
       </div>
     </div>
@@ -92,11 +94,11 @@ function setBadge(stat){
   el.badge.className = 'pill ' + (map[s] || 'warn');
   el.state.className = 'state ' + (isPaid(s) ? 'ok' : (s==='expired'||s==='cancelled') ? 'bad' : '');
   el.stateText.textContent =
-    isPaid(s)       ? 'Pembayaran berhasil ✅' :
+    isPaid(s)       ? 'Pembayaran berhasil.' :
     s==='expired'   ? 'Transaksi kedaluwarsa.' :
     s==='cancelled' ? 'Transaksi dibatalkan.' :
-    s==='pending'   ? 'Menunggu pembayaran…' :
-                      'Menunggu order dari kasir…';
+    s==='pending'   ? 'Menunggu pembayaran...' :
+                      'Menunggu order dari kasir...';
 }
 
 function renderBelanja(items){
@@ -135,10 +137,10 @@ function showVa(bankRaw, no){
 }
 
 function clearUI(){
-  el.title.textContent='Menunggu order…';
+  el.title.textContent='Menunggu order...';
   el.list.innerHTML=''; el.total.textContent='Rp 0';
   el.img.style.display='none'; el.fb.style.display='none';
-  el.info.style.display='block'; el.info.textContent='Menunggu metode pembayaran…';
+  el.info.style.display='block'; el.info.textContent='Menunggu metode pembayaran...';
   el.boxVa.style.display='none'; setBadge('idle');
 }
 
@@ -150,7 +152,7 @@ async function fetchDisplay(){
 
 function render(data){
   LAST = data;
-  el.title.textContent = data.order_no ? ('Order ' + data.order_no) : 'Menunggu order…';
+  el.title.textContent = data.order_no ? ('Order ' + data.order_no) : 'Menunggu order...';
   renderBelanja(data.items || []);
   el.total.textContent = rupiah(data.grand_total || 0);
   setBadge(data.status || 'pending');

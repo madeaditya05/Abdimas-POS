@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<div class="auth-page">
+<div class="auth-page" style="--auth-mobile-bg: url('{{ asset('images/login.png') }}')">
 
   {{-- PANEL KIRI: ILUSTRASI --}}
   <div class="auth-hero">

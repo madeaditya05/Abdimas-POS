@@ -106,7 +106,7 @@
     <div class="om-section">
       <div class="om-section__label">OPERASIONAL</div>
       <div class="om-grid">
-        {{-- Penjualan --}}
+        {{-- Laporan Rekapitulasi Pembayaran --}}
         <a class="om-tile" href="{{ $toOwner('payments') }}">
           <div class="om-tile__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
@@ -115,7 +115,7 @@
             </svg>
           </div>
           <div class="om-tile__body">
-            <div class="om-tile__title">Penjualan</div>
+            <div class="om-tile__title">Laporan Rekapitulasi Pembayaran</div>
             <div class="om-tile__desc">Ringkasan performa penjualan pada periode yang dipilih.</div>
           </div>
         </a>

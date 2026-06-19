@@ -9,17 +9,17 @@
 <div class="card" id="customer-table">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
     <h2 style="margin:0;">Customer</h2>
-
-    <a href="{{ route('customer.create') }}"
-       class="btn btn--outline-success btn--with-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-inline"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
-      <span>Customer Baru</span>
-    </a>
   </div>
 
   @if (session('success'))
     <div class="alert alert--success" style="margin:12px 0;">
       {{ session('success') }}
+    </div>
+  @endif
+
+  @if (session('error'))
+    <div class="alert alert--error" style="margin:12px 0;">
+      {{ session('error') }}
     </div>
   @endif
 
@@ -59,6 +59,8 @@
         @forelse ($items as $idx => $row)
           @php
             $jumlahBeli = (int) ($row->completed_penjualans_count ?? 0);
+            $isUsed = ((int) ($row->penjualans_count ?? 0) > 0)
+                || ((int) ($row->orders_count ?? 0) > 0);
             $minBeli = (int) ($row->discount_min_transactions ?? 10);
             $diskonPersen = (float) ($row->discount_percent ?? 0);
             $diskonAktif = $diskonPersen > 0 && $jumlahBeli >= $minBeli;
@@ -90,19 +92,21 @@
                   <span class="sr-only">Edit</span>
                 </a>
 
-                <form action="{{ route('customer.destroy', $row) }}"
-                      method="POST"
-                      onsubmit="return confirm('Hapus customer ini?')">
-                  @csrf
-                  @method('DELETE')
+                @if (!$isUsed)
+                  <form action="{{ route('customer.destroy', $row) }}"
+                        method="POST"
+                        onsubmit="return confirm('Hapus customer ini?')">
+                    @csrf
+                    @method('DELETE')
 
-                  <button type="submit"
-                          class="btn btn--outline-danger btn--sm btn--icon"
-                          title="Hapus">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
-                    <span class="sr-only">Hapus</span>
-                  </button>
-                </form>
+                    <button type="submit"
+                            class="btn btn--outline-danger btn--sm btn--icon"
+                            title="Hapus">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="icon-aksi"><path d="M3 6h18" /><path d="M8 6V4.75A1.75 1.75 0 0 1 9.75 3h4.5A1.75 1.75 0 0 1 16 4.75V6" /><path d="M6.75 6l.7 11.2A2 2 0 0 0 9.44 19h5.12a2 2 0 0 0 1.99-1.8L17.25 6" /><path d="M10 10.25v5.5" /><path d="M14 10.25v5.5" /></svg>
+                      <span class="sr-only">Hapus</span>
+                    </button>
+                  </form>
+                @endif
               </div>
             </td>
           </tr>
