@@ -139,18 +139,22 @@
 
 <div class="page">
   <div class="no-print" style="display:flex; gap:8px; justify-content:flex-end; margin-bottom:12px;">
-    <a href="{{ route('kasir.index') }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kembali</a>
+    @auth
+      <a href="{{ route('kasir.index') }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kembali</a>
+    @endauth
     <a href="{{ route('kasir.invoice', ['kode' => $penjualan->kode_penjualan, 'print' => 1]) }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Cetak</a>
-    <button type="button" id="btnCetakRawBT" class="btn" style="cursor:pointer; padding:8px 10px; border:1px solid #0f766e; border-radius:10px; background:#fff; color:#0f766e;">Cetak Struk</button>
-    @php
-      $waMsg = "Invoice {$penjualan->kode_penjualan} - {$brand}%0A".
-               "Total: {$rupiah($grand)}%0A".
-               ($due ? "Jatuh tempo: {$due}%0A" : "").
-               "Link: " . urlencode(route('kasir.invoice', ['kode' => $penjualan->kode_penjualan]));
-      $waLink = "https://wa.me/?text={$waMsg}";
-    @endphp
-    <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kirim WhatsApp</a>
-    <span id="rawbtStatus" style="align-self:center; font-size:12px; color:#334155;"></span>
+    @auth
+      <button type="button" id="btnCetakRawBT" class="btn" style="cursor:pointer; padding:8px 10px; border:1px solid #0f766e; border-radius:10px; background:#fff; color:#0f766e;">Cetak Struk</button>
+      @php
+        $waMsg = "Invoice {$penjualan->kode_penjualan} - {$brand}%0A".
+                 "Total: {$rupiah($grand)}%0A".
+                 ($due ? "Jatuh tempo: {$due}%0A" : "").
+                 "Link: " . urlencode(route('kasir.invoice', ['kode' => $penjualan->kode_penjualan]));
+        $waLink = "https://wa.me/?text={$waMsg}";
+      @endphp
+      <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kirim WhatsApp</a>
+      <span id="rawbtStatus" style="align-self:center; font-size:12px; color:#334155;"></span>
+    @endauth
   </div>
 
   <div class="inv-wrap">
