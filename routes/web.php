@@ -22,6 +22,7 @@ use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\BebanOperasionalController;
 use App\Http\Controllers\LaporanJurnalController;
 use App\Http\Controllers\EspressoController;
+use App\Http\Controllers\SettingController;
 
 use App\Http\Controllers\Reports\KasirReportController;
 use App\Http\Controllers\Reports\OwnerReportController;
@@ -163,4 +164,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/barista/espresso/data', [EspressoController::class, 'getData'])->name('espresso.data');
     Route::get('/barista/espresso/preview', [EspressoController::class, 'preview'])->name('espresso.preview');
     Route::get('/display/espresso', [EspressoController::class, 'screen'])->name('espresso.screen');
+
+    // Pengaturan (Owner)
+    Route::middleware('owner')->group(function () {
+        Route::get('/pengaturan', [SettingController::class, 'index'])->name('pengaturan.index');
+        Route::post('/pengaturan', [SettingController::class, 'update'])->name('pengaturan.update');
+    });
 });

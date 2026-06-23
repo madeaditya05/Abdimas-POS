@@ -233,9 +233,9 @@
       {{-- Metode pencatatan --}}
       <div class="kasir-form-inline" style="margin-bottom:12px;">
         <select name="metode" id="metodeBayar" class="form-input">
-          <option value="cash">Tunai / langsung</option>
-          <option value="qris">QRIS langsung</option>
-          <option value="transfer">Transfer langsung</option>
+          <option value="cash">Tunai</option>
+          <option value="qris">QRIS</option>
+          <option value="transfer">Transfer</option>
           <option value="debit">Debit / kartu</option>
           <option value="tempo">Piutang / invoice</option>
           <option value="lainnya">Lainnya</option>
@@ -1108,15 +1108,16 @@ $(function(){
 
     if (DISCOUNT.discount_amount > 0) {
       customerDiscountText.text(
-        'Diskon customer ' + Number(DISCOUNT.discount_percent || 0).toLocaleString('id-ID') +
-        '% - sudah beli ' + (DISCOUNT.purchase_count || 0) + ' kali'
+        '🎉 Selamat! Diskon Loyalti ' + Number(DISCOUNT.discount_percent || 0).toLocaleString('id-ID') +
+        '% Aktif (Pembelian ke-' + (DISCOUNT.purchase_count + 1) + ')'
       );
       customerDiscountAmount.text('-' + formatRupiah(DISCOUNT.discount_amount));
       customerDiscountBox.show();
     } else if (String(inputNama.val() || '').trim() && DISCOUNT.exists && DISCOUNT.configured_percent > 0) {
+      const minTx = parseInt(DISCOUNT.min_transactions || 10, 10);
+      const nextTarget = (Math.floor((DISCOUNT.purchase_count || 0) / minTx) + 1) * minTx;
       customerDiscountText.text(
-        'Belum dapat diskon. Riwayat ' + (DISCOUNT.purchase_count || 0) +
-        '/' + (DISCOUNT.min_transactions || 10) + ' kali pembelian'
+        'Beli ' + (DISCOUNT.remaining_transactions || minTx) + 'x lagi untuk diskon berikutnya (Target: ke-' + nextTarget + ')'
       );
       customerDiscountAmount.text(Number(DISCOUNT.configured_percent || 0).toLocaleString('id-ID') + '%');
       customerDiscountBox.show();

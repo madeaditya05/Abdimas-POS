@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User; 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
@@ -73,14 +74,21 @@ class LoginController extends Controller
 
     private function resolveSignupUserGroup(string $token): ?string
     {
-        $codes = [
-            'owner' => config('auth.owner_signup_code'),
-            'kasir' => config('auth.kasir_signup_code'),
-        ];
+        $signupCode = Setting::get('signup_code');
+        if (is_string($signupCode) && $signupCode !== '') {
+            if (hash_equals($signupCode, $token)) {
+                return 'owner';
+            }
+        } else {
+            // Fallback to config files
+            $ownerCode = config('auth.owner_signup_code');
+            if (is_string($ownerCode) && $ownerCode !== '' && hash_equals($ownerCode, $token)) {
+                return 'owner';
+            }
 
-        foreach ($codes as $group => $expected) {
-            if (is_string($expected) && $expected !== '' && hash_equals($expected, $token)) {
-                return $group;
+            $kasirCode = config('auth.kasir_signup_code');
+            if (is_string($kasirCode) && $kasirCode !== '' && hash_equals($kasirCode, $token)) {
+                return 'kasir';
             }
         }
 

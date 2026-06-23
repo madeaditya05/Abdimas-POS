@@ -18,5 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
     })
 
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => 'Sesi Anda telah berakhir. Silakan muat ulang halaman.',
+                ], 419);
+            }
+            return redirect()->route('login')->with('success', 'Sesi Anda telah berakhir. Silakan login kembali.');
+        });
     })->create();

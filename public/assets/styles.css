@@ -3552,3 +3552,10 @@ button {
         min-width: 0;
     }
 }
+
+/* Prevent sidebar header and footer from shrinking in flexbox layout */
+.sidebar-header,
+.sidebar-footer {
+    flex-shrink: 0 !important;
+}
+
