@@ -94,7 +94,7 @@
 @section('content')
 <div class="page">
   <div class="no-print" style="display:flex; gap:8px; justify-content:center; margin-bottom:20px; background:#fff; padding:10px; border-radius:8px; border:1px solid #d1d5db; flex-wrap:wrap;">
-    <a href="{{ route('kasir.index') }}" class="btn" style="text-decoration:none; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; color:#111827; font-size:13px; font-weight:600;">
+    <a href="{{ route('kasir.index') }}" class="btn" id="btnKembali" style="text-decoration:none; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; color:#111827; font-size:13px; font-weight:600;">
       Kembali
     </a>
 
@@ -202,7 +202,16 @@
           setStatus(data.message || 'Struk berhasil dicetak.');
 
           if (redirectAfterPrint) {
-            window.location.href = indexUrl;
+            if (window.opener) {
+              try {
+                if (window.opener && !window.opener.closed) {
+                  window.opener.location.reload();
+                }
+              } catch(e) {}
+              window.close();
+            } else {
+              window.location.href = indexUrl;
+            }
           }
         }).catch(function(error) {
           setStatus(error.message || 'Gagal mencetak struk.');
@@ -211,6 +220,18 @@
             btnCetak.innerText = 'Cetak ke ' + printerName;
           }
         });
+      }
+
+      const btnKembali = document.getElementById('btnKembali');
+      if (window.opener) {
+        if (btnKembali) {
+          btnKembali.textContent = 'Tutup Halaman';
+          btnKembali.href = '#';
+          btnKembali.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.close();
+          });
+        }
       }
 
       if (btnCetak) {
@@ -242,7 +263,16 @@
             body: JSON.stringify({ dicetak: 1 })
           }).finally(function(){
             localStorage.removeItem('last_sales_code');
-            window.location.href = indexUrl;
+            if (window.opener) {
+              try {
+                if (window.opener && !window.opener.closed) {
+                  window.opener.location.reload();
+                }
+              } catch(e) {}
+              window.close();
+            } else {
+              window.location.href = indexUrl;
+            }
           });
         });
       }

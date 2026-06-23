@@ -35,6 +35,65 @@
     background: #fee2e2;
     color: #991b1b;
   }
+
+  /* Tablet layout overrides to optimize space */
+  @media (max-width: 1200px) {
+    .dashboard-main {
+      padding: 12px !important;
+    }
+  }
+
+  @media (min-width: 901px) and (max-width: 1200px) {
+    .kasir-pos-grid {
+      grid-template-columns: minmax(0, 1fr) 310px !important;
+      gap: 12px !important;
+    }
+    .produk-grid--img {
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+      gap: 10px !important;
+    }
+    .produk-card--img {
+      min-height: 180px !important;
+    }
+    .produk-body {
+      padding: 8px !important;
+      min-height: 80px !important;
+    }
+    .produk-name {
+      font-size: 12px !important;
+      line-height: 1.2 !important;
+      margin-bottom: 4px !important;
+    }
+    .produk-price {
+      font-size: 11px !important;
+      margin-bottom: 4px !important;
+    }
+    .produk-kat {
+      font-size: 10px !important;
+    }
+    .order-item {
+      padding: 10px !important;
+    }
+    .order-header {
+      margin-bottom: 6px !important;
+    }
+    .order-item .btn-sm {
+      padding: 4px 6px !important;
+      font-size: 11px !important;
+    }
+    .produk-toolbar {
+      grid-template-columns: minmax(0, 1fr) 140px !important;
+      gap: 8px !important;
+    }
+    .kategori-pills {
+      gap: 6px !important;
+      margin-bottom: 8px !important;
+    }
+    .kategori-pill {
+      padding: 7px 10px !important;
+      font-size: 11px !important;
+    }
+  }
 </style>
 @endpush
 
@@ -834,6 +893,32 @@ $(function(){
     metodeBayar.val(savedMetode);
   }
 
+  let transactionLocked = Boolean(salesCode);
+
+  // Restore values if transaction is locked
+  if (transactionLocked) {
+    const savedName = localStorage.getItem('kasir_customer_name');
+    if (savedName !== null) inputNama.val(savedName);
+
+    const savedCompany = localStorage.getItem('kasir_invoice_to_company');
+    if (savedCompany !== null) $('[name=invoice_to_company]').val(savedCompany);
+
+    const savedDueDate = localStorage.getItem('kasir_tempo_due_date');
+    if (savedDueDate !== null) $('[name=tempo_due_date]').val(savedDueDate);
+
+    const savedInputCash = localStorage.getItem('kasir_input_cash');
+    if (savedInputCash !== null) inputCash.val(savedInputCash);
+
+    const savedCashRaw = localStorage.getItem('kasir_cash_tendered_raw');
+    if (savedCashRaw !== null) cashTenderedRaw.val(savedCashRaw);
+  } else {
+    localStorage.removeItem('kasir_customer_name');
+    localStorage.removeItem('kasir_invoice_to_company');
+    localStorage.removeItem('kasir_tempo_due_date');
+    localStorage.removeItem('kasir_input_cash');
+    localStorage.removeItem('kasir_cash_tendered_raw');
+  }
+
   // ===== State keranjang
   let CART = { items: [], subtotal: 0, subtotal_text: 'Rp 0' };
   let DISCOUNT = {
@@ -850,7 +935,6 @@ $(function(){
   let cartMutationSeq = 0; // cegah response out-of-order bikin flicker
   let discountTimer = null;
   let discountRequestSeq = 0;
-  let transactionLocked = Boolean(salesCode);
   let pollTimer = null;
 
   if (transactionLocked) {
@@ -871,7 +955,7 @@ $(function(){
     if (mt === 'tempo') {
       linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
     } else {
-      linkCetakRawBT.text('Cetak via Bluetooth').removeAttr('target');
+      linkCetakRawBT.text('Cetak via Bluetooth').attr('target', '_blank');
     }
     btnCetakWrap.css({display:'flex'});
   }
@@ -957,6 +1041,11 @@ $(function(){
     clearTimeout(pollTimer);
     salesCode = null;
     localStorage.removeItem(salesStorageKey);
+    localStorage.removeItem('kasir_customer_name');
+    localStorage.removeItem('kasir_invoice_to_company');
+    localStorage.removeItem('kasir_tempo_due_date');
+    localStorage.removeItem('kasir_input_cash');
+    localStorage.removeItem('kasir_cash_tendered_raw');
     setCartDrawer(false);
     setTransactionLocked(false);
     btnProses.text('Catat Penjualan');
@@ -1317,7 +1406,7 @@ $(function(){
           linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
           statusInfo.text('Invoice siap dicetak.');
         } else {
-          linkCetakRawBT.text('Cetak via Bluetooth').removeAttr('target');
+          linkCetakRawBT.text('Cetak via Bluetooth').attr('target', '_blank');
           statusInfo.text('Struk siap dicetak via Bluetooth.');
         }
         btnCetakWrap.css({display:'flex'});
@@ -1473,6 +1562,12 @@ $(function(){
       salesCode = res.sales_code;
       if (salesCode) {
         localStorage.setItem(salesStorageKey, salesCode);
+        localStorage.setItem('kasir_customer_name', inputNama.val() || '');
+        localStorage.setItem('kasir_invoice_to_company', $('[name=invoice_to_company]').val() || '');
+        localStorage.setItem('kasir_tempo_due_date', $('[name=tempo_due_date]').val() || '');
+        localStorage.setItem('kasir_input_cash', inputCash.val() || '');
+        localStorage.setItem('kasir_cash_tendered_raw', cashTenderedRaw.val() || '0');
+
         statusWrap.show();
         statusBadge.text('Tercatat').css({background:'#dcfce7', color:'#14532d'});
         statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode);
@@ -1489,7 +1584,7 @@ $(function(){
           linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
           statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode + '. Invoice siap dicetak.');
         } else {
-          linkCetakRawBT.text('Cetak via Bluetooth').removeAttr('target');
+          linkCetakRawBT.text('Cetak via Bluetooth').attr('target', '_blank');
           statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode + '. Struk siap dicetak via Bluetooth.');
         }
         btnCetakWrap.css({display:'flex'});

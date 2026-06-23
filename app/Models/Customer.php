@@ -40,7 +40,7 @@ class Customer extends Model
     $minimum = max(1, (int) ($this->discount_min_transactions ?? 10));
     $percent = max(0, min(99.99, (float) ($this->discount_percent ?? 0)));
 
-    return $percent > 0 && $count >= $minimum ? $percent : 0.0;
+    return $percent > 0 && $count > 0 && ($count % $minimum === 0) ? $percent : 0.0;
   }
 
   // normalisasi nama: trim + rapikan spasi + lower

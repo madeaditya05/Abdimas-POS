@@ -152,6 +152,13 @@ class KasirController extends Controller
             : 0;
         $discountAmount = min($subtotal, max(0, $discountAmount));
 
+        if ($purchaseCount > 0 && $purchaseCount % $minTransactions === 0) {
+            $remainingTransactions = 0;
+        } else {
+            $nextTarget = (floor($purchaseCount / $minTransactions) + 1) * $minTransactions;
+            $remainingTransactions = (int) ($nextTarget - $purchaseCount);
+        }
+
         return [
             'exists' => true,
             'purchase_count' => $purchaseCount,
@@ -161,7 +168,7 @@ class KasirController extends Controller
             'discount_amount' => $discountAmount,
             'total_after_discount' => max(0, $subtotal - $discountAmount),
             'eligible' => $discountPercent > 0,
-            'remaining_transactions' => max(0, $minTransactions - $purchaseCount),
+            'remaining_transactions' => $remainingTransactions,
         ];
     }
 

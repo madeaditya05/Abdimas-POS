@@ -140,7 +140,7 @@
 <div class="page">
   <div class="no-print" style="display:flex; gap:8px; justify-content:flex-end; margin-bottom:12px;">
     @auth
-      <a href="{{ route('kasir.index') }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kembali</a>
+      <a href="{{ route('kasir.index') }}" class="btn" id="btnKembali" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kembali</a>
     @endauth
     <a href="{{ request()->fullUrlWithQuery(['print' => 1]) }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Cetak</a>
     @auth
@@ -296,6 +296,16 @@
 
       function setRawBTStatus(text) {
         if (rawbtStatus) rawbtStatus.textContent = text;
+      }
+
+      const btnKembali = document.getElementById('btnKembali');
+      if (window.opener && btnKembali) {
+        btnKembali.textContent = 'Tutup Halaman';
+        btnKembali.href = '#';
+        btnKembali.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.close();
+        });
       }
 
       if (btnCetakRawBT) {
