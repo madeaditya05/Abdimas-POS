@@ -250,19 +250,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function closeAll(persist = true) {
+    groups.forEach(group => setGroup(group, false, persist));
+  }
+
   function openOnly(target, persist = true) {
     groups.forEach(group => setGroup(group, group === target, persist));
   }
 
+  // Hanya buka submenu yang aktif saat halaman dimuat
   const activeGroup = groups.find(group => group.classList.contains('has-active'));
-  const savedGroup = groups.find(group => localStorage.getItem(PREFIX + (group.dataset.key || '')) === 'open');
-  const initialGroup = activeGroup || savedGroup || groups.find(group => group.classList.contains('is-open'));
-
   groups.forEach(group => setGroup(group, false, false));
-  if (initialGroup) {
-    openOnly(initialGroup, true);
+  if (activeGroup) {
+    openOnly(activeGroup, true);
   }
 
+  // Klik tombol toggle submenu
   groups.forEach(g => {
     const btn = g.querySelector('.nav-toggle');
 
@@ -276,5 +279,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // Auto-close semua submenu ketika klik link nav biasa (bukan toggle)
+  const sidebar = document.getElementById('sidebar');
+  sidebar?.querySelectorAll('a.nav-item, .subnav-item').forEach(link => {
+    link.addEventListener('click', () => {
+      // Delay sedikit agar navigasi tidak terputus, lalu simpan state tertutup
+      groups.forEach(group => {
+        const key = group.dataset.key || '';
+        if (key) localStorage.setItem(PREFIX + key, 'closed');
+      });
+    });
+  });
 });
 </script>
+
