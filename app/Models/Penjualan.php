@@ -26,6 +26,7 @@ class Penjualan extends Model
         'bayar',
         'kembalian',
         'metode',
+        'channel',
         'invoice_to_name',
         'invoice_to_company',
         'tempo_due_date',

@@ -65,6 +65,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/kasir/struk/{kode}', [KasirController::class, 'cetakStruk'])->name('kasir.struk');
     Route::post('/kasir/struk/{kode}/print', [KasirController::class, 'printStruk'])->name('kasir.struk.print');
     Route::post('/kasir/selesai-cetak/{kode}', [KasirController::class, 'selesaiCetak'])->name('kasir.selesaiCetak');
+    Route::post('/kasir/batal/{kode}', [KasirController::class, 'batal'])->name('kasir.batal');
+    Route::post('/kasir/konfirmasi-pembayaran/{kode}', [KasirController::class, 'konfirmasiPembayaran'])->name('kasir.konfirmasiPembayaran');
     Route::get('/kasir/customer/discount', [KasirController::class, 'customerDiscountInfo'])->name('kasir.customer.discount');
 
     Route::get('/kasir/cart',            [KasirController::class, 'dataKeranjang'])->name('kasir.cart.data');
@@ -72,6 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/kasir/cart/kurang',    [KasirController::class, 'kurangKeranjang'])->name('kasir.cart.kurang');
     Route::delete('/kasir/cart/hapus',   [KasirController::class, 'hapusDariKeranjang'])->name('kasir.cart.hapus');
     Route::post('/kasir/cart/kosongkan', [KasirController::class, 'kosongkanKeranjang'])->name('kasir.cart.kosongkan');
+    Route::post('/kasir/cart/channel',   [KasirController::class, 'setChannel'])->name('kasir.cart.channel');
     Route::get('/kasir/status/{kode}',   [KasirController::class, 'statusPenjualan'])->name('kasir.status');
 
     // Laporan (Kasir)

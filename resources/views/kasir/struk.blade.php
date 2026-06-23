@@ -222,6 +222,38 @@
         });
       }
 
+      function triggerSelesai() {
+        if (btnSelesai) {
+          btnSelesai.disabled = true;
+          btnSelesai.innerText = 'Memproses...';
+        }
+        if (btnCetakRawBT) {
+          btnCetakRawBT.disabled = true;
+        }
+
+        fetch(selesaiUrl, {
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': csrfToken(),
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ dicetak: 1 })
+        }).finally(function(){
+          localStorage.removeItem('last_sales_code');
+          if (window.opener) {
+            try {
+              if (window.opener && !window.opener.closed) {
+                window.opener.location.reload();
+              }
+            } catch(e) {}
+            window.close();
+          } else {
+            window.location.href = indexUrl;
+          }
+        });
+      }
+
       const btnKembali = document.getElementById('btnKembali');
       if (window.opener) {
         if (btnKembali) {
@@ -245,35 +277,15 @@
           window.cetakRawBT(thermalReceipt, {
             onStatus: setStatus
           });
+          setTimeout(function() {
+            triggerSelesai();
+          }, 1500);
         });
       }
 
       if (btnSelesai) {
         btnSelesai.addEventListener('click', function(){
-          btnSelesai.disabled = true;
-          btnSelesai.innerText = 'Memproses...';
-
-          fetch(selesaiUrl, {
-            method: 'POST',
-            headers: {
-              'X-CSRF-TOKEN': csrfToken(),
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ dicetak: 1 })
-          }).finally(function(){
-            localStorage.removeItem('last_sales_code');
-            if (window.opener) {
-              try {
-                if (window.opener && !window.opener.closed) {
-                  window.opener.location.reload();
-                }
-              } catch(e) {}
-              window.close();
-            } else {
-              window.location.href = indexUrl;
-            }
-          });
+          triggerSelesai();
         });
       }
 
@@ -288,6 +300,9 @@
           window.cetakRawBT(thermalReceipt, {
             onStatus: setStatus
           });
+          setTimeout(function() {
+            triggerSelesai();
+          }, 1500);
         });
       @endif
     })();

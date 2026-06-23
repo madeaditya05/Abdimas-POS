@@ -65,17 +65,18 @@
         <div class="form-help"></div>
       </div>
 
-      {{-- Stok --}}
+
+      {{-- Harga Offline --}}
       <div class="form-field">
-        <label>Stok <span style="color:#ef4444">*</span></label>
+        <label>Harga Offline <span style="color:#ef4444">*</span></label>
         <div class="field-with-icon">
           <input
             class="form-input"
             type="number"
             step="1"
             min="0"
-            name="stok"
-            value="{{ old('stok', $produk->stok ?? 0) }}"
+            name="harga"
+            value="{{ old('harga', isset($produk->harga) ? (int)$produk->harga : 0) }}"
             required
           >
           <span class="field-icon">
@@ -85,24 +86,24 @@
         <div class="form-help"></div>
       </div>
 
-      {{-- Harga --}}
+      {{-- Harga Online --}}
       <div class="form-field">
-        <label>Harga <span style="color:#ef4444">*</span></label>
+        <label>Harga Online <span style="color:#ef4444">*</span></label>
         <div class="field-with-icon">
           <input
             class="form-input"
             type="number"
             step="1"
             min="0"
-            name="harga"
-            value="{{ old('harga', $produk->harga ?? 0) }}"
+            name="harga_online"
+            value="{{ old('harga_online', isset($produk->harga_online) ? (int)$produk->harga_online : 0) }}"
             required
           >
           <span class="field-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" class="hi hi-5"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
           </span>
         </div>
-        <div class="form-help">Isi harga jual dalam rupiah (tanpa titik).</div>
+        <div class="form-help">Harga untuk penjualan online (tanpa titik).</div>
       </div>
 
       {{-- Kategori --}}

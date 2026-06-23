@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 use App\Models\StokMutasi;
 use App\Models\BahanBaku;
+use App\Models\PenjualanDetail;
+use App\Models\Produk;
 
 class DashboardController extends Controller
 {
@@ -37,30 +39,43 @@ class DashboardController extends Controller
 
         $salesChartData = $this->salesChartData($filters['period'], $rangeStart, $rangeEnd, $chartTitle);
 
-        // ---- Pie chart produk terlaris sesuai periode filter
-        $topProductsChart = OrderItem::select(
-                'product_id',
-                DB::raw('MIN(name) as item_name'),
-                DB::raw('SUM(qty) as sold')
-            )
-            ->whereHas('order', function ($query) use ($rangeStart, $rangeEnd) {
-                $query->where('status', 'paid')
-                    ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        // ---- Pie chart produk terlaris: gabung OrderItem (online) + PenjualanDetail (kasir)
+        // Subquery 1: online orders
+        $onlineSub = DB::table('order_item')
+            ->join('order', 'order_item.order_id', '=', 'order.id')
+            ->where('order.status', 'paid')
+            ->whereBetween('order.created_at', [$rangeStart, $rangeEnd])
+            ->selectRaw('order_item.name as product_name, SUM(order_item.qty) as total_qty')
+            ->groupBy('order_item.name');
+
+        // Subquery 2: kasir sales (semua channel)
+        $kasirSub = DB::table('penjualan_detail')
+            ->join('produk', 'penjualan_detail.produk_id', '=', 'produk.id')
+            ->join('penjualan', 'penjualan_detail.penjualan_id', '=', 'penjualan.id')
+            ->where('penjualan.total', '>', 0)
+            ->where(function ($q) {
+                $q->whereColumn('penjualan.bayar', '>=', 'penjualan.total')
+                  ->orWhere('penjualan.metode', 'tempo');
             })
-            ->groupBy('product_id')
+            ->whereBetween('penjualan.tanggal', [$rangeStart, $rangeEnd])
+            ->selectRaw('produk.nama_barang as product_name, SUM(penjualan_detail.qty) as total_qty')
+            ->groupBy('produk.nama_barang');
+
+        // Gabung keduanya lalu aggregate
+        $topProductsChart = DB::query()
+            ->fromSub(
+                $onlineSub->unionAll($kasirSub),
+                'combined'
+            )
+            ->selectRaw('product_name, SUM(total_qty) as sold')
+            ->groupBy('product_name')
             ->orderByDesc('sold')
             ->limit(5)
-            ->with('product:id,name')
             ->get()
-            ->map(function ($item) {
-                return [
-                    'product_id' => $item->product_id,
-                    'name' => $item->product?->name
-                        ?? $item->item_name
-                        ?? ('Produk #' . ($item->product_id ?: '-')),
-                    'sold' => (int) $item->sold,
-                ];
-            });
+            ->map(fn ($row) => [
+                'name' => $row->product_name ?? '-',
+                'sold' => (int) $row->sold,
+            ]);
 
         return view('tampilan.dashboard', compact(
             'salesTotal',
@@ -79,14 +94,23 @@ class DashboardController extends Controller
     private function channelComparisonData(Carbon $rangeStart, Carbon $rangeEnd): array
     {
         $offlineQuery = Penjualan::completedPurchase()
+            ->where(function ($q) {
+                $q->whereNull('channel')
+                  ->orWhere('channel', '!=', 'online');
+            })
             ->whereBetween('tanggal', [$rangeStart, $rangeEnd]);
-        $onlineQuery = Order::where('status', 'paid')
+
+        $onlinePenjualanQuery = Penjualan::completedPurchase()
+            ->where('channel', 'online')
+            ->whereBetween('tanggal', [$rangeStart, $rangeEnd]);
+
+        $onlineOrderQuery = Order::where('status', 'paid')
             ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
 
         $offlineCount = (clone $offlineQuery)->count();
-        $onlineCount = (clone $onlineQuery)->count();
+        $onlineCount = (clone $onlinePenjualanQuery)->count() + (clone $onlineOrderQuery)->count();
         $offlineRevenue = (float) (clone $offlineQuery)->sum('total');
-        $onlineRevenue = (float) (clone $onlineQuery)->sum('grand_total');
+        $onlineRevenue = (float) (clone $onlinePenjualanQuery)->sum('total') + (float) (clone $onlineOrderQuery)->sum('grand_total');
 
         $totalCount = $offlineCount + $onlineCount;
         $totalRevenue = $offlineRevenue + $onlineRevenue;

@@ -37,8 +37,8 @@ class Customer extends Model
 
   public function eligibleDiscountPercent(?int $purchaseCount = null): float {
     $count = $purchaseCount ?? $this->purchase_count;
-    $minimum = max(1, (int) ($this->discount_min_transactions ?? 10));
-    $percent = max(0, min(99.99, (float) ($this->discount_percent ?? 0)));
+    $minimum = max(1, (int) (\App\Models\Setting::get('discount_min_transactions', 10)));
+    $percent = max(0, min(99.99, (float) (\App\Models\Setting::get('discount_percent', 0))));
 
     return $percent > 0 && $count > 0 && ($count % $minimum === 0) ? $percent : 0.0;
   }

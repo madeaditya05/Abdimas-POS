@@ -62,13 +62,9 @@ class CustomerController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:191'],
-            'discount_min_transactions' => ['required', 'integer', 'min:1', 'max:100000'],
-            'discount_percent' => ['required', 'numeric', 'min:0', 'max:99.99'],
         ]);
 
         $data['name'] = trim($data['name']);
-        $data['discount_min_transactions'] = (int) $data['discount_min_transactions'];
-        $data['discount_percent'] = round((float) $data['discount_percent'], 2);
 
         Customer::create($data);
 
@@ -98,13 +94,9 @@ class CustomerController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:191'],
-            'discount_min_transactions' => ['required', 'integer', 'min:1', 'max:100000'],
-            'discount_percent' => ['required', 'numeric', 'min:0', 'max:99.99'],
         ]);
 
         $data['name'] = trim($data['name']);
-        $data['discount_min_transactions'] = (int) $data['discount_min_transactions'];
-        $data['discount_percent'] = round((float) $data['discount_percent'], 2);
 
         $customer->update($data);
 

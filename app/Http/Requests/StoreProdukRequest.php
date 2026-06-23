@@ -16,24 +16,24 @@ class StoreProdukRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nama_barang' => ['required', 'string', 'max:255'],
-            'stok'        => ['required', 'integer', 'min:0'],
-            'harga'       => ['required', 'numeric', 'min:0'],
-            'kategori'    => ['required', 'string', 'max:50', Rule::exists('kategori_produk', 'slug')],
-            'gambar'      => ['nullable', 'image', 'max:2048'], // ~2MB
-            'deskripsi'   => ['nullable', 'string'],
+            'nama_barang'  => ['required', 'string', 'max:255'],
+            'harga'        => ['required', 'numeric', 'min:0'],
+            'harga_online' => ['required', 'numeric', 'min:0'],
+            'kategori'     => ['required', 'string', 'max:50', Rule::exists('kategori_produk', 'slug')],
+            'gambar'       => ['nullable', 'image', 'max:2048'], // ~2MB
+            'deskripsi'    => ['nullable', 'string'],
         ];
     }
 
     public function attributes(): array
     {
         return [
-            'nama_barang' => 'Nama Produk',
-            'stok'        => 'Stok',
-            'harga'       => 'Harga',
-            'kategori'    => 'Kategori',
-            'gambar'      => 'Gambar',
-            'deskripsi'   => 'Deskripsi',
+            'nama_barang'  => 'Nama Produk',
+            'harga'        => 'Harga Offline',
+            'harga_online' => 'Harga Online',
+            'kategori'     => 'Kategori',
+            'gambar'       => 'Gambar',
+            'deskripsi'    => 'Deskripsi',
         ];
     }
 }

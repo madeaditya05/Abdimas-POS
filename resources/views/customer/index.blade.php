@@ -49,7 +49,6 @@
           <th style="width:60px;">#</th>
           <th>Nama</th>
           <th style="width:130px;">Pembelian</th>
-          <th style="width:190px;">Aturan Diskon</th>
           <th>Created</th>
           <th style="width:130px;">Aksi</th>
         </tr>
@@ -61,26 +60,12 @@
             $jumlahBeli = (int) ($row->completed_penjualans_count ?? 0);
             $isUsed = ((int) ($row->penjualans_count ?? 0) > 0)
                 || ((int) ($row->orders_count ?? 0) > 0);
-            $minBeli = (int) ($row->discount_min_transactions ?? 10);
-            $diskonPersen = (float) ($row->discount_percent ?? 0);
-            $diskonAktif = $diskonPersen > 0 && $jumlahBeli >= $minBeli;
           @endphp
 
           <tr>
             <td>{{ $items->firstItem() + $idx }}</td>
             <td>{{ $row->name ?? '-' }}</td>
             <td>{{ number_format($jumlahBeli, 0, ',', '.') }} kali</td>
-            <td>
-              <div style="font-weight:600;">
-                {{ number_format($diskonPersen, 2, ',', '.') }}%
-              </div>
-              <div class="muted" style="font-size:12px;">
-                Minimal {{ number_format($minBeli, 0, ',', '.') }} kali beli
-              </div>
-              <div style="font-size:12px; color:{{ $diskonAktif ? '#166534' : '#64748b' }};">
-                {{ $diskonAktif ? 'Sedang memenuhi syarat' : 'Belum memenuhi syarat' }}
-              </div>
-            </td>
             <td>{{ optional($row->created_at)->diffForHumans() ?? '-' }}</td>
 
             <td>
@@ -112,7 +97,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="6" class="muted" style="text-align:center;">
+            <td colspan="5" class="muted" style="text-align:center;">
               Belum ada customer.
             </td>
           </tr>

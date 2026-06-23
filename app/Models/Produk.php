@@ -19,12 +19,18 @@ class Produk extends Model
     protected $fillable = [
         'kode_barang',
         'nama_barang',
-        // 'stok',
         'aktif',
         'harga',
+        'harga_online',
         'kategori',
         'gambar',
         'deskripsi',
+    ];
+
+    protected $casts = [
+        'harga' => 'decimal:2',
+        'harga_online' => 'decimal:2',
+        'aktif' => 'boolean',
     ];
 
     public function reseps(): HasMany

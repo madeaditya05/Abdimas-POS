@@ -8,8 +8,6 @@
 @section('content')
 @php
   $nama = old('name', $row->name ?? '');
-  $minBeli = old('discount_min_transactions', $row->discount_min_transactions ?? 10);
-  $diskonPersen = old('discount_percent', $row->discount_percent ?? 0);
 @endphp
 
 @if ($errors->any())
@@ -54,43 +52,6 @@
 
         <div class="form-help">
           Nama ini akan muncul di transaksi / order yang terkait.
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label>Minimal Pembelian Diskon <span style="color:#ef4444">*</span></label>
-
-        <input
-          type="number"
-          class="form-input"
-          name="discount_min_transactions"
-          value="{{ $minBeli }}"
-          min="1"
-          step="1"
-          required
-          placeholder="Contoh: 10">
-
-        <div class="form-help">
-          Customer mulai dapat diskon jika riwayat pembeliannya sudah mencapai angka ini.
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label>Diskon Customer (%) <span style="color:#ef4444">*</span></label>
-
-        <input
-          type="number"
-          class="form-input"
-          name="discount_percent"
-          value="{{ $diskonPersen }}"
-          min="0"
-          max="99.99"
-          step="0.01"
-          required
-          placeholder="Contoh: 5">
-
-        <div class="form-help">
-          Isi 0 jika customer ini belum punya diskon.
         </div>
       </div>
 

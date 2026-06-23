@@ -63,7 +63,7 @@
     <form method="POST" action="{{ route('pengaturan.update') }}" class="form">
       @csrf
       
-      <div class="form-section" style="border: 0; padding: 0; background: transparent; margin-bottom: 20px;">
+      <div class="form-section" style="border: 0; padding: 0; background: transparent; margin-bottom: 24px;">
         <div class="form-title" style="font-size: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--bb-line); padding-bottom: 8px;">
           Kode Proteksi Pendaftaran (Sign-up Code)
         </div>
@@ -79,6 +79,45 @@
                    style="width: 100%; height: 42px; padding: 10px 14px; border: 1px solid var(--bb-line); border-radius: 8px;">
             <div class="form-help" style="font-size: 12px; color: var(--bb-muted); margin-top: 6px;">
               Kode keamanan yang harus diinput oleh pendaftar baru agar bisa membuat akun.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" style="border: 0; padding: 0; background: transparent; margin-bottom: 20px;">
+        <div class="form-title" style="font-size: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--bb-line); padding-bottom: 8px;">
+          Diskon Loyalitas Pelanggan (Global Loyalty Discount)
+        </div>
+
+        <div class="form-grid" style="display: grid; gap: 20px; grid-template-columns: repeat(2, 1fr);">
+          <div class="form-field">
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Minimal Transaksi</label>
+            <input type="number" 
+                   name="discount_min_transactions" 
+                   value="{{ old('discount_min_transactions', $discountMinTransactions) }}" 
+                   class="form-input" 
+                   required
+                   min="1"
+                   placeholder="Contoh: 10"
+                   style="width: 100%; height: 42px; padding: 10px 14px; border: 1px solid var(--bb-line); border-radius: 8px;">
+            <div class="form-help" style="font-size: 12px; color: var(--bb-muted); margin-top: 6px;">
+              Pelanggan mendapatkan diskon jika kelipatan jumlah transaksi mereka mencapai angka ini.
+            </div>
+          </div>
+          <div class="form-field">
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Persentase Diskon (%)</label>
+            <input type="number" 
+                   name="discount_percent" 
+                   value="{{ old('discount_percent', $discountPercent) }}" 
+                   class="form-input" 
+                   required
+                   min="0"
+                   max="99.99"
+                   step="0.01"
+                   placeholder="Contoh: 5"
+                   style="width: 100%; height: 42px; padding: 10px 14px; border: 1px solid var(--bb-line); border-radius: 8px;">
+            <div class="form-help" style="font-size: 12px; color: var(--bb-muted); margin-top: 6px;">
+              Besar persentase diskon yang diberikan (misalnya 5 untuk 5%). Isi 0 untuk menonaktifkan.
             </div>
           </div>
         </div>

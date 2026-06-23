@@ -79,7 +79,8 @@
         <tr>
           <th>Kode</th>
           <th>Nama</th>
-          <th class="num">Harga</th>
+          <th class="num">Harga Offline</th>
+          <th class="num">Harga Online</th>
           <th>Kategori</th>
           <th>Gambar</th>
           <th style="width:180px;">Status</th>
@@ -113,6 +114,10 @@
 
             <td class="num">
               Rp {{ number_format((float) $produk->harga, 0, ',', '.') }}
+            </td>
+
+            <td class="num">
+              Rp {{ number_format((float) $produk->harga_online, 0, ',', '.') }}
             </td>
 
             <td>
@@ -178,7 +183,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="muted" style="text-align:center;">
+            <td colspan="8" class="muted" style="text-align:center;">
               Belum ada data produk.
             </td>
           </tr>

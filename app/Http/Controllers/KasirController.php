@@ -26,7 +26,7 @@ class KasirController extends Controller
     {
         $this->produkCatalogSync->syncFromStorage();
 
-        $produks = Produk::select('id', 'nama_barang', 'harga', 'kategori', 'gambar')
+        $produks = Produk::select('id', 'nama_barang', 'harga', 'harga_online', 'kategori', 'gambar')
             ->where('aktif', true)
             ->orderBy('nama_barang')
             ->get();
@@ -71,21 +71,25 @@ class KasirController extends Controller
 
     private function simpanKeranjang(array $cart): array
     {
+        $channel = Session::get('pos_channel', 'offline');
         $subtotal = 0;
         $count = 0;
         $items = [];
 
         foreach ($cart['items'] as $row) {
-            $line = (int) $row['price'] * (int) $row['qty'];
+            $price = (int) ($channel === 'online' ? ($row['price_online'] ?? $row['price']) : $row['price']);
+            $line = $price * (int) $row['qty'];
             $subtotal += $line;
             $count += (int) $row['qty'];
             $items[] = [
                 'produk_id' => (int) $row['id'],
                 'name' => $row['name'],
-                'price' => (int) $row['price'],
+                'price' => $price,
+                'price_offline' => (int) $row['price'],
+                'price_online' => (int) ($row['price_online'] ?? $row['price']),
                 'qty' => (int) $row['qty'],
                 'line_total' => $line,
-                'price_text' => $this->rupiah((int) $row['price']),
+                'price_text' => $this->rupiah($price),
                 'line_total_text' => $this->rupiah($line),
             ];
         }
@@ -144,8 +148,8 @@ class KasirController extends Controller
         }
 
         $purchaseCount = (int) $purchaseQuery->count();
-        $minTransactions = max(1, (int) ($customer->discount_min_transactions ?? 10));
-        $configuredPercent = max(0, min(99.99, (float) ($customer->discount_percent ?? 0)));
+        $minTransactions = max(1, (int) (\App\Models\Setting::get('discount_min_transactions', 10)));
+        $configuredPercent = max(0, min(99.99, (float) (\App\Models\Setting::get('discount_percent', 0))));
         $discountPercent = $customer->eligibleDiscountPercent($purchaseCount);
         $discountAmount = $discountPercent > 0
             ? (int) floor($subtotal * $discountPercent / 100)
@@ -194,7 +198,7 @@ class KasirController extends Controller
     public function tambahKeKeranjang(Request $req)
     {
         $data = $req->validate(['produk_id' => 'required|integer|exists:produk,id']);
-        $p = Produk::select('id', 'nama_barang', 'harga', 'aktif')->findOrFail($data['produk_id']);
+        $p = Produk::select('id', 'nama_barang', 'harga', 'harga_online', 'aktif')->findOrFail($data['produk_id']);
 
         if (! $p->aktif) {
             return response()->json([
@@ -210,6 +214,7 @@ class KasirController extends Controller
                 'id' => $p->id,
                 'name' => $p->nama_barang,
                 'price' => (int) $p->harga,
+                'price_online' => (int) $p->harga_online,
                 'qty' => 1,
             ];
         } else {
@@ -252,6 +257,17 @@ class KasirController extends Controller
         return response()->json($this->simpanKeranjang(['items' => []]));
     }
 
+    public function setChannel(Request $req)
+    {
+        $channel = (string) $req->input('channel', 'offline');
+        if (! in_array($channel, ['online', 'offline'], true)) {
+            $channel = 'offline';
+        }
+        Session::put('pos_channel', $channel);
+
+        return response()->json($this->simpanKeranjang($this->ambilKeranjang()));
+    }
+
     public function prosesForm(Request $req)
     {
         try {
@@ -280,8 +296,6 @@ class KasirController extends Controller
             if (! $customer) {
                 $customer = Customer::create([
                     'name' => trim($rawCustomerName),
-                    'discount_min_transactions' => 10,
-                    'discount_percent' => 0,
                 ]);
             } elseif ($customer->name !== $rawCustomerName) {
                 $customer->name = $rawCustomerName;
@@ -298,12 +312,14 @@ class KasirController extends Controller
                 $tempoDueDate = now()->addDays(7)->toDateString();
             }
 
-            $penjualan = DB::transaction(function () use ($req, $cart, $customer, $metode, $invoiceToName, $invoiceToCompany, $tempoDueDate) {
+            $channel = Session::get('pos_channel', 'offline');
+            $penjualan = DB::transaction(function () use ($req, $cart, $customer, $metode, $channel, $invoiceToName, $invoiceToCompany, $tempoDueDate) {
                 $penjualan = Penjualan::create([
                     'tanggal' => now(),
                     'user_id' => Auth::id() ?: 1,
                     'customer_id' => $customer->id,
                     'metode' => $metode,
+                    'channel' => $channel,
                     'total' => 0,
                     'bayar' => 0,
                     'kembalian' => 0,
@@ -314,11 +330,14 @@ class KasirController extends Controller
 
                 $subtotal = 0;
                 foreach ($cart['items'] as $row) {
-                    $line = (int) $row['price'] * (int) $row['qty'];
+                    $produk = Produk::find((int) $row['id']);
+                    $harga = $produk ? (float) ($channel === 'online' ? $produk->harga_online : $produk->harga) : (float) $row['price'];
+                    $line = $harga * (int) $row['qty'];
+                    
                     PenjualanDetail::create([
                         'penjualan_id' => $penjualan->id,
                         'produk_id' => (int) $row['id'],
-                        'harga' => (int) $row['price'],
+                        'harga' => $harga,
                         'qty' => (int) $row['qty'],
                         'subtotal' => $line,
                     ]);
@@ -337,6 +356,9 @@ class KasirController extends Controller
                     $bayarRaw = (int) $req->input('bayar', 0);
                     $bayar = $bayarRaw > 0 ? $bayarRaw : (int) $penjualan->total;
                     $kembalian = max(0, $bayar - (int) $penjualan->total);
+                } elseif (in_array($metode, ['qris', 'transfer', 'debit'], true)) {
+                    $bayar = 0;
+                    $kembalian = 0;
                 } elseif ($metode !== 'tempo') {
                     $bayar = (int) $penjualan->total;
                 }
@@ -406,6 +428,26 @@ class KasirController extends Controller
             Log::warning('Kasir batal error', ['kode' => $kode, 'msg' => $e->getMessage()]);
 
             return response()->json(['ok' => false, 'message' => 'Gagal membatalkan.'], 500);
+        }
+    }
+
+    public function konfirmasiPembayaran(Request $req, string $kode)
+    {
+        try {
+            $penjualan = Penjualan::where('kode_penjualan', $kode)->first();
+            if (! $penjualan) {
+                return response()->json(['ok' => false, 'message' => 'Transaksi tidak ditemukan.'], 404);
+            }
+
+            $penjualan->forceFill([
+                'bayar' => $penjualan->total,
+                'kembalian' => 0,
+            ])->save();
+
+            return response()->json(['ok' => true, 'message' => 'Pembayaran berhasil dikonfirmasi.']);
+        } catch (\Throwable $e) {
+            Log::error('Kasir konfirmasiPembayaran error', ['kode' => $kode, 'msg' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'message' => 'Gagal mengonfirmasi pembayaran.'], 500);
         }
     }
 
