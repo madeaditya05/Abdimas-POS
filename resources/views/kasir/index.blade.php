@@ -944,7 +944,7 @@ $(function(){
     
     const mt = localStorage.getItem(metodeStorageKey) || 'cash';
     const printUrl = (mt === 'tempo')
-      ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(salesCode) + "?print=1"
+      ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(salesCode) + "?print=0"
       : "{{ url('/kasir/struk') }}/" + encodeURIComponent(salesCode) + "?print=0&rawbt=1";
       
     linkCetakRawBT
@@ -953,7 +953,7 @@ $(function(){
       .attr('data-metode', mt);
       
     if (mt === 'tempo') {
-      linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
+      linkCetakRawBT.text('Cetak Invoice').removeAttr('target');
     } else {
       linkCetakRawBT.text('Cetak via Bluetooth').attr('target', '_blank');
     }
@@ -1395,7 +1395,7 @@ $(function(){
       
       if (isPaid) {
         let printUrl = (metode === 'tempo')
-            ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=1"
+            ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(kode) + "?print=0"
             : "{{ url('/kasir/struk') }}/" + encodeURIComponent(kode) + "?print=0&rawbt=1";
         
         linkCetakRawBT
@@ -1404,7 +1404,7 @@ $(function(){
           .attr('data-metode', metode);
         
         if (metode === 'tempo') {
-          linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
+          linkCetakRawBT.text('Cetak Invoice').removeAttr('target');
           statusInfo.text('Invoice siap dicetak.');
         } else {
           linkCetakRawBT.text('Cetak via Bluetooth').attr('target', '_blank');
@@ -1573,7 +1573,7 @@ $(function(){
         statusBadge.text('Tercatat').css({background:'#dcfce7', color:'#14532d'});
         statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode);
         let cetakUrl = (res.metode === 'tempo')
-          ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(salesCode) + "?print=1"
+          ? "{{ url('/kasir/invoice') }}/" + encodeURIComponent(salesCode) + "?print=0"
           : "{{ url('/kasir/struk') }}/" + encodeURIComponent(salesCode) + "?print=0&rawbt=1";
 
         linkCetakRawBT
@@ -1582,7 +1582,7 @@ $(function(){
           .attr('data-metode', res.metode || 'cash');
         
         if ((res.metode || 'cash') === 'tempo') {
-          linkCetakRawBT.text('Cetak Invoice').attr('target', '_blank');
+          linkCetakRawBT.text('Cetak Invoice').removeAttr('target');
           statusInfo.text((res.message || 'Penjualan berhasil dicatat.') + ' Kode: ' + salesCode + '. Invoice siap dicetak.');
         } else {
           linkCetakRawBT.text('Cetak via Bluetooth').attr('target', '_blank');

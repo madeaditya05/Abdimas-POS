@@ -86,7 +86,7 @@
       margin: 0;
     }
     .inv-brand { margin-top: 4px; font-weight: 800; letter-spacing: 2.6px; }
-    .inv-meta { display:flex; justify-content:space-between; margin-top: 18mm; gap: 18px; }
+    .inv-meta { display:flex; justify-content:space-between; margin-top: 8mm; gap: 18px; }
     .inv-to-label { color:#6b7280; font-size: 13px; }
     .inv-to-name { margin-top: 6px; font-weight: 600; font-size: 14px; min-height: 20px; }
     .inv-meta-right { width: 250px; font-size: 13px; }
@@ -95,19 +95,19 @@
     .inv-meta-key { color:#6b7280; }
     .inv-meta-val { font-weight: 600; }
 
-    .inv-line-strong { border-top: 2px solid #111827; margin-top: 14mm; }
+    .inv-line-strong { border-top: 2px solid #111827; margin-top: 6mm; }
 
-    .inv-table { margin-top: 8mm; }
+    .inv-table { margin-top: 4mm; }
     .inv-th { display:grid; grid-template-columns: 1fr 120px 70px 130px; gap: 10px; font-weight: 800; letter-spacing: 1px; font-size: 13px; }
     .inv-th > div { padding-bottom: 6px; }
     .inv-th-line { border-top: 1px solid #111827; margin-top: 2px; }
-    .inv-body { min-height: 98mm; padding-top: 8mm; }
+    .inv-body { min-height: 60mm; padding-top: 6mm; }
     .inv-row { display:grid; grid-template-columns: 1fr 120px 70px 130px; gap: 10px; font-size: 13px; margin-bottom: 10px; }
     .inv-row-desc { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .t-right { text-align:right; }
 
     .inv-bottom-line { border-top: 2px solid #111827; }
-    .inv-bottom { display:flex; justify-content:space-between; gap: 18px; margin-top: 12mm; }
+    .inv-bottom { display:flex; justify-content:space-between; gap: 18px; margin-top: 6mm; }
     .inv-payto { flex: 1; }
     .inv-payto-title { font-weight: 800; font-size: 13px; letter-spacing: 1px; }
     .inv-payto-box { margin-top: 10px; font-size: 12px; color:#6b7280; }
@@ -116,7 +116,7 @@
     .inv-sum-row { display:flex; justify-content:space-between; margin-bottom: 10px; font-weight: 800; }
     .inv-sum-row.total { font-weight: 900; }
 
-    .inv-footer { display:flex; justify-content:space-between; align-items:flex-end; gap: 18px; margin-top: 18mm; }
+    .inv-footer { display:flex; justify-content:space-between; align-items:flex-end; gap: 18px; margin-top: 8mm; }
     .inv-thanks {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 34px;
@@ -144,7 +144,6 @@
     @endauth
     <a href="{{ request()->fullUrlWithQuery(['print' => 1]) }}" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Cetak</a>
     @auth
-      <button type="button" id="btnCetakRawBT" class="btn" style="cursor:pointer; padding:8px 10px; border:1px solid #0f766e; border-radius:10px; background:#fff; color:#0f766e;">Cetak Struk</button>
       @php
         $waMsg = "Invoice {$penjualan->kode_penjualan} - {$brand}%0A".
                  "Total: {$rupiah($grand)}%0A".
@@ -153,7 +152,6 @@
         $waLink = "https://wa.me/?text={$waMsg}";
       @endphp
       <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn" style="text-decoration:none; padding:8px 10px; border:1px solid #d1d5db; border-radius:10px; color:#111827;">Kirim WhatsApp</a>
-      <span id="rawbtStatus" style="align-self:center; font-size:12px; color:#334155;"></span>
     @endauth
   </div>
 
