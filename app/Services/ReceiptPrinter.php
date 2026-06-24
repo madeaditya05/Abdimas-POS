@@ -38,7 +38,7 @@ class ReceiptPrinter
         $metode = strtoupper((string) ($payment?->pg_payment_type ?? $penjualan->metode ?? '-'));
 
         $printer->initialize();
-        $printer->feed(2); // Spasi kosong 2 baris agar nama brand atas tidak terpotong saat kertas disobek
+        $printer->feed(1); // Spasi kosong 1 baris agar nama brand atas tidak terpotong saat kertas disobek
         $printer->setJustification(Printer::JUSTIFY_CENTER);
         $printer->setEmphasis(true);
         $this->line($printer, $brand);
@@ -94,7 +94,7 @@ class ReceiptPrinter
         $printer->setJustification(Printer::JUSTIFY_CENTER);
         $this->line($printer, 'Terima kasih');
         $this->line($printer, 'atas kunjungan Anda');
-        $printer->feed(1);
+        $printer->feed(2);
 
         if (config('receipt_printer.cash_drawer', false)) {
             $printer->pulse();

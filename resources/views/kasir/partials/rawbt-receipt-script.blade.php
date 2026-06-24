@@ -129,7 +129,6 @@
 
       const rows = [
         '',
-        '',
         centerText(outletName, width),
         centerText(receiptTitle, width),
       ];
@@ -183,6 +182,7 @@
         line(width),
         centerText('Terima kasih', width),
         centerText('atas kunjungan Anda', width),
+        '',
         ''
       );
 
