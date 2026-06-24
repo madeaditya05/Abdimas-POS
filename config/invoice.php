@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'brand_name'    => env('INVOICE_BRAND_NAME', env('APP_NAME', '')),
+    'brand_name'    => 'Nafisa Pasta',
     'brand_tagline' => env('INVOICE_BRAND_TAGLINE', ''),
 
     'phone'     => env('INVOICE_PHONE', ''),

@@ -38,6 +38,7 @@ class ReceiptPrinter
         $metode = strtoupper((string) ($payment?->pg_payment_type ?? $penjualan->metode ?? '-'));
 
         $printer->initialize();
+        $printer->feed(2); // Spasi kosong 2 baris agar nama brand atas tidak terpotong saat kertas disobek
         $printer->setJustification(Printer::JUSTIFY_CENTER);
         $printer->setEmphasis(true);
         $this->line($printer, $brand);

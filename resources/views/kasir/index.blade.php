@@ -1575,6 +1575,26 @@ $(function(){
 
   // Polling awal dipanggil setelah handler final dipasang.
 
+  // Helper untuk menyelesaikan transaksi dan mengosongkan keranjang
+  function selesaikanTransaksi(kode, onSuccess = null, onError = null) {
+    $.post("{{ url('/kasir/selesai-cetak') }}/" + encodeURIComponent(kode), { dicetak: 1 })
+      .done(function() {
+        $.post('{{ route('kasir.cart.kosongkan') }}', {}, function(data){
+          resetKasirState({clearCart:false});
+          renderKeranjang(data);
+          if (onSuccess) onSuccess();
+        }).fail(function(){
+          resetKasirState();
+          if (onSuccess) onSuccess();
+        });
+      })
+      .fail(function(xhr) {
+        const res = xhr.responseJSON || {};
+        if (onError) onError(res.message || 'Gagal menyelesaikan transaksi.');
+        else resetKasirState();
+      });
+  }
+
   $('#btnSelesaiTransaksi').off('click');
   $(document).off('click', '#btnSelesaiTransaksi').on('click', '#btnSelesaiTransaksi', function() {
     const kode = localStorage.getItem(salesStorageKey) || salesCode;
@@ -1586,20 +1606,18 @@ $(function(){
     const btn = $(this);
     btn.prop('disabled', true).text('Mereset...');
 
-    $.post("{{ url('/kasir/selesai-cetak') }}/" + encodeURIComponent(kode), { dicetak: 1 })
-      .done(function() {
-        $.post('{{ route('kasir.cart.kosongkan') }}', {}, function(data){
-          resetKasirState({clearCart:false});
-          renderKeranjang(data);
-        }).fail(function(){
-          resetKasirState();
-        });
-      })
-      .fail(function(xhr) {
-        const res = xhr.responseJSON || {};
-        statusInfo.text(res.message || 'Gagal menyelesaikan transaksi.');
-        btn.prop('disabled', false).text('Selesaikan');
-      });
+    selesaikanTransaksi(kode, null, function(errMsg) {
+      statusInfo.text(errMsg);
+      btn.prop('disabled', false).text('Selesaikan');
+    });
+  });
+
+  // Saat tombol Cetak via Bluetooth (RawBT) diklik, langsung selesaikan transaksi secara otomatis
+  $(document).off('click', '#linkCetakRawBT').on('click', '#linkCetakRawBT', function() {
+    const kode = localStorage.getItem(salesStorageKey) || salesCode;
+    if (kode) {
+      selesaikanTransaksi(kode);
+    }
   });
 
   $(document).off('click', '#btnBatalTransaksi').on('click', '#btnBatalTransaksi', function() {

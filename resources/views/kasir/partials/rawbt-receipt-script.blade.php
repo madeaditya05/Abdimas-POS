@@ -128,6 +128,8 @@
       const items = Array.isArray(data.items) ? data.items : [];
 
       const rows = [
+        '',
+        '',
         centerText(outletName, width),
         centerText(receiptTitle, width),
       ];
