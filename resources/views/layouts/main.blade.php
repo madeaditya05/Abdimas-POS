@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') - Pasta Nafisa</title>
     {{-- CSS global --}}
-    <link rel="stylesheet" href="{{ asset('assets/styles.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/styles.css') }}?v={{ filemtime(public_path('assets/styles.css')) }}">
 
 
     {{-- Slot untuk CSS halaman (product.css, DataTables, dll) --}}
