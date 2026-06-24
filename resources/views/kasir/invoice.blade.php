@@ -126,7 +126,7 @@
       margin: 0;
     }
     .inv-logo { margin-top: 10px; }
-    .inv-logo img { height: 76px; width: auto; }
+    .inv-logo img { height: 120px; width: auto; }
     .inv-contact { width: 260px; font-size: 12px; color:#111827; }
     .inv-contact-row { display:flex; justify-content:flex-end; align-items:center; gap: 10px; margin-top: 8px; }
     .inv-contact-row:first-child { margin-top: 0; }
