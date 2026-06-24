@@ -99,7 +99,7 @@ svg {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 16px 12px 18px;
+    padding: 4px 0;
     min-width: 0;
 }
 .sidebar-logo-img {
@@ -2936,7 +2936,7 @@ body.sidebar-collapsed .sidebar .nav-item:not(.nav-toggle)::after {
     .sidebar {
         transform: translateX(-100%);
         transition: transform 0.2s ease;
-        z-index: 1200;
+        z-index: 2000;
     }
     body.sidebar-open .sidebar {
         transform: translateX(0);
@@ -2948,7 +2948,7 @@ body.sidebar-collapsed .sidebar .nav-item:not(.nav-toggle)::after {
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.35);
-        z-index: 1100;
+        z-index: 1990;
     }
     .topbar {
         left: 0 !important;
@@ -2981,9 +2981,10 @@ body.sidebar-collapsed .sidebar .nav-item .nav-icon {
 
 /* header cukup tinggi dan tidak memotong isi */
 .sidebar-header {
-    padding: 14px 16px;
+    padding: 12px 16px;
     min-height: 72px;
-    overflow: visible;
+    height: auto !important;
+    overflow: hidden;
 }
 
 /* wrapper & img logo aman di kedua mode */
@@ -3291,7 +3292,7 @@ body {
         width: min(86vw, 304px) !important;
         transform: translateX(-105%) !important;
         transition: transform 0.2s ease !important;
-        z-index: 1200 !important;
+        z-index: 2000 !important;
     }
 
     body.sidebar-open {
@@ -3307,7 +3308,7 @@ body {
         position: fixed;
         inset: 0;
         background: rgba(15, 23, 42, 0.42);
-        z-index: 1100;
+        z-index: 1990 !important;
     }
 
     body.sidebar-collapsed .sidebar {
@@ -3571,5 +3572,8 @@ button {
 .sidebar-header,
 .sidebar-footer {
     flex-shrink: 0 !important;
+    position: relative;
+    z-index: 10;
+    background: inherit;
 }
 
